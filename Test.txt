@@ -2,7 +2,7 @@ Listado de alumnos del curso de Estructuras de Datos
 
 1. Acevedo Lermo, Aniee
 2. Caballero Chocano, Martín
-3. Delgado
+3. Delgado Huaychani, Aroon Alberto
 4. Galvez Garro, Jorge Luis Junior
 5. Gamarra Muñoz Juan Pablo
 6. Gonzales, Alexis 
