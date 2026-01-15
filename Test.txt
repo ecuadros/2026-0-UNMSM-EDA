@@ -17,7 +17,7 @@ Listado de alumnos del curso de Estructuras de Datos
 7. Rojas Villaorduña, Aaron
 5. Alvaro Salazar
 6. Alejandro Sotelo
-7. Paolo Villavicencio
+7. Villavicencio Merella, Paolo Alonso
 8.
 9.
 10.Galvez Garro, Jorge Luis Junior :D 
