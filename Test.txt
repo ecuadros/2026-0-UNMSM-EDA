@@ -23,7 +23,7 @@ Listado de alumnos del curso de Estructuras de Datos
 10.Galvez Garro, Jorge Luis Junior :D 
 10.
 11.
-12.
+12. Quispe Mejia, Ricardo Antonio
 13.
 14.
 15. Ventura Enciso, Alan
