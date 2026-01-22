@@ -12,7 +12,7 @@ class CArray {
     using CompareFunc = bool (*)(const T &, const T &);
 
   private:
-    size_t m_capacity = 0, m_last = 0;
+    size_t m_capacity = 0, m_count = 0;
     value_type *m_data = nullptr;
 
   public:
@@ -22,7 +22,7 @@ class CArray {
     void push_back(value_type value);
     value_type &operator[](size_t index);
     size_t getSize() const
-    {   return m_last + 1;  };
+    {   return m_count;  };
     void resize(size_t delta = 10);
     void sort( CompareFunc pComp );
     void Foreach(void (*pf)(T &, T), T p1);
@@ -40,20 +40,20 @@ template <typename T>
 typename CArray<T>::value_type &CArray<T>::operator[](size_t index) {
     // cout << "XResizing from " << m_capacity << " to at least " << index + 5 << endl;
     if (index > m_capacity) {
-      cout << "Resizing from " << m_capacity << " to at least " << index + 5 << endl;
-      resize(index - m_last + 5);
+        cout << "Resizing from " << m_capacity << " to at least " << index + 5 << endl;
+        resize(index - m_count + 5);
     }
     assert(index < m_capacity);
-    if (index > m_last)
-      m_last = index;
+    if (index >= m_count)
+        m_count = index + 1;
     return m_data[index];
 }
 
 template <typename T>
 void CArray<T>::push_back(value_type value) {
-    if (m_last >= m_capacity)
+    if (m_count >= m_capacity)
       resize();
-    m_data[m_last++] = value;
+    m_data[m_count++] = value;
 }
 
 template <typename T>
@@ -69,7 +69,7 @@ void CArray<T>::resize(size_t delta) {
 
 template <typename T>
 void CArray<T>::sort( CompareFunc pComp ){
-    BurbujaRecursivo(m_data, m_last, pComp);
+    BurbujaRecursivo(m_data, m_count, pComp);
 }
 
 template <typename Q>
