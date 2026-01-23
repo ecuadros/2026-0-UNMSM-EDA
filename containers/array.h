@@ -39,7 +39,7 @@ CArray<T>::~CArray() { delete[] m_data; }
 template <typename T>
 typename CArray<T>::value_type &CArray<T>::operator[](size_t index) {
     // cout << "XResizing from " << m_capacity << " to at least " << index + 5 << endl;
-    if (index > m_capacity) {
+    if (index >= m_capacity) {
         cout << "Resizing from " << m_capacity << " to at least " << index + 5 << endl;
         resize(index - m_count + 5);
     }
