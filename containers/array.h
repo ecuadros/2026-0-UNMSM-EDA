@@ -23,9 +23,8 @@ class ArrayForwardIterator
     size_t      m_pos        = -1;
   public:
     ArrayForwardIterator(Container *pContainer, size_t pos=0) 
-         : m_pContainer(pContainer) {
+         : m_pContainer(pContainer), m_pos(pos) {
           m_data = m_pContainer->m_data;
-          m_pos  = 0;
          }
     ArrayForwardIterator(ArrayForwardIterator<Container> &another)
          :  m_pContainer(another.m_pContainer),
