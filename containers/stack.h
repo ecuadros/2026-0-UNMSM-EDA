@@ -3,7 +3,11 @@
 
 #include <iostream>
 #include "../general/types.h"
+#include "../util.h"
 
+class CStack{
+    
+};
 
 
 #endif // __STACK_H__
