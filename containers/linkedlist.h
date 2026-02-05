@@ -3,6 +3,7 @@
 #include <iostream>
 #include "../general/types.h"
 #include "../util.h"
+#include <mutex> //Para poder usar mutex en concurrencia
 using namespace std;
 
 // TODO: Traits para listas enlazadas
@@ -66,17 +67,53 @@ class CLinkedList {
     // friend GeneralIterator< CLinkedList<Traits> >;
     using  Node = NodeLinkedList<Traits>;
 
-    Node *m_pRoot = nullptr;
+    //Node *m_pRoot = nullptr;
+    Node *m_pHat;
     Node *m_pLast = nullptr;
     size_t m_nElements = 0;
+    std::mutex m_mutex; // Mutex para control de concurrencia
 public:
-    CLinkedList(){}
+    CLinkedList(){
+        m_pHat= new Node();
+        m_pHat->GetNextRef() = m_pHat; // Lista circular
+        m_pLast = m_pHat;
+        m_nElements = 0;
+    };
+
     // TODO: Constructor copia
+    CLinkedList(const CLinkedList &other){};
+
     // TODO: Move Constructor
+    CLinkedList(CLinkedList &&other){};
+
     // TODO: Destructor seguro y virtual
+    virtual ~CLinkedList(){};
+
     // TODO: Concurrencia (mutex)
+
     // TODO: Iterators begin() end()
+    Node* begin(){
+        return m_pHat->GetNext();
+    };
+    Node* end(){
+        return m_pHat;
+    };
+
     // TODO: Operadores de acceso []
+    value_type &operator[](size_t index){};
+
+    //First/hat
+    Node *
+
+    //Foreach
+    template <typename Func>
+    void Foreach(Func f){
+        Node* curr=m_pHat->GetNext();  
+        while (curr!=m_pHat){  
+            f(curr->GetValueRef());  
+            curr=curr->GetNext();  
+        }
+    }
 
     void push_back(value_type &val, ref_type ref);
     void Insert(const value_type &val, ref_type ref);
@@ -88,22 +125,110 @@ private:
     friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
         os << "CLinkedList: size = " << container.getSize() << endl;
         os << "[";
-        for (auto i = 0; i < container.getSize(); ++i){
-            // os << "(" << arr.m_data[i].GetValue() << ":" << arr.m_data[i].GetRef() << "),";
+        Node *pCurrent = container.m_pRoot;
+        while (pCurrent){
+            os << "(" << pCurrent->GetValue() << ":" << pCurrent->GetRef() << ")";
+            pCurrent = pCurrent->GetNext();
+            if(pCurrent) os << " , ";
+
         }
         os << "]" << endl;
         return os;
     }
+
     // TODO: Persistencia (read)
+    friend istream &operator>>(istream &is, CLinkedList<Traits> &container){
+        value_type val;
+        ref_type   ref;
+        char ch;
+        while (is >> ch){
+            if (ch == '('){
+                is >> val;
+                is >> ch; // :
+                is >> ref;
+                is >> ch; // )
+                container.push_back(val, ref);
+            }
+        }
+        return is;
+    }
+
 };
+
+//Constructor copia
+template <typename Traits>
+CLinkedList<Traits>::CLinkedList(const CLinkedList &other){
+    m_pRoot = nullptr;
+    m_pLast = nullptr;
+    m_nElements = 0;
+
+    Node *pCurrent = other.m_pRoot;
+    while (pCurrent){
+        value_type val = pCurrent->GetValue();
+        ref_type   ref = pCurrent->GetRef();
+        push_back(val, ref);
+        pCurrent = pCurrent->GetNext();
+    }
+}
+
+//Move Constructor
+template <typename Traits>
+CLinkedList<Traits>::CLinkedList(CLinkedList &&other){
+    m_pRoot = other.m_pRoot;
+    m_pLast = other.m_pLast;
+    m_nElements = other.m_nElements;
+
+    other.m_pRoot = nullptr;
+    other.m_pLast = nullptr;
+    other.m_nElements = 0;
+}
+
+//Destructor virtual
+template <typename Traits>
+CLinkedList<Traits>::~CLinkedList(){
+    std::lock_guard<std::mutex> lock(m_mutex); // Bloquea el mutex durante la ejecucion de esta funcion
+    Node* curr = m_pHat->GetNext();
+    while (curr != m_pHat){
+        Node* tmp = curr;
+        curr = curr->GetNext();
+        delete tmp;
+    }
+    delete m_pHat;
+}
+
+//Iterator begin
+template <typename Traits>
+typename CLinkedList<Traits>::Node* CLinkedList<Traits>::begin(){
+    return m_pRoot;
+}
+
+//Iterator end
+template <typename Traits>
+typename CLinkedList<Traits>::Node* CLinkedList<Traits>::end(){
+    return nullptr;
+}
+
+//Operador de acceso []
+template <typename Traits>
+typename CLinkedList<Traits>::value_type &CLinkedList<Traits>::operator[](size_t index){
+    assert (index < m_nElements);
+
+    Node *pCurrent = m_pRoot;
+    for (size_t i = 0; i < index; ++i){
+        pCurrent = pCurrent->GetNext();
+    }
+    return pCurrent->GetValueRef();
+}
 
 template <typename Traits>
 void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
-    Node *pNewNode = new Node(val, ref);
-    if( !m_pRoot )
-        m_pRoot = pNewNode;
-    m_pLast = pNewNode;
+    std::lock_guard<std::mutex> lock(m_mutex); 
+    Node *pNew = new Node(val, ref);
+    pNew->GetNextRef() = m_pHat; // Apunta al hat
+    m_pLast->GetNextRef() = pNew; // El ultimo apunta al nuevo
+    m_pLast = pNew; // Actualiza el ultimo
     ++m_nElements;
+
 }
 
 template <typename Traits>
@@ -120,6 +245,7 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
+    std::lock_guard<std::mutex> lock(m_mutex); 
     InternalInsert(m_pRoot, val, ref);
 }
 
