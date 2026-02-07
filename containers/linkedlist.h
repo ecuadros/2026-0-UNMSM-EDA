@@ -2,6 +2,7 @@
 #define __LINKEDLIST_H__
 #include <iostream>
 #include "../general/types.h"
+#include "GeneralIterator.h"
 #include "../util.h"
 using namespace std;
 
@@ -21,6 +22,7 @@ template <typename T>
 struct DescendingTrait : 
     public ListTrait<T, std::less<T> >{
 };
+
 
 // Iterators para listas enlazadas
 
@@ -60,28 +62,62 @@ public:
     { return m_data < another.GetValue();   }
 };
 
+
+template <typename Container>
+class LinkedListForwardIterator : public GeneralIterator<Container> {
+public:
+    using Parent     = GeneralIterator<Container>;
+    using value_type = typename Container::value_type;
+    using Node       = typename Container::Node;
+
+    // como el operador * originalmente regresa un nodo con el operador []
+    // itera sobre todos los nodos cada vez que se llama
+    // para optimizar este proceso, se crea el puntero a nodo pCurrent
+    Node *pCurrent = nullptr;
+
+    LinkedListForwardIterator(Container *pContainer, Size pos=0)
+        : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot) {
+        // desplazarse a la posicion
+        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
+    }
+    LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
+        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+
+    // se sobrecarga el operador * y ++
+    value_type &operator*() override { return pCurrent->GetValueRef(); }
+    LinkedListForwardIterator<Container> &operator++() {
+        if (pCurrent) {
+            pCurrent = pCurrent->GetNext();
+            ++this->m_pos;
+        }
+        return *this;
+    }
+
+    LinkedListForwardIterator<Container> operator++(int) {
+        LinkedListForwardIterator<Container> tmp(*this);
+        ++(*this);
+        return tmp;
+    }
+};
+
+
 template <typename Traits>
 class CLinkedList {
-    using  value_type  = typename Traits::value_type;
-    // using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
-    // friend forward_iterator;
-    // friend GeneralIterator< CLinkedList<Traits> >;
-    using  Node = NodeLinkedList<Traits>;
+public:
+    using value_type       = typename Traits::value_type;
+    using forward_iterator = LinkedListForwardIterator<CLinkedList<Traits>>;
+
+    friend forward_iterator;
+    friend GeneralIterator<CLinkedList<Traits>>;
+    using Node = NodeLinkedList<Traits>;
 
     Node *m_pRoot = nullptr;
     Node *m_pLast = nullptr;
     size_t m_nElements = 0;
-public:
     CLinkedList(){}
     // TODO: Constructor copia
     CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), m_pLast(nullptr) {
-        // si se asigna a si mismo se regresa a si mismo
-        if (this == &to_copy) return *this;
-
-        // llama al destructor para eliminar nodos
-        // que la lista a asignarse podria tener
-        this->~CLinkedList();
-        // copia los nodos
+        // usa la helper function implementada
         _copyNodesFrom(to_copy);
     }
     // TODO: Move Constructor
@@ -99,12 +135,17 @@ public:
     virtual ~CLinkedList();
     // TODO: Concurrencia (mutex)
     // TODO: Iterators begin() end()
+    forward_iterator begin() { return forward_iterator(this); }
+    forward_iterator end()   { return forward_iterator(this, m_nElements); }
+
     // TODO: Operadores de acceso [] done
     value_type &operator[](size_t index);
 
-    void push_back(value_type &val, ref_type ref);
+    void push_back(const value_type &val, ref_type ref);
+
     void Insert(const value_type &val, ref_type ref);
     size_t getSize(){ return m_nElements;  }
+
 private:
     void InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref);
 
@@ -120,16 +161,52 @@ private:
         return os;
     }
     // TODO: Persistencia (read)
+    // lee el mismo formato en que se escribe
     friend istream &operator>>(istream &is, CLinkedList<Traits> &container) {
-        // hay que manejar el estilo en que se escribe
+        // verificar el buen estado del stream
+        if (!is) return is;
+
+        try {
+            // crea un contenedor temporal
+            CLinkedList<Traits> tmp;
+
+            // ignorar texto hasta el primer '['
+            string bar;
+            getline(is, bar, '[');
+
+            // leer elementos continuamente
+            char ch;
+            while (is.get(ch) && ch != ']') {
+                if (ch != '(') {
+                    is.putback(ch);
+                    continue;
+                }
+                value_type val;
+                ref_type ref;
+                string separator;
+
+                // leer el valor
+                is >> val;
+                getline(is, separator, ':');
+                // leer la ref
+                is >> ref;
+                getline(is, separator, ')');
+
+                tmp.push_back(val, ref);
+            }
+            // si la lectura salio bien, intercambia los contenidos
+            container = std::move(tmp);
+        } catch (const exception& e) {
+            // si algo paso, setea el estado del stream en failbit
+            // (hubo fallo al leer el contenido)
+            is.setstate(ios::failbit);
+        }
+
         return is;
     }
 
-    CLinkedList &operator=(const CLinkedList &other) {
-        if (this == &other) return *this;
-        this->~CLinkedList();
-        // usa el helper para ahorrar codigo
-        _copyNodesFrom(other);
+    CLinkedList &operator=(const CLinkedList &to_copy) {
+        _copyNodesFrom(to_copy);
         return *this;
     }
 
@@ -137,14 +214,17 @@ private:
      * Helper function
      * copia los nodos de otra linked list
      */
-    void _copyNodesFrom(const CLinkedList &other) {
-        // ahorrate el trabajo si es el mismo LL
-        if (this == &other) return;
-        // nodo raiz del otro linked list
-        Node* trav = other.m_pRoot;
+    void _copyNodesFrom(const CLinkedList &to_copy) {
+        // si se asigna a si mismo se regresa a si mismo
+        if (this == &to_copy) return;
+
+        // llama al destructor para eliminar los nodos
+        this->~CLinkedList();
+
+        Node* trav = to_copy.m_pRoot;
         while (trav) {
             value_type val = trav->GetValue();
-            ref_type ref = trav->GetRef();
+            ref_type   ref = trav->GetRef();
             push_back(val, ref);
             trav = trav->GetNext();
         }
@@ -174,29 +254,62 @@ CLinkedList<Traits>::~CLinkedList() {
 }
 
 template <typename Traits>
-void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
+void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
+    typename Traits::Func compareFunc;
+    // si el valor a añadir no sigue el orden (ascendente/descendente)
+    // si es ascendente:  val > m_pLast->GetValue()
+    // si es descendente: val < m_pLast->GetValue()
+    if ( m_pLast && compareFunc(m_pLast->GetValueRef(), val) ) {
+        InternalInsert(m_pRoot, val, ref);
+        return;
+    }
+
     Node *pNewNode = new Node(val, ref);
-    if( !m_pRoot )
-        m_pRoot = pNewNode;
-    m_pLast = pNewNode;
+    if ( !m_pRoot ) m_pRoot = m_pLast = pNewNode;
+    else {
+        m_pLast->GetNextRef() = pNewNode;
+        m_pLast = pNewNode;
+    }
     ++m_nElements;
 }
 
+
 template <typename Traits>
-void CLinkedList<Traits>::InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref){
+void CLinkedList<Traits>::InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref) {
+    typename Traits::Func compareFunc;
     // TODO: Agregar algo para el caso de circular
-    if( !rCurrentNode || rCurrentNode->GetValue() > val ){
-        Node *pNew = new Node(val, ref, rCurrentNode);
+    // crea un nuevo nodo
+    Node *pNew = new Node(val, ref);
+
+    // caso ultimo nodo
+    if ( !rCurrentNode ) {
+        rCurrentNode = pNew;
+        m_pLast = pNew;
+        ++m_nElements;
+        return;
+    }
+    // caso base, el valor debe insertarse antes del nodo actual
+    if ( compareFunc(rCurrentNode->GetValueRef(), val ) ) {
+        pNew->GetNextRef() = rCurrentNode;
         rCurrentNode = pNew;
         ++m_nElements;
         return;
     }
+    /*
+    if ( !rCurrentNode || compareFunc(val, rCurrentNode->GetValue()) ) {
+        // reemplaza rCurrent node por pNew
+        rCurrentNode = pNew;
+        ++m_nElements;
+        return;
+    }
+    */
     InternalInsert(rCurrentNode->GetNextRef(), val, ref);
 }
 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
-    InternalInsert(m_pRoot, val, ref);
+    if (!m_nElements) push_back(val, ref);
+    else InternalInsert(m_pRoot, val, ref);
 }
 
 // implementado operador []
