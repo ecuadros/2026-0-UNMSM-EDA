@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cassert>
+#include <fstream>
+#include <sstream>
 #include "containers/lists.h"
 
 using namespace std;
@@ -79,7 +81,7 @@ void testIterators() {
     list.push_back(20, 2);
     list.push_back(30, 3);
 
-    Size count = 0;
+    size_t count = 0;
     T1 sum = 0;
     for (auto it = list.begin(); it != list.end(); ++it) {
         sum += *it;
@@ -98,6 +100,88 @@ void testIterators() {
     cout << "OK: iteradores avanzan y dereferencian correctamente" << endl;
 }
 
+void testQuotedStringIO() {
+    cout << "Prueba de IO con strings y std::quoted" << endl;
+
+    using StringList = CLinkedList<AscendingTrait<string>>;
+    StringList list;
+    list.push_back(string("a: b) c"), 7);
+
+    stringstream ss;
+    ss << list;
+
+    StringList readBack;
+    ss >> readBack;
+
+    assert(readBack.getSize() == 1);
+    assert(readBack.m_pRoot != nullptr);
+    assert(readBack.m_pRoot->GetValue() == "a: b) c");
+    assert(readBack.m_pRoot->GetRef() == 7);
+
+    cout << "OK: strings con ':' y ')' se leen/escriben bien" << endl;
+
+    cout << "Strings con escaped quotes" << endl;
+    list.clear();
+    readBack.clear();
+
+    list.Insert("1 string \"", 1);
+    list.Insert("2 string \'", 2);
+    list.Insert("\"3 string \"", 3);
+    list.Insert("\'4 string \'", 4);
+
+    cout << "La lista de strings con escaped quotes: " << list << endl;
+
+    ss.str("");
+    ss << list;
+    ss >> readBack;
+
+    assert(readBack.getSize() == 4);
+    cout << readBack[0] << endl;
+    assert(readBack[0] == "\"3 string \"");
+    assert(readBack[1] == "\'4 string \'");
+    assert(readBack[2] == "1 string \"");
+    assert(readBack[3] == "2 string \'");
+
+    cout << "OK: strings con escaped quotes se leen/escriben bien" << endl;
+}
+
+void testWriteRead(string outFilePath = "linkedlistsample.log") {
+    cout << "Prueba de lectura y escritura" << endl;
+    CLinkedList<AscendingTrait<T1>> list;
+
+    list.push_back(10, 1);
+    list.push_back(20, 2);
+    list.push_back(30, 3);
+    list.Insert(40, 4);
+    list.Insert(5, 5);
+
+    cout << "Lista original: " << list << endl;
+    cout << "archivo de escritura: " << outFilePath << endl;
+    ofstream outFile(outFilePath);
+    if (outFile.is_open()) {
+        outFile << list;
+        outFile.close();
+    } else {
+        cout << "Error al abrir archivo de escritura" << endl;
+    }
+
+    CLinkedList<AscendingTrait<T1>> list2;
+    ifstream inFile(outFilePath);
+    if (inFile.is_open()) {
+        inFile >> list2;
+        inFile.close();
+        cout << "Lista cargada desde archivo: " << list2 << endl;
+        // Verificar que la lista se haya cargado correctamente
+        assert(list2.getSize() == list.getSize());
+        for (size_t i = 0; i < list.getSize(); ++i) {
+            assert(list[i] == list2[i]);
+        }
+        cout << "OK: La lista se guardó y recuperó correctamente" << endl;
+    } else {
+        cout << "Error al abrir el archivo para lectura." << endl;
+    }
+}
+
 void DemoLists(){
     CLinkedList< AscendingTrait<T1> > l1;
 
@@ -106,5 +190,7 @@ void DemoLists(){
     testMoveConstructor();
     testInsertUpdatesLast();
     testIterators();
+    testQuotedStringIO();
+    testWriteRead();
 }
 

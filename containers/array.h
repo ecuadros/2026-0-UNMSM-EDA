@@ -21,6 +21,10 @@ class ArrayForwardIterator : public GeneralIterator<Container>
     ArrayForwardIterator(Container *pContainer, Size pos=0)       : Parent(pContainer, pos){}
     ArrayForwardIterator(ArrayForwardIterator<Container> &another):  Parent(another){}
 
+    typename Container::value_type &operator*() override {
+        return Parent::m_data[Parent::m_pos].GetValueRef();
+    }
+
     ArrayForwardIterator<Container> &operator++(){
         if( Parent::m_pos < Parent::m_pContainer->getSize() )
             ++Parent::m_pos;
@@ -35,6 +39,10 @@ class ArrayBackwardIterator : public GeneralIterator<Container>
   public:
     ArrayBackwardIterator(Container *pContainer, Size pos=0)          : Parent(pContainer, pos){}
     ArrayBackwardIterator(ArrayBackwardIterator<Container> &another)  :  Parent(another){}
+
+    typename Container::value_type &operator*() override {
+        return Parent::m_data[Parent::m_pos].GetValueRef();
+    }
 
     ArrayBackwardIterator<Container> &operator++(){
         if( Parent::m_pos > -1 )
