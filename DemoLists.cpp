@@ -2,6 +2,9 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
+#include <thread>
+#include <vector>
+#include <thread>
 #include "containers/lists.h"
 
 using namespace std;
@@ -182,6 +185,103 @@ void testWriteRead(string outFilePath = "linkedlistsample.log") {
     }
 }
 
+void testLLConcurrencyBasic() {
+    cout << "Prueba basica de concurrencia (push_back con mutex)" << endl;
+    AscendingLL list;
+    AscendingLL temp;
+    const Size threads = 6;
+    const Size perThread = 50;
+
+    vector<thread> workers;
+    workers.reserve(threads);
+    stringstream ss;
+
+    workers.emplace_back([&]() {
+        cout << "LinkedList: << list en el estado en que este" << endl;
+        ss << list;
+        cout << "LinkedList: >> list en el estado en que este" << endl;
+        ss >> temp;
+    });
+    for (int t = 0; t < threads - 2; ++t) {
+        workers.emplace_back([t, &list]() {
+            T1 base = t * perThread;
+            for (Size i = 0; i < perThread; ++i) {
+                list.push_back(base + i, base + i);
+            }
+        });
+    }
+    workers.emplace_back([&]() {
+        cout << "LinkedList: iterador " << endl;
+        for (auto it = list.begin(); it != list.end(); ++it)
+            cout << "(" << *it << ")";
+        cout << endl;
+    });
+
+    for (auto &th : workers) th.join();
+
+    // intentamos leer la lista a ver en que estado esta
+    cout << "LinkedList: list: " << list << endl;
+    cout << "LinkedList: temp: " << temp << endl;
+
+    assert(list.getSize() == static_cast<size_t>((threads - 2) * perThread));
+    cout << "OK: size == " << list.getSize() << endl;
+}
+
+void testAssignmentOperator() {
+    cout << "Prueba de operador de asignacion" << endl;
+    CLinkedList<AscendingTrait<T1>> a;
+    a.push_back(10, 1);
+    a.push_back(20, 2);
+    a.push_back(30, 3);
+
+    CLinkedList<AscendingTrait<T1>> b;
+    b.push_back(99, 9);
+    b = a;
+
+    assert(b.getSize() == a.getSize());
+    for (size_t i = 0; i < a.getSize(); ++i) {
+        assert(a[i] == b[i]);
+    }
+
+    b = b; // self-assign should be no-op
+    assert(b.getSize() == a.getSize());
+    for (size_t i = 0; i < a.getSize(); ++i) {
+        assert(a[i] == b[i]);
+    }
+    cout << "OK: operador= copia y self-assign" << endl;
+}
+
+void testForeachFirstthat() {
+    cout << "Prueba de firstThat" << endl;
+    CLinkedList<AscendingTrait<T1>> list;
+    list.push_back(10, 1);
+    list.push_back(20, 2);
+    list.push_back(30, 3);
+    list.push_back(40, 4);
+    list.push_back(50, 5);
+    list.push_back(60, 6);
+    auto firstMultipleOfThree = list.firstThat([](const T1 &x) { return x % 3 == 0; });
+    cout << "primer multiplo de 3: " << firstMultipleOfThree  << endl;
+    assert(firstMultipleOfThree == 30);
+    assert(list.getSize() == 6);
+    cout << "OK: FirstThat funciona correctamente" << endl;
+    cout << "Prueba de forEach" << endl;
+    list.push_back(70, 7);
+    list.push_back(80, 8);
+    list.push_back(90, 9);
+    list.push_back(100, 10);
+    list.push_back(110, 11);
+    list.push_back(120, 12);
+
+    cout << "dividir a todos entre 10" << endl;
+    list.forEach([](T1& x) { x /= 10; });
+    assert(list.getSize() == 12);
+    assert(list.firstThat([](const T1 &x) { return x % 3 == 0; }) == 3);
+    cout << list << endl;
+
+    cout << "OK: forEach funciona correctamente" << endl;
+}
+
 void DemoLists(){
     CLinkedList< AscendingTrait<T1> > l1;
 
@@ -192,4 +292,7 @@ void DemoLists(){
     testIterators();
     testQuotedStringIO();
     testWriteRead();
+    testAssignmentOperator();
+    testLLConcurrencyBasic();
+    testForeachFirstthat();
 }
