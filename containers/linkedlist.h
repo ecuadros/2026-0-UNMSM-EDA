@@ -20,12 +20,12 @@ struct ListTrait{
 
 template <typename T>
 struct AscendingTrait : 
-    public ListTrait<T, std::greater<T> >{
+    public ListTrait<T, greater<T> >{
 };
 
 template <typename T>
 struct DescendingTrait : 
-    public ListTrait<T, std::less<T> >{
+    public ListTrait<T, less<T> >{
 };
 
 // Iterators para listas enlazadas
