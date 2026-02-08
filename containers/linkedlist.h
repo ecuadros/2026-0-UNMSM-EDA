@@ -68,7 +68,7 @@ class CLinkedList {
     using  Node = NodeLinkedList<Traits>;
 
     //Node *m_pRoot = nullptr;
-    Node *m_pHat;
+    Node *m_pHat; //para poder hacer la lista circular y evitar casos especiales en insercion/eliminacion
     Node *m_pLast = nullptr;
     size_t m_nElements = 0;
     std::mutex m_mutex; // Mutex para control de concurrencia
@@ -102,9 +102,6 @@ public:
     // TODO: Operadores de acceso []
     value_type &operator[](size_t index){};
 
-    //First/hat
-    Node *
-
     //Foreach
     template <typename Func>
     void Foreach(Func f){
@@ -119,17 +116,17 @@ public:
     void Insert(const value_type &val, ref_type ref);
     size_t getSize(){ return m_nElements;  }
 private:
-    void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
+    //void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
 
     // TODO: Persistencia (write)
     friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
         os << "CLinkedList: size = " << container.getSize() << endl;
         os << "[";
-        Node *pCurrent = container.m_pRoot;
-        while (pCurrent){
+        Node *pCurrent = container.m_pHat->GetNext();
+        while (pCurrent != container.m_pHat){
             os << "(" << pCurrent->GetValue() << ":" << pCurrent->GetRef() << ")";
             pCurrent = pCurrent->GetNext();
-            if(pCurrent) os << " , ";
+            if(pCurrent != container.m_pHat) os << " , ";
 
         }
         os << "]" << endl;
@@ -158,12 +155,13 @@ private:
 //Constructor copia
 template <typename Traits>
 CLinkedList<Traits>::CLinkedList(const CLinkedList &other){
-    m_pRoot = nullptr;
-    m_pLast = nullptr;
+    m_pHat = new Node();
+    m_pHat->GetNextRef() = m_pHat; // Lista circular
+    m_pLast = m_pHat;
     m_nElements = 0;
 
-    Node *pCurrent = other.m_pRoot;
-    while (pCurrent){
+    Node *pCurrent = other.m_pHat->GetNext();
+    while (pCurrent != other.m_pHat){
         value_type val = pCurrent->GetValue();
         ref_type   ref = pCurrent->GetRef();
         push_back(val, ref);
@@ -174,11 +172,11 @@ CLinkedList<Traits>::CLinkedList(const CLinkedList &other){
 //Move Constructor
 template <typename Traits>
 CLinkedList<Traits>::CLinkedList(CLinkedList &&other){
-    m_pRoot = other.m_pRoot;
+    m_pHat = other.m_pHat;
     m_pLast = other.m_pLast;
     m_nElements = other.m_nElements;
 
-    other.m_pRoot = nullptr;
+    other.m_pHat = nullptr;
     other.m_pLast = nullptr;
     other.m_nElements = 0;
 }
@@ -196,24 +194,12 @@ CLinkedList<Traits>::~CLinkedList(){
     delete m_pHat;
 }
 
-//Iterator begin
-template <typename Traits>
-typename CLinkedList<Traits>::Node* CLinkedList<Traits>::begin(){
-    return m_pRoot;
-}
-
-//Iterator end
-template <typename Traits>
-typename CLinkedList<Traits>::Node* CLinkedList<Traits>::end(){
-    return nullptr;
-}
-
 //Operador de acceso []
 template <typename Traits>
 typename CLinkedList<Traits>::value_type &CLinkedList<Traits>::operator[](size_t index){
     assert (index < m_nElements);
 
-    Node *pCurrent = m_pRoot;
+    Node *pCurrent = m_pHat->GetNext();
     for (size_t i = 0; i < index; ++i){
         pCurrent = pCurrent->GetNext();
     }
@@ -231,7 +217,8 @@ void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
 
 }
 
-template <typename Traits>
+//Como es lista circular, se usa Insert iterativo enves de un InternalInsert recursivo
+/*template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
     // TODO: Agregar algo para el caso de circular
     if( !rParent || rParent->m_data > val ){
@@ -241,12 +228,29 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
         return;
     }
     InternalInsert(rParent->GetNextRef(), val, ref);
-}
+}*/
 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
     std::lock_guard<std::mutex> lock(m_mutex); 
-    InternalInsert(m_pRoot, val, ref);
+    //InternalInsert(m_pHat, val, ref);
+    Node *pPrev = m_pHat;
+    Node *pCurrent = m_pHat->GetNext();
+    
+    while(pCurrent != m_pHat && pCurrent->GetValue() < val){
+        pPrev = pCurrent;
+        pCurrent = pCurrent->GetNext();
+    }
+
+    Node *pNew = new Node(val, ref);
+    pNew->GetNextRef() = pCurrent;
+    pPrev->GetNextRef() = pNew;
+
+    if( pCurrent == m_pHat) // Si se inserta al final, actualizar el ultimo
+        m_pLast = pNew;
+
+    ++m_nElements;
 }
 
 #endif // __LINKEDLIST_H__
+ 
