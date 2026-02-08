@@ -29,6 +29,7 @@ class NodeLinkedList{
 
     using  value_type  = typename Traits::value_type;
     using  Node        = NodeLinkedList<Traits>;
+    
 private:
     value_type m_data;
     ref_type   m_ref;
@@ -58,12 +59,33 @@ public:
     { return m_data < another.GetValue();   }
 };
 
+template <typename Container>
+class LinkedListForwardIterator{
+       using value_type=typename Container::value_type;
+       using Node      =typename Container::Node;
+       private:
+       Node *m_pCurrent =nullptr;
+       public:
+      LinkedListForwardIterator(Node *pNode) : m_pCurrent(pNode) {}
+      bool operator!=(const LinkedListForwardIterator &other) const {
+        return m_pCurrent != other.m_pCurrent;
+    }
+      LinkedListForwardIterator &operator++() {
+        if (m_pCurrent) {
+            m_pCurrent = m_pCurrent->GetNext(); 
+        }
+        return *this;
+    }
+    value_type &operator*() {
+        return m_pCurrent->GetValueRef();
+    }  
+};
 template <typename Traits>
 class CLinkedList {
     using  value_type  = typename Traits::value_type;
-    // using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
-    // friend forward_iterator;
-    // friend GeneralIterator< CLinkedList<Traits> >;
+     using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
+     friend forward_iterator;
+    
     using  Node = NodeLinkedList<Traits>;
 
     Node *m_pRoot = nullptr;
@@ -71,6 +93,7 @@ class CLinkedList {
     size_t m_nElements = 0;
 public:
     CLinkedList(){}
+    virtual ~CLinkedList();
     // TODO: Constructor copia
     // TODO: Move Constructor
     // TODO: Destructor seguro y virtual
@@ -78,9 +101,16 @@ public:
     // TODO: Iterators begin() end()
     // TODO: Operadores de acceso []
 
-    void push_back(value_type &val, ref_type ref);
+    void push_back(const value_type &val, ref_type ref);
     void Insert(const value_type &val, ref_type ref);
     size_t getSize(){ return m_nElements;  }
+    forward_iterator begin() {
+        return forward_iterator(m_pRoot); 
+    }
+
+    forward_iterator end() {
+        return forward_iterator(nullptr); 
+    }
 private:
     void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
 
@@ -88,9 +118,15 @@ private:
     friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
         os << "CLinkedList: size = " << container.getSize() << endl;
         os << "[";
-        for (auto i = 0; i < container.getSize(); ++i){
-            // os << "(" << arr.m_data[i].GetValue() << ":" << arr.m_data[i].GetRef() << "),";
+        Node *pCurrent = container.m_pRoot;
+        while (pCurrent != nullptr) {
+            os << "(" << pCurrent->GetValue() << ":" << pCurrent->GetRef() << ")";
+            if (pCurrent->GetNext() != nullptr) {
+                os << ", ";
+            }
+            pCurrent = pCurrent->GetNext();
         }
+        
         os << "]" << endl;
         return os;
     }
@@ -98,19 +134,20 @@ private:
 };
 
 template <typename Traits>
-void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
+void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref){
     Node *pNewNode = new Node(val, ref);
     if( !m_pRoot )
         m_pRoot = pNewNode;
     m_pLast = pNewNode;
     ++m_nElements;
-}
+};
 
 template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
     // TODO: Agregar algo para el caso de circular
-    if( !rParent || rParent->m_data > val ){
-        Node *pNew = new Node(val, ref, rParent);
+    if( !rParent || rParent->GetValue() > val ){
+        Node *pNew = new Node(val, ref);
+        pNew->GetNextRef() = rParent;
         rParent = pNew;
         ++m_nElements;
         return;
@@ -121,6 +158,17 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
     InternalInsert(m_pRoot, val, ref);
+}
+
+template <typename Traits>
+CLinkedList<Traits>::~CLinkedList() {
+    Node *pCurrent = m_pRoot;
+    while (pCurrent) {
+        Node *pNext = pCurrent->GetNext(); 
+        delete pCurrent;                   
+        pCurrent = pNext;                  
+    }
+    m_pRoot = nullptr; 
 }
 
 #endif // __LINKEDLIST_H__
