@@ -21,7 +21,7 @@ public:
     Container  *m_pContainer = nullptr;
     Node       *m_data       = nullptr;
     Size        m_pos        = -1;
-public:
+
     GeneralIterator(Container *pContainer, Size pos=0) 
          : m_pContainer(pContainer) {
            if constexpr (has_m_data<Container>::value) {
