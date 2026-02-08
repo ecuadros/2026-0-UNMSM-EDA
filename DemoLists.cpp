@@ -4,7 +4,6 @@
 #include <sstream>
 #include <thread>
 #include <vector>
-#include <thread>
 #include "containers/lists.h"
 
 using namespace std;
@@ -12,59 +11,86 @@ using namespace std;
 using AscendingLL = CLinkedList<AscendingTrait<T1>>;
 using DescendingLL = CLinkedList<DescendingTrait<T1>>;
 
+
+static ofstream logFile("linkedlist_tests.log");
+// if (logFile.is_open()) return logFile;
+
 void testInsert(AscendingLL& original) {
-    cout << "Prueba de lista enlazada" << endl;
-    cout << "insertar 3 elementos: 20, 30, 10 en ese orden" << endl;
-    cout << "Lista enlazada ascendente" << endl;
+    logFile << "=== Prueba de inserciones basicas ===" << endl;
+    logFile << "insertar 3 elementos: 20, 30, 10 en ese orden" << endl;
+    logFile << "Lista enlazada ascendente" << endl;
     original.Insert(20, 5);
     original.Insert(30, 3);
     original.Insert(10, 13);
-    cout << original << endl;
-    cout << "imprimir valores en indices 2 y 3 (error en este ultimo)" << endl;
-    cout << original[2] << endl;
+    assert(original.getSize() == 3);
+    assert(original[0] == 10);
+    assert(original[1] == 20);
+    assert(original[2] == 30);
+    logFile << original << endl;
+    logFile << "imprimir valores en indices 2 y 3 (error en este ultimo)" << endl;
+    logFile << original[2] << endl;
+    bool threw = false;
     try {
-        cout << original[3] << endl;
+        logFile << original[3] << endl;
     } catch (const exception& e) {
-        cout << e.what() << endl;
+        threw = true;
+        logFile << e.what() << endl;
     }
-    cout << "insertar valores 10 y 50" << endl;
+    assert(threw);
+    logFile << "insertar valores 10 y 50" << endl;
     original.Insert(10, 10);
     original.Insert(50, 1);
-    cout << original << endl;
-    cout << "si el tamaño es 5 salio bien" << endl;
+    assert(original.getSize() == 5);
+    assert(original[0] == 10);
+    assert(original[1] == 10);
+    assert(original[2] == 20);
+    assert(original[3] == 30);
+    assert(original[4] == 50);
+    logFile << "Lista enlazada final:" << endl;
+    logFile << original << endl;
+    logFile << "OK: inserciones basicas funcionan y respetan orden\n" << endl;
 }
 
 void testCopyConstructor(AscendingLL& original) {
-    cout << endl << "Prueba de copia de lista enlazada" << endl;
-    cout << "Lista original: " << original << endl;
+    logFile << "=== Prueba de copia de lista enlazada ===" << endl;
+    logFile << "Lista original: " << original << endl;
     AscendingLL copy(original);
-    cout << "Lista copia: " << copy << endl;
-    cout << "añadiendo 120 y 40 a la lista copia" << endl;
+    assert(copy.getSize() == original.getSize());
+    for (size_t i = 0; i < original.getSize(); ++i) {
+        assert(copy[i] == original[i]);
+    }
+    logFile << "Lista copia: " << copy << endl;
+    logFile << "añadiendo 120 y 40 a la lista copia" << endl;
     T1 bar = 120;
     copy.push_back(bar, 1);
     T1 bar2 = 40;
     copy.push_back(bar2, 2);
-    cout << "Lista copia modificada: " << copy << endl;
-    cout << "Lista original: " << original << endl;
+    assert(copy.getSize() == original.getSize() + 2);
+    logFile << "Lista copia modificada: " << copy << endl;
+    logFile << "Lista original: " << original << endl;
+    assert(original.getSize() + 2 == copy.getSize());
+    logFile << "OK: copia de lista enlazada funciona correctamente\n" << endl;
 }
 
 void testMoveConstructor() {
-    cout << "Prueba de movimiento de lista enlazada" << endl;
+    logFile << "=== Prueba de movimiento de lista enlazada ===" << endl;
     // Crear lista temporal
     CLinkedList<AscendingTrait<T1>> temp;
     temp.Insert(42, 42);
     temp.Insert(24, 24);
-    cout << "Lista temporal antes del movimiento: " << temp << endl;
+    logFile << "Lista temporal antes del movimiento: " << temp << endl;
 
     // Mover la lista temporal (usando el constructor de movimiento)
     CLinkedList<AscendingTrait<T1>> moved(std::move(temp));
-    cout << "Lista movida: " << moved << endl;
-    cout << "Lista temporal después del movimiento (debería estar vacía): " << temp << endl;
-    cout << endl;
+    assert(moved.getSize() == 2);
+    assert(temp.getSize() == 0);
+    logFile << "Lista movida: " << moved << endl;
+    logFile << "Lista temporal después del movimiento (debería estar vacía): " << temp << endl;
+    logFile << "OK: movimiento de lista enlazada funciona correctamente\n" << endl;
 }
 
 void testInsertUpdatesLast() {
-    cout << "Prueba de actualizar m_pLast al insertar al final" << endl;
+    logFile << "=== Prueba de actualizar m_pLast al insertar al final ===" << endl;
     CLinkedList<AscendingTrait<T1>> list;
 
     list.push_back(10, 1);
@@ -74,11 +100,11 @@ void testInsertUpdatesLast() {
     assert(list.getSize() == 3);
     assert(list.m_pLast != nullptr);
     assert(list.m_pLast->GetValue() == 30);
-    cout << "OK: m_pLast apunta al ultimo nodo" << endl;
+    logFile << "OK: insert actualiza m_pLast al ultimo nodo correctamente\n" << endl;
 }
 
 void testIterators() {
-    cout << "Prueba de iteradores forward" << endl;
+    logFile << "=== Prueba de iteradores forward ===" << endl;
     CLinkedList<AscendingTrait<T1>> list;
     list.push_back(10, 1);
     list.push_back(20, 2);
@@ -86,7 +112,9 @@ void testIterators() {
 
     size_t count = 0;
     T1 sum = 0;
+    logFile << "sumar los elementos de la lista: " << list << endl;
     for (auto it = list.begin(); it != list.end(); ++it) {
+        logFile << "sumar " << *it << endl;
         sum += *it;
         ++count;
     }
@@ -100,30 +128,31 @@ void testIterators() {
     assert(*it2 == 10);
     assert(*it == 20);
 
-    cout << "OK: iteradores avanzan y dereferencian correctamente" << endl;
+    logFile << "OK: iteradores avanzan y dereferencian correctamente\n" << endl;
 }
 
 void testQuotedStringIO() {
-    cout << "Prueba de IO con strings y std::quoted" << endl;
+    logFile << "=== Prueba de IO con strings y std::quoted ===" << endl;
 
     using StringList = CLinkedList<AscendingTrait<string>>;
     StringList list;
     list.push_back(string("a: b) c"), 7);
 
+    logFile << "lista de string: " << list << endl;
     stringstream ss;
     ss << list;
 
     StringList readBack;
     ss >> readBack;
-
+    logFile << "lista leida: " << readBack << endl;
     assert(readBack.getSize() == 1);
     assert(readBack.m_pRoot != nullptr);
     assert(readBack.m_pRoot->GetValue() == "a: b) c");
     assert(readBack.m_pRoot->GetRef() == 7);
 
-    cout << "OK: strings con ':' y ')' se leen/escriben bien" << endl;
+    logFile << "OK: strings con ':' y ')' se leen/escriben bien" << endl;
 
-    cout << "Strings con escaped quotes" << endl;
+    logFile << "Strings con escaped quotes" << endl;
     list.clear();
     readBack.clear();
 
@@ -132,24 +161,23 @@ void testQuotedStringIO() {
     list.Insert("\"3 string \"", 3);
     list.Insert("\'4 string \'", 4);
 
-    cout << "La lista de strings con escaped quotes: " << list << endl;
-
+    logFile << "La lista con escaped quotes: " << list << endl;
     ss.str("");
     ss << list;
     ss >> readBack;
-
+    logFile << "Lista leida: " << readBack << endl;
     assert(readBack.getSize() == 4);
-    cout << readBack[0] << endl;
+    logFile << readBack[0] << endl;
     assert(readBack[0] == "\"3 string \"");
     assert(readBack[1] == "\'4 string \'");
     assert(readBack[2] == "1 string \"");
     assert(readBack[3] == "2 string \'");
 
-    cout << "OK: strings con escaped quotes se leen/escriben bien" << endl;
+    logFile << "OK: strings con escaped quotes se leen/escriben bien\n" << endl;
 }
 
-void testWriteRead(string outFilePath = "linkedlistsample.log") {
-    cout << "Prueba de lectura y escritura" << endl;
+void testWriteRead(string outFilePath = "linkedlist_write.log") {
+    logFile << "=== Prueba de lectura y escritura ===" << endl;
     CLinkedList<AscendingTrait<T1>> list;
 
     list.push_back(10, 1);
@@ -158,35 +186,31 @@ void testWriteRead(string outFilePath = "linkedlistsample.log") {
     list.Insert(40, 4);
     list.Insert(5, 5);
 
-    cout << "Lista original: " << list << endl;
-    cout << "archivo de escritura: " << outFilePath << endl;
+    logFile << "Lista original: " << list << endl;
+    logFile << "archivo de escritura: " << outFilePath << endl;
     ofstream outFile(outFilePath);
     if (outFile.is_open()) {
         outFile << list;
         outFile.close();
-    } else {
-        cout << "Error al abrir archivo de escritura" << endl;
-    }
+    } else logFile << "Error al abrir archivo de escritura" << endl;
 
     CLinkedList<AscendingTrait<T1>> list2;
     ifstream inFile(outFilePath);
     if (inFile.is_open()) {
         inFile >> list2;
         inFile.close();
-        cout << "Lista cargada desde archivo: " << list2 << endl;
+        logFile << "Lista cargada desde archivo: " << list2 << endl;
         // Verificar que la lista se haya cargado correctamente
         assert(list2.getSize() == list.getSize());
         for (size_t i = 0; i < list.getSize(); ++i) {
             assert(list[i] == list2[i]);
         }
-        cout << "OK: La lista se guardó y recuperó correctamente" << endl;
-    } else {
-        cout << "Error al abrir el archivo para lectura." << endl;
-    }
+        logFile << "OK: La lista se guardó y recuperó correctamente\n" << endl;
+    } else logFile << "Error al abrir el archivo para lectura.\n" << endl;
 }
 
-void testLLConcurrencyBasic() {
-    cout << "Prueba basica de concurrencia (push_back con mutex)" << endl;
+void testLLConcurrency() {
+    logFile << "=== Prueba de concurrencia: push_back, iteraciones, lectura y escritura ===" << endl;
     AscendingLL list;
     AscendingLL temp;
     const Size threads = 6;
@@ -197,9 +221,9 @@ void testLLConcurrencyBasic() {
     stringstream ss;
 
     workers.emplace_back([&]() {
-        cout << "LinkedList: << list en el estado en que este" << endl;
+        logFile << "LinkedList: << list en el estado en que este" << endl;
         ss << list;
-        cout << "LinkedList: >> list en el estado en que este" << endl;
+        logFile << "LinkedList: >> list en el estado en que este" << endl;
         ss >> temp;
     });
     for (int t = 0; t < threads - 2; ++t) {
@@ -211,24 +235,30 @@ void testLLConcurrencyBasic() {
         });
     }
     workers.emplace_back([&]() {
-        cout << "LinkedList: iterador " << endl;
+        logFile << "LinkedList: iterador " << endl;
         for (auto it = list.begin(); it != list.end(); ++it)
-            cout << "(" << *it << ")";
-        cout << endl;
+            try {
+                logFile << "(" << *it << ")";
+            } catch (const exception& e) {
+                logFile << e.what();
+                break;
+            }
+        logFile << endl;
     });
 
     for (auto &th : workers) th.join();
 
     // intentamos leer la lista a ver en que estado esta
-    cout << "LinkedList: list: " << list << endl;
-    cout << "LinkedList: temp: " << temp << endl;
+    logFile << "LinkedList: list: " << list << endl;
+    logFile << "LinkedList: temp: " << temp << endl;
 
     assert(list.getSize() == static_cast<size_t>((threads - 2) * perThread));
-    cout << "OK: size == " << list.getSize() << endl;
+    logFile << "tamaño final: " << list.getSize() << endl;
+    logFile << "OK: concurrencia funciona correctamente\n" << endl;
 }
 
 void testAssignmentOperator() {
-    cout << "Prueba de operador de asignacion" << endl;
+    logFile << "=== Prueba de operador de asignacion ===" << endl;
     CLinkedList<AscendingTrait<T1>> a;
     a.push_back(10, 1);
     a.push_back(20, 2);
@@ -248,11 +278,58 @@ void testAssignmentOperator() {
     for (size_t i = 0; i < a.getSize(); ++i) {
         assert(a[i] == b[i]);
     }
-    cout << "OK: operador= copia y self-assign" << endl;
+    logFile << "OK: operador= copia y self-assign\n" << endl;
+}
+
+void testAllListOrders() {
+    logFile << "=== Prueba: listas ordenadas y no ordenadas ===" << endl;
+
+    // AscendingTrait va en orden ascendente
+    CLinkedList<AscendingTrait<T1>> asc;
+    asc.Insert(20, 1);
+    asc.Insert(10, 2);
+    asc.Insert(30, 3);
+    logFile << "lista ordenada ascendente" << endl;
+    logFile << asc << endl;
+    assert(asc.getSize() == 3);
+    assert(asc[0] == 10);
+    assert(asc[1] == 20);
+    assert(asc[2] == 30);
+
+    // DescendingTrait usa std::less => orden ascendente
+    CLinkedList<DescendingTrait<T1>> desc;
+    desc.Insert(20, 1);
+    desc.Insert(10, 2);
+    desc.Insert(30, 3);
+    logFile << "lista ordenada descendente" << endl;
+    logFile << desc << endl;
+    assert(desc.getSize() == 3);
+    assert(desc[0] == 30);
+    assert(desc[1] == 20);
+    assert(desc[2] == 10);
+
+    // Unordered: por defecto
+    CLinkedList<UnorderedTrait<T1>> unord;
+    unord.Insert(10, 1);
+    unord.Insert(30, 3);
+    unord.Insert(20, 2, 1); // insert en medio
+    unord.Insert(5, 4, 0);  // insert al inicio
+    unord.Insert(50, 5, -1);  // testeo de la chistosada
+    logFile << "lista no ordenada" << endl;
+    logFile << unord << endl;
+    assert(unord.getSize() == 5);
+    assert(unord[0] == 5);
+    assert(unord[1] == 10);
+    assert(unord[2] == 20);
+    assert(unord[3] == 30);
+    assert(unord[4] == 50);
+
+    logFile << "OK: orden asc/desc y no ordenada\n" << endl;
 }
 
 void testForeachFirstthat() {
-    cout << "Prueba de firstThat" << endl;
+    logFile << "=== Prueba de FirstThat y forEach ===" << endl;
+    logFile << "Prueba de firstThat" << endl;
     CLinkedList<AscendingTrait<T1>> list;
     list.push_back(10, 1);
     list.push_back(20, 2);
@@ -261,11 +338,11 @@ void testForeachFirstthat() {
     list.push_back(50, 5);
     list.push_back(60, 6);
     auto firstMultipleOfThree = list.firstThat([](const T1 &x) { return x % 3 == 0; });
-    cout << "primer multiplo de 3: " << firstMultipleOfThree  << endl;
+    logFile << "primer multiplo de 3: " << firstMultipleOfThree  << endl;
     assert(firstMultipleOfThree == 30);
     assert(list.getSize() == 6);
-    cout << "OK: FirstThat funciona correctamente" << endl;
-    cout << "Prueba de forEach" << endl;
+    logFile << "OK: FirstThat funciona correctamente" << endl;
+    logFile << "Prueba de forEach" << endl;
     list.push_back(70, 7);
     list.push_back(80, 8);
     list.push_back(90, 9);
@@ -273,18 +350,17 @@ void testForeachFirstthat() {
     list.push_back(110, 11);
     list.push_back(120, 12);
 
-    cout << "dividir a todos entre 10" << endl;
+    logFile << "dividir a todos entre 10" << endl;
     list.forEach([](T1& x) { x /= 10; });
     assert(list.getSize() == 12);
     assert(list.firstThat([](const T1 &x) { return x % 3 == 0; }) == 3);
-    cout << list << endl;
+    logFile << list << endl;
 
-    cout << "OK: forEach funciona correctamente" << endl;
+    logFile << "OK: forEach funciona correctamente\n" << endl;
 }
 
 void DemoLists(){
     CLinkedList< AscendingTrait<T1> > l1;
-
     testInsert(l1);
     testCopyConstructor(l1);
     testMoveConstructor();
@@ -293,6 +369,8 @@ void DemoLists(){
     testQuotedStringIO();
     testWriteRead();
     testAssignmentOperator();
-    testLLConcurrencyBasic();
+    testLLConcurrency();
     testForeachFirstthat();
+    testAllListOrders();
+    logFile.close();
 }
