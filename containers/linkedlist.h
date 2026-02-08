@@ -1,8 +1,9 @@
 #ifndef __LINKEDLIST_H__
 #define __LINKEDLIST_H__
-#include <iostream>
 #include <type_traits>
 #include <iomanip>
+#include <mutex>
+#include <vector>
 #include "../general/types.h"
 #include "GeneralIterator.h"
 
@@ -90,6 +91,8 @@ istream &operator>>(istream &is, CLinkedList<Traits> &container);
 
 template <typename Traits>
 class CLinkedList {
+    // one mutex per instance
+    mutable mutex mtx;
 public:
     using value_type       = typename Traits::value_type;
     using forward_iterator = LinkedListForwardIterator<CLinkedList<Traits>>;
@@ -118,34 +121,57 @@ public:
     // TODO: Operadores de acceso [] done
     value_type &operator[](size_t index);
 
+    CLinkedList &operator=(const CLinkedList &to_copy);
+
     void push_back(const value_type &val, ref_type ref);
 
     void Insert(const value_type &val, ref_type ref);
     size_t getSize();
 
-    /*
-     * Helper function
-     * limpia la lista
-     */
+    // TODO: forEach y firstThat
+
+    // forEach
+    // invoca a la variante de iteradores para ahorrar una call
+    template <typename ObjFunc, typename ...Args>
+    void forEach(ObjFunc foo, Args... args) {
+        // esta operacion bloquea el mutex
+        lock_guard<mutex> lock(mtx);
+        ::Foreach(begin(), end(), foo, args...);
+    }
+
+    // firstThat
+    template <typename ObjFunc, typename ...Args>
+    value_type firstThat(ObjFunc foo, Args... args) {
+        lock_guard<mutex> lock(mtx);
+        return *::FirstThat(begin(), end(), foo, args...);
+    }
+
+    // borra nodos bajo lock para evitar carreras
     void clear() {
-        this->~CLinkedList();
-        m_pRoot = m_pLast = nullptr;
-        m_nElements = 0;
+        lock_guard<mutex> lock(mtx);
+        clear_unlocked();
     }
 
 private:
     void InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref);
+
+    // requiere que el caller tenga el lock
+    void clear_unlocked() {
+        auto trav = m_pRoot;
+        while (trav) {
+            auto temp = trav->GetNext();
+            delete trav;
+            trav = temp;
+        }
+        m_pRoot = m_pLast = nullptr;
+        m_nElements = 0;
+    }
 
     // TODO: Persistencia (write)
     friend ostream &operator<< <>(ostream &os, CLinkedList<Traits> &container);
     // TODO: Persistencia (read)
     // lee el mismo formato en que se escribe
     friend istream &operator>> <>(istream &is, CLinkedList<Traits> &container);
-
-    CLinkedList &operator=(const CLinkedList &to_copy) {
-        _copyNodesFrom(to_copy);
-        return *this;
-    }
 
     /*
      * Helper function
@@ -155,8 +181,8 @@ private:
         // si se asigna a si mismo se regresa a si mismo
         if (this == &to_copy) return;
 
-        // llama al destructor para eliminar los nodos
-        this->~CLinkedList();
+        // limpia sin lock (caller debe bloquear)
+        clear_unlocked();
 
         Node* trav = to_copy.m_pRoot;
         while (trav) {
@@ -243,12 +269,13 @@ LinkedListForwardIterator<Container>::LinkedListForwardIterator(Container *pCont
 }
 
 template <typename Container>
-LinkedListForwardIterator<Container>::LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
+LinkedListForwardIterator<Container>
+::LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
     : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
 
 template <typename Container>
-typename LinkedListForwardIterator<Container>::value_type &
-LinkedListForwardIterator<Container>::operator*() {
+typename LinkedListForwardIterator<Container>::value_type &LinkedListForwardIterator<Container>::operator*() {
+    if (!pCurrent) throw std::runtime_error("Cannot dereference null iterator");
     return pCurrent->GetValueRef();
 }
 
@@ -275,6 +302,8 @@ LinkedListForwardIterator<Container> LinkedListForwardIterator<Container>::opera
 
 template <typename Traits>
 CLinkedList<Traits>::CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), m_pLast(nullptr) {
+    // bloquea solo al objeto fuente para copiar un estado consistente
+    lock_guard<mutex> lock(to_copy.mtx);
     // usa la helper function implementada
     _copyNodesFrom(to_copy);
 }
@@ -282,6 +311,8 @@ CLinkedList<Traits>::CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), 
 template <typename Traits>
 CLinkedList<Traits>::CLinkedList(CLinkedList &&to_move)
 : m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast), m_nElements(to_move.m_nElements) {
+    // bloquea solo al objeto fuente antes de mover
+    lock_guard<mutex> lock(to_move.mtx);
     // solo mueve los punteros y el numero de elementos
     // reinicia los de la lista a mover
     to_move.m_pRoot     = nullptr;
@@ -292,14 +323,15 @@ CLinkedList<Traits>::CLinkedList(CLinkedList &&to_move)
 // destructor implementado
 template <typename Traits>
 CLinkedList<Traits>::~CLinkedList() {
-    auto trav = m_pRoot;
-    while (trav) {
-        auto temp = trav->GetNext();
-        delete trav;
-        trav = temp;
-    }
-    m_pRoot = m_pLast = nullptr;
+    // no se bloquea en el destructor: asumir sincronizacion externa
+    clear_unlocked();
 }
+
+/*
+ * los iteradores no bloquean la LinkedList
+ * los iteradores son inseguros a cambio de simplicidad
+ * se toma como inspiracion el ConcurrentMap de java
+ */
 
 template <typename Traits>
 typename CLinkedList<Traits>::forward_iterator CLinkedList<Traits>::begin() {
@@ -313,11 +345,16 @@ typename CLinkedList<Traits>::forward_iterator CLinkedList<Traits>::end() {
 
 template <typename Traits>
 size_t CLinkedList<Traits>::getSize() {
+    // bloquear por si acaso
+    lock_guard<mutex> lock(mtx);
     return m_nElements;
 }
 
 template <typename Traits>
 void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
+    // aqui definitivamente se bloquea
+    lock_guard<mutex> lock(mtx);
+
     typename Traits::Func compareFunc;
     // si el valor a añadir no sigue el orden (ascendente/descendente)
     // si es ascendente:  val > m_pLast->GetValue()
@@ -368,28 +405,65 @@ void CLinkedList<Traits>::InternalInsert(
 }
 
 template <typename Traits>
-void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
-    if (!m_nElements) push_back(val, ref);
-    else InternalInsert(m_pRoot, val, ref);
+void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
+    // se utiliza getSize para verificar si la lista esta vacia
+    // porque es una operacion cubierta con un lock_guard
+    if (!getSize()) push_back(val, ref);
+    else {
+        // se deshace el lock del getSize() y se bloquea denuevo al insertar
+        lock_guard<mutex> lock(mtx);
+        InternalInsert(m_pRoot, val, ref);
+    }
 }
 
 // implementado operador []
 template <typename Traits>
 typename CLinkedList<Traits>::value_type &
 CLinkedList<Traits>::operator[](const size_t index) {
+    // aqui tambien se bloquea
+    lock_guard<mutex> lock(mtx);
+
     if (index >= m_nElements) {
         throw std::out_of_range("Index out of range");
     }
     Node *trav = m_pRoot;
     for (size_t i = 0; i < index; ++i)
         trav = trav->GetNext();
+    // WARNING: se retorna una referencia que puede invalidarse con modificaciones concurrentes
     return trav->GetValueRef();
+}
+
+// implementacion operador =
+template <typename Traits>
+CLinkedList<Traits>& CLinkedList<Traits>::operator=(const CLinkedList &to_copy) {
+    if (this == &to_copy) return *this;
+
+    // se toma una snapshot para evitar deadlocks
+    // (llamada a este operador en la implementacion del operador >>)
+    std::vector<std::pair<value_type, ref_type>> items;
+    {
+        lock_guard<mutex> lock(to_copy.mtx);
+        for (auto trav = to_copy.m_pRoot; trav; trav = trav->GetNext()) {
+            items.emplace_back(trav->GetValue(), trav->GetRef());
+        }
+    }
+    // ahora se limpia el contenido bloqueando el mutex
+    {
+        lock_guard<mutex> lock(mtx);
+        clear_unlocked();
+    }
+    // se reconstruye la linked list usando push_back
+    for (const auto &item : items) {
+        push_back(item.first, item.second);
+    }
+    return *this;
 }
 
 // operador right shift
 template <typename Traits>
 ostream &operator<<(ostream &os, CLinkedList<Traits> &container) {
-    os << "CLinkedList: size = " << container.getSize() << " [";
+    lock_guard<mutex> lock(container.mtx);
+    os << "CLinkedList: size = " << container.m_nElements << " [";
     // cambio: variable del loop es un traveler del que se extrae el value y el Ref
     for (auto trav = container.m_pRoot; trav; trav = trav->GetNext()) {
         if constexpr (std::is_same_v<typename CLinkedList<Traits>::value_type, std::string>) {
@@ -406,6 +480,8 @@ ostream &operator<<(ostream &os, CLinkedList<Traits> &container) {
 // lee del input stream esperando el formato en el que se escribe
 template <typename Traits>
 istream &operator>>(istream &is, CLinkedList<Traits> &container) {
+    // WARNING: esta operacion no bloquea para evitar deadlock con operator=
+    // no es segura frente a concurrencia
     // verificar el buen estado del stream
     if (!is) return is;
 
