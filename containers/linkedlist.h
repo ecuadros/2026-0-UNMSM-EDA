@@ -15,6 +15,7 @@ template <typename T, typename _Func>
 struct ListTrait{
     using value_type = T;
     using Func       = _Func;
+    static constexpr bool ordered = true;
 };
 
 template <typename T>
@@ -25,6 +26,12 @@ struct AscendingTrait :
 template <typename T>
 struct DescendingTrait :
     ListTrait<T, std::less<T> >{
+};
+
+template <typename T>
+struct UnorderedTrait :
+    ListTrait<T, std::less<T> >{
+    static constexpr bool ordered = false;
 };
 
 // Iterators para listas enlazadas
@@ -125,7 +132,7 @@ public:
 
     void push_back(const value_type &val, ref_type ref);
 
-    void Insert(const value_type &val, ref_type ref);
+    void Insert(const value_type &val, ref_type ref, size_t index = static_cast<size_t>(-1));
     size_t getSize();
 
     // TODO: forEach y firstThat
@@ -154,6 +161,8 @@ public:
 
 private:
     void InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref);
+    void InsertAtIndex(const value_type &val, ref_type ref, size_t index);
+    bool compare(const value_type &a, const value_type &b) const;
 
     // requiere que el caller tenga el lock
     void clear_unlocked() {
@@ -355,16 +364,20 @@ void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     // aqui definitivamente se bloquea
     lock_guard<mutex> lock(mtx);
 
-    typename Traits::Func compareFunc;
     // si el valor a añadir no sigue el orden (ascendente/descendente)
     // si es ascendente:  val > m_pLast->GetValue()
     // si es descendente: val < m_pLast->GetValue()
     // si invertimos los operandos y es verdadero, no está en orden
-    if ( m_pLast && compareFunc(m_pLast->GetValueRef(), val) ) {
-        InternalInsert(m_pRoot, val, ref);
-        return;
+    // el if constexpr se aplica para la clase: para las CLinkedList con
+    // UnorderedTrait, esta condicional no existe
+    if constexpr (Traits::ordered) {
+        if ( m_pLast && compare(m_pLast->GetValueRef(), val) ) {
+            InternalInsert(m_pRoot, val, ref);
+            return;
+        }
     }
 
+    // si no tiene la flag ordered, se prosigue con el push_back normal
     Node *pNewNode = new Node(val, ref);
     if ( !m_pRoot ) m_pRoot = m_pLast = pNewNode;
     else {
@@ -381,7 +394,6 @@ template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(
     Node *&rCurrentNode, const value_type &val, ref_type ref
     ) {
-    typename Traits::Func compareFunc;
     // TODO: Agregar algo para el caso de circular
     // crea un nuevo nodo
     Node *pNew = new Node(val, ref);
@@ -394,7 +406,7 @@ void CLinkedList<Traits>::InternalInsert(
         return;
     }
     // caso base, el valor debe insertarse antes del nodo actual
-    if ( compareFunc(rCurrentNode->GetValueRef(), val ) ) {
+    if ( compare(rCurrentNode->GetValueRef(), val ) ) {
         pNew->GetNextRef() = rCurrentNode;
         rCurrentNode = pNew;
         ++m_nElements;
@@ -405,15 +417,74 @@ void CLinkedList<Traits>::InternalInsert(
 }
 
 template <typename Traits>
-void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
+void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref, size_t index) {
     // se utiliza getSize para verificar si la lista esta vacia
     // porque es una operacion cubierta con un lock_guard
-    if (!getSize()) push_back(val, ref);
-    else {
-        // se deshace el lock del getSize() y se bloquea denuevo al insertar
-        lock_guard<mutex> lock(mtx);
-        InternalInsert(m_pRoot, val, ref);
+    if (!getSize()) {
+        push_back(val, ref);
+        return;
     }
+
+    // el lock del getSize() ya se deshizo y se bloquea denuevo al insertar
+    lock_guard<mutex> lock(mtx);
+
+    // si es una lista no ordenada, se pasa al else (se usa el indice)
+    // si es una lista ordenada, se procede con la logica regular
+    if constexpr (Traits::ordered) InternalInsert(m_pRoot, val, ref);
+    else {
+        // si algun chistoso pone de indice -1
+        // se le perdonara y añadira el item al final
+        if (index == static_cast<size_t>(-1)) {
+            index = m_nElements;
+        }
+        InsertAtIndex(val, ref, index);
+    }
+}
+
+/*
+ * metodo privado creada para manejar el caso en que se utilice una lista no ordenada
+ * (UnorderedTrait)
+ */
+template <typename Traits>
+void CLinkedList<Traits>::InsertAtIndex(const value_type &val, ref_type ref, size_t index) {
+    if (index > m_nElements) throw std::out_of_range("Index out of range");
+
+    // crear nodo, no hay que manejar el caso de lista vacia
+    // en Insert ya se maneja llamando a push_back
+    Node *pNew = new Node(val, ref);
+
+    // manejar el caso de que index = 0
+    if (!index) {
+        pNew->GetNextRef() = m_pRoot;
+        m_pRoot = pNew;
+        ++m_nElements;
+        return;
+    }
+    /*
+     * como se tiene que conectar:
+     * el anterior a pNew
+     * pNew al siguiente
+     * trav termina en el anterior al indice de pNew y se conecta
+     * pNew->GetNextRef() a trav->GetNext()
+     * y trav->GetNextRef() a pNew
+     */
+    Node *trav = m_pRoot;
+    for (size_t i = 0; i + 1 < index; ++i) {
+        trav = trav->GetNext();
+    }
+    pNew->GetNextRef() = trav->GetNext();
+    trav->GetNextRef() = pNew;
+    if (trav == m_pLast) m_pLast = pNew;
+    ++m_nElements;
+}
+
+template <typename Traits>
+bool CLinkedList<Traits>::compare(const value_type &a, const value_type &b) const {
+    if constexpr (Traits::ordered) {
+        typename Traits::Func compareFunc;
+        return compareFunc(a, b);
+    }
+    return false;
 }
 
 // implementado operador []
