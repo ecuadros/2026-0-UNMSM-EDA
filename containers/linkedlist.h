@@ -1,9 +1,12 @@
 #ifndef __LINKEDLIST_H__
 #define __LINKEDLIST_H__
 #include <iostream>
+#include <type_traits>
+#include <iomanip>
 #include "../general/types.h"
 #include "GeneralIterator.h"
-#include "../util.h"
+
+
 using namespace std;
 
 // TODO: Traits para listas enlazadas
@@ -14,15 +17,14 @@ struct ListTrait{
 };
 
 template <typename T>
-struct AscendingTrait : 
-    public ListTrait<T, std::greater<T> >{
+struct AscendingTrait :
+    ListTrait<T, std::greater<T> >{
 };
 
 template <typename T>
-struct DescendingTrait : 
-    public ListTrait<T, std::less<T> >{
+struct DescendingTrait :
+    ListTrait<T, std::less<T> >{
 };
-
 
 // Iterators para listas enlazadas
 
@@ -37,29 +39,21 @@ private:
     Node *m_pNext = nullptr;
 
 public:
-    NodeLinkedList(){}
-    NodeLinkedList( value_type _value, ref_type _ref = -1)
-        : m_data(_value), m_ref(_ref){   }
-    NodeLinkedList( value_type _value, ref_type _ref, Node *pNext)
-        : m_data(_value), m_ref(_ref), m_pNext(pNext){   }
-    value_type  GetValue   () const { return m_data; }
-    value_type &GetValueRef() { return m_data; }
+    NodeLinkedList();
+    NodeLinkedList(value_type _value, ref_type _ref = -1);
+    NodeLinkedList(value_type _value, ref_type _ref, Node *pNext);
+    value_type  GetValue   () const;
+    value_type &GetValueRef();
 
-    ref_type    GetRef     () const { return m_ref;   }
-    ref_type   &GetRefRef  () { return m_ref;   }
+    ref_type    GetRef     () const;
+    ref_type   &GetRefRef  ();
 
-    Node      * GetNext     () const { return m_pNext;   }
-    Node      *&GetNextRef  () { return m_pNext;   }
+    Node      * GetNext     () const;
+    Node      *&GetNextRef  ();
 
-    Node &operator=(const Node &another){
-        m_data = another.GetValue();
-        m_ref   = another.GetRef();
-        return *this;
-    }
-    bool operator==(const Node &another) const
-    { return m_data == another.GetValue();   }
-    bool operator<(const Node &another) const
-    { return m_data < another.GetValue();   }
+    Node &operator=(const Node &another);
+    bool operator==(const Node &another) const;
+    bool operator<(const Node &another) const;
 };
 
 
@@ -75,31 +69,24 @@ public:
     // para optimizar este proceso, se crea el puntero a nodo pCurrent
     Node *pCurrent = nullptr;
 
-    LinkedListForwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot) {
-        // desplazarse a la posicion
-        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
-    }
-    LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
-        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+    LinkedListForwardIterator(Container *pContainer, Size pos=0);
+    LinkedListForwardIterator(LinkedListForwardIterator<Container> &another);
 
     // se sobrecarga el operador * y ++
-    value_type &operator*() override { return pCurrent->GetValueRef(); }
-    LinkedListForwardIterator<Container> &operator++() {
-        if (pCurrent) {
-            pCurrent = pCurrent->GetNext();
-            ++this->m_pos;
-        }
-        return *this;
-    }
-
-    LinkedListForwardIterator<Container> operator++(int) {
-        LinkedListForwardIterator<Container> tmp(*this);
-        ++(*this);
-        return tmp;
-    }
+    value_type &operator*() override;
+    LinkedListForwardIterator<Container> &operator++();
+    LinkedListForwardIterator<Container> operator++(int);
 };
 
+
+template <typename Traits>
+class CLinkedList;
+
+template <typename Traits>
+ostream &operator<<(ostream &os, CLinkedList<Traits> &container);
+
+template <typename Traits>
+istream &operator>>(istream &is, CLinkedList<Traits> &container);
 
 template <typename Traits>
 class CLinkedList {
@@ -116,27 +103,17 @@ public:
     size_t m_nElements = 0;
     CLinkedList(){}
     // TODO: Constructor copia
-    CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), m_pLast(nullptr) {
-        // usa la helper function implementada
-        _copyNodesFrom(to_copy);
-    }
+    CLinkedList(const CLinkedList &to_copy);
     // TODO: Move Constructor
-    CLinkedList(CLinkedList &&to_move)
-    : m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast), m_nElements(to_move.m_nElements) {
-        // solo mueve los punteros y el numero de elementos
-        // reinicia los de la lista a mover
-        to_move.m_pRoot = nullptr;
-        to_move.m_pLast = nullptr;
-        to_move.m_nElements = 0;
-    }
+    CLinkedList(CLinkedList &&to_move);
 
 
     // TODO: Destructor seguro y virtual
     virtual ~CLinkedList();
     // TODO: Concurrencia (mutex)
     // TODO: Iterators begin() end()
-    forward_iterator begin() { return forward_iterator(this); }
-    forward_iterator end()   { return forward_iterator(this, m_nElements); }
+    forward_iterator begin();
+    forward_iterator end();
 
     // TODO: Operadores de acceso [] done
     value_type &operator[](size_t index);
@@ -144,66 +121,26 @@ public:
     void push_back(const value_type &val, ref_type ref);
 
     void Insert(const value_type &val, ref_type ref);
-    size_t getSize(){ return m_nElements;  }
+    size_t getSize();
+
+    /*
+     * Helper function
+     * limpia la lista
+     */
+    void clear() {
+        this->~CLinkedList();
+        m_pRoot = m_pLast = nullptr;
+        m_nElements = 0;
+    }
 
 private:
     void InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref);
 
     // TODO: Persistencia (write)
-    friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
-        os << "CLinkedList: size = " << container.getSize() << endl;
-        os << "[";
-        // cambio: variable del loop es un traveler del que se extrae el value y el Ref
-        for (auto trav = container.m_pRoot; trav; trav = trav->GetNext()) {
-            os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
-        }
-        os << "]" << endl;
-        return os;
-    }
+    friend ostream &operator<< <>(ostream &os, CLinkedList<Traits> &container);
     // TODO: Persistencia (read)
     // lee el mismo formato en que se escribe
-    friend istream &operator>>(istream &is, CLinkedList<Traits> &container) {
-        // verificar el buen estado del stream
-        if (!is) return is;
-
-        try {
-            // crea un contenedor temporal
-            CLinkedList<Traits> tmp;
-
-            // ignorar texto hasta el primer '['
-            string bar;
-            getline(is, bar, '[');
-
-            // leer elementos continuamente
-            char ch;
-            while (is.get(ch) && ch != ']') {
-                if (ch != '(') {
-                    is.putback(ch);
-                    continue;
-                }
-                value_type val;
-                ref_type ref;
-                string separator;
-
-                // leer el valor
-                is >> val;
-                getline(is, separator, ':');
-                // leer la ref
-                is >> ref;
-                getline(is, separator, ')');
-
-                tmp.push_back(val, ref);
-            }
-            // si la lectura salio bien, intercambia los contenidos
-            container = std::move(tmp);
-        } catch (const exception& e) {
-            // si algo paso, setea el estado del stream en failbit
-            // (hubo fallo al leer el contenido)
-            is.setstate(ios::failbit);
-        }
-
-        return is;
-    }
+    friend istream &operator>> <>(istream &is, CLinkedList<Traits> &container);
 
     CLinkedList &operator=(const CLinkedList &to_copy) {
         _copyNodesFrom(to_copy);
@@ -229,17 +166,128 @@ private:
             trav = trav->GetNext();
         }
     }
-
-    /*
-     * Helper function
-     * limpia la lista
-     */
-    void clear() {
-        this->~CLinkedList();
-        m_pRoot = m_pLast = nullptr;
-        m_nElements = 0;
-    }
 };
+
+// ======================
+// === NodeLinkedList ===
+// ======================
+
+template <typename Traits>
+NodeLinkedList<Traits>::NodeLinkedList(){}
+
+template <typename Traits>
+NodeLinkedList<Traits>::NodeLinkedList(value_type _value, ref_type _ref)
+    : m_data(_value), m_ref(_ref){   }
+
+template <typename Traits>
+NodeLinkedList<Traits>::NodeLinkedList(value_type _value, ref_type _ref, Node *pNext)
+    : m_data(_value), m_ref(_ref), m_pNext(pNext){   }
+
+template <typename Traits>
+typename NodeLinkedList<Traits>::value_type NodeLinkedList<Traits>::GetValue() const {
+    return m_data;
+}
+
+template <typename Traits>
+typename NodeLinkedList<Traits>::value_type &NodeLinkedList<Traits>::GetValueRef() {
+    return m_data;
+}
+
+template <typename Traits>
+ref_type NodeLinkedList<Traits>::GetRef() const {
+    return m_ref;
+}
+
+template <typename Traits>
+ref_type &NodeLinkedList<Traits>::GetRefRef() {
+    return m_ref;
+}
+
+template <typename Traits>
+typename NodeLinkedList<Traits>::Node *NodeLinkedList<Traits>::GetNext() const {
+    return m_pNext;
+}
+
+template <typename Traits>
+typename NodeLinkedList<Traits>::Node *&NodeLinkedList<Traits>::GetNextRef() {
+    return m_pNext;
+}
+
+template <typename Traits>
+NodeLinkedList<Traits> &NodeLinkedList<Traits>::operator=(const Node &another){
+    m_data = another.GetValue();
+    m_ref  = another.GetRef();
+    return *this;
+}
+
+template <typename Traits>
+bool NodeLinkedList<Traits>::operator==(const Node &another) const {
+    return m_data == another.GetValue();
+}
+
+template <typename Traits>
+bool NodeLinkedList<Traits>::operator<(const Node &another) const {
+    return m_data < another.GetValue();
+}
+
+
+// =================================
+// === LinkedListForwardIterator ===
+// =================================
+
+template <typename Container>
+LinkedListForwardIterator<Container>::LinkedListForwardIterator(Container *pContainer, Size pos)
+    : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot) {
+    // desplazarse a la posicion
+    for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
+}
+
+template <typename Container>
+LinkedListForwardIterator<Container>::LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
+    : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+
+template <typename Container>
+typename LinkedListForwardIterator<Container>::value_type &
+LinkedListForwardIterator<Container>::operator*() {
+    return pCurrent->GetValueRef();
+}
+
+template <typename Container>
+LinkedListForwardIterator<Container> &LinkedListForwardIterator<Container>::operator++() {
+    if (pCurrent) {
+        pCurrent = pCurrent->GetNext();
+        ++this->m_pos;
+    }
+    return *this;
+}
+
+template <typename Container>
+LinkedListForwardIterator<Container> LinkedListForwardIterator<Container>::operator++(int) {
+    LinkedListForwardIterator<Container> tmp(*this);
+    ++(*this);
+    return tmp;
+}
+
+
+// ===================
+// === CLinkedList ===
+// ===================
+
+template <typename Traits>
+CLinkedList<Traits>::CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), m_pLast(nullptr) {
+    // usa la helper function implementada
+    _copyNodesFrom(to_copy);
+}
+
+template <typename Traits>
+CLinkedList<Traits>::CLinkedList(CLinkedList &&to_move)
+: m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast), m_nElements(to_move.m_nElements) {
+    // solo mueve los punteros y el numero de elementos
+    // reinicia los de la lista a mover
+    to_move.m_pRoot     = nullptr;
+    to_move.m_pLast     = nullptr;
+    to_move.m_nElements = 0;
+}
 
 // destructor implementado
 template <typename Traits>
@@ -254,11 +302,27 @@ CLinkedList<Traits>::~CLinkedList() {
 }
 
 template <typename Traits>
+typename CLinkedList<Traits>::forward_iterator CLinkedList<Traits>::begin() {
+    return forward_iterator(this);
+}
+
+template <typename Traits>
+typename CLinkedList<Traits>::forward_iterator CLinkedList<Traits>::end() {
+    return forward_iterator(this, m_nElements);
+}
+
+template <typename Traits>
+size_t CLinkedList<Traits>::getSize() {
+    return m_nElements;
+}
+
+template <typename Traits>
 void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     typename Traits::Func compareFunc;
     // si el valor a añadir no sigue el orden (ascendente/descendente)
     // si es ascendente:  val > m_pLast->GetValue()
     // si es descendente: val < m_pLast->GetValue()
+    // si invertimos los operandos y es verdadero, no está en orden
     if ( m_pLast && compareFunc(m_pLast->GetValueRef(), val) ) {
         InternalInsert(m_pRoot, val, ref);
         return;
@@ -275,7 +339,9 @@ void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
 
 
 template <typename Traits>
-void CLinkedList<Traits>::InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref) {
+void CLinkedList<Traits>::InternalInsert(
+    Node *&rCurrentNode, const value_type &val, ref_type ref
+    ) {
     typename Traits::Func compareFunc;
     // TODO: Agregar algo para el caso de circular
     // crea un nuevo nodo
@@ -284,7 +350,7 @@ void CLinkedList<Traits>::InternalInsert(Node *&rCurrentNode, const value_type &
     // caso ultimo nodo
     if ( !rCurrentNode ) {
         rCurrentNode = pNew;
-        m_pLast = pNew;
+        m_pLast = pNew;  // no olvidarse de reasignar m_pLast
         ++m_nElements;
         return;
     }
@@ -295,14 +361,7 @@ void CLinkedList<Traits>::InternalInsert(Node *&rCurrentNode, const value_type &
         ++m_nElements;
         return;
     }
-    /*
-    if ( !rCurrentNode || compareFunc(val, rCurrentNode->GetValue()) ) {
-        // reemplaza rCurrent node por pNew
-        rCurrentNode = pNew;
-        ++m_nElements;
-        return;
-    }
-    */
+
     InternalInsert(rCurrentNode->GetNextRef(), val, ref);
 }
 
@@ -323,6 +382,67 @@ CLinkedList<Traits>::operator[](const size_t index) {
     for (size_t i = 0; i < index; ++i)
         trav = trav->GetNext();
     return trav->GetValueRef();
+}
+
+// operador right shift
+template <typename Traits>
+ostream &operator<<(ostream &os, CLinkedList<Traits> &container) {
+    os << "CLinkedList: size = " << container.getSize() << " [";
+    // cambio: variable del loop es un traveler del que se extrae el value y el Ref
+    for (auto trav = container.m_pRoot; trav; trav = trav->GetNext()) {
+        if constexpr (std::is_same_v<typename CLinkedList<Traits>::value_type, std::string>) {
+            os << "(" << std::quoted(trav->GetValue()) << ":" << trav->GetRef() << "),";
+        } else {
+            os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
+        }
+    }
+    os << "]" << endl;
+    return os;
+}
+
+// operador left shift
+// lee del input stream esperando el formato en el que se escribe
+template <typename Traits>
+istream &operator>>(istream &is, CLinkedList<Traits> &container) {
+    // verificar el buen estado del stream
+    if (!is) return is;
+
+    try {
+        // crea un contenedor temporal
+        CLinkedList<Traits> tmp;
+        // ignorar texto hasta el primer '['
+        string bar;
+        getline(is, bar, '[');
+
+        // leer elementos continuamente
+        char ch;
+        while (is.get(ch) && ch != ']') {
+            if (ch != '(') continue;
+
+            typename CLinkedList<Traits>::value_type val;
+            ref_type ref;
+
+            if constexpr (std::is_same_v<typename CLinkedList<Traits>::value_type, std::string>) {
+                // leer string con comillas y escapes
+                is >> std::quoted(val);
+                getline(is, bar, ':');
+            } else {
+                is >> val;  // leer el valor
+                getline(is, bar, ':');
+            }
+            is >> ref;  // leer la ref
+            getline(is, bar, ')');
+
+            tmp.push_back(val, ref);
+        }
+        // si la lectura salio bien, intercambia los contenidos
+        container = std::move(tmp);
+    } catch (const exception& e) {
+        // si algo paso, setea el estado del stream en failbit
+        // (hubo fallo al leer el contenido)
+        is.setstate(ios::failbit);
+    }
+    return is;
 }
 
 #endif // __LINKEDLIST_H__

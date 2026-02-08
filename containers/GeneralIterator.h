@@ -40,11 +40,7 @@ public:
         return m_pContainer != another.m_pContainer ||
                m_pos        != another.m_pos;         
     }
-    virtual value_type &operator*(){
-        static_assert(has_m_data<Container>::value,
-                    "GeneralIterator::operator* requires Container::m_data");
-        return m_data[m_pos].GetValueRef();
-    }
+    virtual value_type &operator*() = 0;
 };
 
 #endif // __GENERAL_ITERATOR_H__
