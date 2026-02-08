@@ -331,7 +331,9 @@ void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     Node *pNewNode = new Node(val, ref);
     if ( !m_pRoot ) m_pRoot = m_pLast = pNewNode;
     else {
+        // que el ultimo nodo actual apunte al nuevo nodo
         m_pLast->GetNextRef() = pNewNode;
+        // que el puntero de la lista apunte al ultimo nodo
         m_pLast = pNewNode;
     }
     ++m_nElements;
