@@ -127,6 +127,7 @@ public:
     CircularDoubleLinkedListBackwardIterator(CircularDoubleLinkedListBackwardIterator<Container> &another)
         : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
 
+    // override necesario del GeneralIterator
     value_type &operator*() override { return pCurrent->GetValueRef(); }
     CircularDoubleLinkedListBackwardIterator<Container> &operator++() {
         if (pCurrent) {
@@ -212,7 +213,7 @@ public:
     template <typename ObjFunc, typename ...Args>
     auto firstThat(ObjFunc foo, Args... args) {
         lock_guard<mutex> lock(mtx);
-        return ::FirstThat(*this, foo, args...);
+        return *::FirstThat(*this, foo, args...);
     }
 
     void clear() {

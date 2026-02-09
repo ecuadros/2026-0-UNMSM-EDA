@@ -6,7 +6,7 @@ DEBUGFLAGS = -g -O0 -DDEBUG
 TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
        DemoArray.cpp DemoLists.cpp DemoCircularLinkedLists.cpp \
-	   DemoDoublyLinkedList.cpp algorithms/sorting.cpp
+	   DemoDoublyLinkedList.cpp DemoCircularDoubleLinkedList.cpp algorithms/sorting.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 debug: CXXFLAGS += $(DEBUGFLAGS)
