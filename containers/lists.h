@@ -3,7 +3,7 @@
 #include "../general/types.h"
 
 #include "linkedlist.h"
-
-void DemoLists();
+#include "doublelinkedlist.h"
+void DemoDoubleList();
 
 #endif // __LISTS_H__
