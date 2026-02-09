@@ -201,6 +201,7 @@ void CDoubleLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
 template <typename Traits>
 void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
     std::lock_guard<std::mutex> lock(m_Block);
+    typename Traits::Func compare;
     Node *pNew = new Node(val, ref);
 
     // Caso 1: Lista vacía
@@ -212,7 +213,7 @@ void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
     }
 
     // Caso 2: Insertar al Inicio (Nuevo valor < Root)
-    if (m_pRoot->GetValue() > val) {
+    if (compare(m_pRoot->GetValue(), val)) {
         pNew->GetNextRef() = m_pRoot;
         m_pRoot->GetPrevRef() = pNew; // ¡Doble enlace!
         m_pRoot = pNew;
@@ -221,7 +222,7 @@ void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
     }
 
     Node *pTemp = m_pRoot;
-    while (pTemp->GetNext() && pTemp->GetNext()->GetValue() < val) {
+    while (pTemp->GetNext() && !compare(pTemp->GetNext()->GetValue(), val)) {
         pTemp = pTemp->GetNext();
     }
 

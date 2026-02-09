@@ -215,6 +215,7 @@ void CDoubleLinkedListCircular<Traits>::push_back(const value_type &val, ref_typ
 template <typename Traits>
 void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref) {
     std::lock_guard<std::mutex> lock(m_Block);
+    typename Traits::Func compare;
     Node *pNew = new Node(val, ref);
 
     // Caso 1: Vacía
@@ -227,7 +228,7 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
         return;
     }
 
-    if (m_pRoot->GetValue() > val) {
+    if (compare(m_pRoot->GetValue(), val)) {
         pNew->GetNextRef() = m_pRoot;
         pNew->GetPrevRef() = m_pLast; 
         
@@ -241,7 +242,7 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
 
    
     Node *pTemp = m_pRoot;
-    while (pTemp != m_pLast && pTemp->GetNext()->GetValue() < val) {
+    while (pTemp !=m_pLast && !compare(pTemp->GetNext()->GetValue(), val)) {
         pTemp = pTemp->GetNext();
     }
     
