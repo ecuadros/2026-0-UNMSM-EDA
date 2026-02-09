@@ -8,9 +8,6 @@
 #include "linkedlist.h"
 using namespace std;
 
-// TODO: ForwardIterator para listas doblemente enlazadas
-
-// TODO: BackwardIterator para listas doblemente enlazadas
 
 template <typename Traits>
 class NodeDoubleLinkedList{
@@ -42,8 +39,6 @@ private:
     bool operator==(const Node &another) const { return m_data == another.GetValue(); }
     bool operator<(const Node &another) const  { return m_data < another.GetValue(); }
 };
-
-// --- Iterador (Bidireccional) ---
 template <typename Container>
 class DoubleLinkedListIterator {
     using value_type = typename Container::value_type;
@@ -142,7 +137,6 @@ public:
     // Operator << (Imprimir)
     friend ostream &operator<<(ostream &os, CDoubleLinkedList<Traits> &container) {
         std::lock_guard<std::mutex> lock(container.m_Block);
-        os << "DoubleList: size = " << container.getSize() << endl;
         os << "[";
         Node *pTemp = container.m_pRoot;
         while (pTemp != nullptr) {
@@ -197,10 +191,9 @@ void CDoubleLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
         m_pRoot = pNew;
         m_pLast = pNew;
     } else {
-        // Enlazar el nuevo al final
-        m_pLast->GetNextRef() = pNew; // El ultimo apunta al nuevo
-        pNew->GetPrevRef()    = m_pLast; // El nuevo apunta atras al ultimo
-        m_pLast               = pNew; // Actualizamos el ultimo
+        m_pLast->GetNextRef() = pNew; 
+        pNew->GetPrevRef()    = m_pLast; 
+        m_pLast               = pNew; 
     }
     ++m_nElements;
 }
@@ -227,29 +220,21 @@ void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
         return;
     }
 
-    // Caso 3: Insertar al Final o en Medio
     Node *pTemp = m_pRoot;
-    // Avanzamos mientras el siguiente sea menor que val
     while (pTemp->GetNext() && pTemp->GetNext()->GetValue() < val) {
         pTemp = pTemp->GetNext();
     }
 
-    // pTemp es el nodo ANTES de donde queremos insertar
-    // Verificamos si llegamos al final (push_back implicito)
     if (pTemp == m_pLast) {
         m_pLast->GetNextRef() = pNew;
         pNew->GetPrevRef()    = m_pLast;
         m_pLast               = pNew;
     } 
     else {
-        // Inserción en medio (Between pTemp and pTemp->Next)
         Node *pNextNode = pTemp->GetNext();
         
-        // Conexiones hacia adelante
         pTemp->GetNextRef() = pNew;
         pNew->GetNextRef()  = pNextNode;
-        
-        // Conexiones hacia atrás
         pNew->GetPrevRef()      = pTemp;
         pNextNode->GetPrevRef() = pNew;
     }

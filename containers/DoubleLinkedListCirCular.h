@@ -3,14 +3,12 @@
 
 #include <iostream>
 #include <mutex>
-#include <utility> // std::exchange
-#include "linkedlist.h" // Para Traits
-#include "doubleLinkedList.h" // Reutilizamos el Nodo Doble
+#include <utility> 
+#include "linkedlist.h" 
+#include "doubleLinkedList.h" 
 
 using namespace std;
 
-// --- Iterador FORWARD (Hacia adelante) ---
-// Se mueve usando GetNext() y se detiene al volver al inicio.
 template <typename Container>
 class CircularDoubleForwardIterator {
     using value_type = typename Container::value_type;
@@ -18,7 +16,7 @@ class CircularDoubleForwardIterator {
 
 private:
     Node *m_pCurrent;
-    Node *m_pStart;   // Punto de partida para saber cuándo detenerse
+    Node *m_pStart;  
 
 public:
     CircularDoubleForwardIterator(Node *pNode, Node *pStart) 
@@ -35,7 +33,6 @@ public:
     CircularDoubleForwardIterator &operator++() {
         if (m_pCurrent) {
             m_pCurrent = m_pCurrent->GetNext();
-            // MAGIA: Si volvemos al nodo de inicio, nos convertimos en nullptr (Fin)
             if (m_pCurrent == m_pStart) {
                 m_pCurrent = nullptr;
             }
@@ -47,9 +44,6 @@ public:
         return m_pCurrent->GetValueRef();
     }
 };
-
-// --- Iterador BACKWARD (Hacia atrás) ---
-// Se mueve usando GetPrev() y se detiene al volver al final.
 template <typename Container>
 class CircularDoubleBackwardIterator {
     using value_type = typename Container::value_type;
@@ -57,7 +51,7 @@ class CircularDoubleBackwardIterator {
 
 private:
     Node *m_pCurrent;
-    Node *m_pStart; // En este caso, el "Inicio" suele ser m_pLast
+    Node *m_pStart;
 
 public:
     CircularDoubleBackwardIterator(Node *pNode, Node *pStart) 
@@ -66,14 +60,10 @@ public:
     bool operator!=(const CircularDoubleBackwardIterator &other) const {
         return m_pCurrent != other.m_pCurrent;
     }
-
-    // OJO: Usamos operator++ para "avanzar" el iterador, 
-    // aunque físicamente nos movemos hacia ATRÁS en la lista.
     CircularDoubleBackwardIterator &operator++() {
         if (m_pCurrent) {
-            m_pCurrent = m_pCurrent->GetPrev(); // <--- La diferencia clave
+            m_pCurrent = m_pCurrent->GetPrev(); 
             
-            // Si damos toda la vuelta y llegamos al que empezamos...
             if (m_pCurrent == m_pStart) {
                 m_pCurrent = nullptr;
             }
@@ -86,14 +76,12 @@ public:
     }
 };
 
-// --- CLASE LISTA DOBLE CIRCULAR ---
+
 template <typename Traits>
 class CDoubleLinkedListCircular {
 public:
     using value_type = typename Traits::value_type;
-    using Node       = NodeDoubleLinkedList<Traits>; // Reutilizamos nodo de doubleLinkedList.h
-    
-    // Definimos los dos tipos de iteradores
+    using Node       = NodeDoubleLinkedList<Traits>; 
     using forward_iterator  = CircularDoubleForwardIterator< CDoubleLinkedListCircular<Traits> >;
     using backward_iterator = CircularDoubleBackwardIterator< CDoubleLinkedListCircular<Traits> >;
     
@@ -148,9 +136,6 @@ public:
     
     size_t getSize() const { return m_nElements; }
 
-    // --- ITERADORES ---
-    
-    // Forward Begin/End (Recorrido Normal: Root -> Last)
     forward_iterator begin() { 
         return forward_iterator(m_pRoot, m_pRoot); 
     }
@@ -158,16 +143,12 @@ public:
         return forward_iterator(nullptr, m_pRoot); 
     }
 
-    // Reverse Begin/End (Recorrido Inverso: Last -> Root)
-    // Para usar Foreach al revés, pasas rbegin() y rend()
     backward_iterator rbegin() {
         return backward_iterator(m_pLast, m_pLast);
     }
     backward_iterator rend() {
         return backward_iterator(nullptr, m_pLast);
     }
-
-    // --- FUNCIONES INTERNAS ---
 
     template <typename ObjFunc, typename ...Args>
     void Foreach(ObjFunc of, Args... args){
@@ -181,10 +162,8 @@ public:
         return ::FirstThat(*this, of, args...);
     }
 
-    // Operator << (Imprimir)
     friend ostream &operator<<(ostream &os, CDoubleLinkedListCircular<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
-        os << "DoubleCircularList: size = " << container.m_nElements << endl;
         os << "[";
         if (container.m_pRoot) {
             Node *pTemp = container.m_pRoot;
@@ -192,7 +171,7 @@ public:
                 os << "(" << pTemp->GetValue() << "|" << pTemp->GetRef() << ")";
                 pTemp = pTemp->GetNext();
                 if (pTemp != container.m_pRoot) {
-                    os << " <-> "; // Indicador de doble enlace
+                    os << " <-> "; 
                 }
             } while (pTemp != container.m_pRoot);
         }
@@ -200,7 +179,6 @@ public:
         return os;
     }
 
-    // Operator []
     value_type &operator[](size_t index) {
         std::lock_guard<std::mutex> lock(m_Block);
         Node *pTemp = m_pRoot;
@@ -211,8 +189,6 @@ public:
     }
 };
 
-// --- IMPLEMENTACIONES ---
-
 template <typename Traits>
 void CDoubleLinkedListCircular<Traits>::push_back(const value_type &val, ref_type ref) {
     std::lock_guard<std::mutex> lock(m_Block);
@@ -221,18 +197,17 @@ void CDoubleLinkedListCircular<Traits>::push_back(const value_type &val, ref_typ
     if (!m_pRoot) {
         m_pRoot = pNew;
         m_pLast = pNew;
-        // Circularidad Doble: se apunta a sí mismo por ambos lados
         pNew->GetNextRef() = m_pRoot;
         pNew->GetPrevRef() = m_pRoot;
     } else {
         // Enlazar al final
-        pNew->GetPrevRef()    = m_pLast; // Nuevo apunta atrás al viejo último
-        pNew->GetNextRef()    = m_pRoot; // Nuevo apunta adelante al Root (cierra círculo)
+        pNew->GetPrevRef()    = m_pLast; 
+        pNew->GetNextRef()    = m_pRoot; 
         
-        m_pLast->GetNextRef() = pNew;    // Viejo último apunta al nuevo
-        m_pRoot->GetPrevRef() = pNew;    // Root apunta atrás al nuevo (cierra círculo inverso)
+        m_pLast->GetNextRef() = pNew;    
+        m_pRoot->GetPrevRef() = pNew;    
         
-        m_pLast = pNew; // Actualizamos Last
+        m_pLast = pNew;
     }
     ++m_nElements;
 }
@@ -252,40 +227,33 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
         return;
     }
 
-    // Caso 2: Insertar al Inicio (val < Root)
     if (m_pRoot->GetValue() > val) {
         pNew->GetNextRef() = m_pRoot;
-        pNew->GetPrevRef() = m_pLast; // Se engancha al último
+        pNew->GetPrevRef() = m_pLast; 
         
-        m_pRoot->GetPrevRef() = pNew; // El viejo root se engancha al nuevo
-        m_pLast->GetNextRef() = pNew; // El último se engancha al nuevo (Cierre circular)
+        m_pRoot->GetPrevRef() = pNew; 
+        m_pLast->GetNextRef() = pNew; 
         
-        m_pRoot = pNew; // Cambiamos el líder
+        m_pRoot = pNew; 
         ++m_nElements;
         return;
     }
 
-    // Caso 3: Insertar Medio/Final
+   
     Node *pTemp = m_pRoot;
-    // Buscamos sin dar vuelta completa (paramos en m_pLast)
     while (pTemp != m_pLast && pTemp->GetNext()->GetValue() < val) {
         pTemp = pTemp->GetNext();
     }
-
-    // pTemp es el nodo PREVIO a donde queremos insertar
-    // Insertamos entre pTemp y pTemp->Next
     
-    Node *pNextNode = pTemp->GetNext(); // Puede ser Root (si pTemp es Last) o un nodo medio
+    Node *pNextNode = pTemp->GetNext(); 
 
-    // Conexiones del Nuevo
     pNew->GetPrevRef() = pTemp;
     pNew->GetNextRef() = pNextNode;
 
-    // Conexiones de los vecinos
     pTemp->GetNextRef()     = pNew;
     pNextNode->GetPrevRef() = pNew;
 
-    // Si insertamos justo al final (después de Last), actualizamos Last
+
     if (pTemp == m_pLast) {
         m_pLast = pNew;
     }
