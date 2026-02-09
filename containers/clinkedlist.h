@@ -1,5 +1,5 @@
-#ifndef __LINKEDLIST_H__
-#define __LINKEDLIST_H__
+#ifndef __CLINKEDLIST_H__
+#define __CLINKEDLIST_H__
 #include <iostream>
 #include <mutex>
 #include <fstream>
@@ -8,28 +8,28 @@
 #include "../util.h"
 using namespace std;
 
-// Traits para listas enlazadas
+// Traits para listas enlazadas circulares
 template <typename T, typename _Func>
-struct ListTrait{
+struct CListTrait{
     using value_type = T;
     using Func       = _Func;
 };
 
 template <typename T>
-struct AscendingTrait : 
-    public ListTrait<T, std::greater<T> >{
+struct CAscendingTrait : 
+    public CListTrait<T, std::greater<T> >{
 };
 
 template <typename T>
-struct DescendingTrait : 
-    public ListTrait<T, std::less<T> >{
+struct CDescendingTrait : 
+    public CListTrait<T, std::less<T> >{
 };
 
-// Nodo para listas enlazadas
+// Nodo para listas enlazadas circulares
 template <typename Traits>
-class NodeLinkedList{
+class NodeCircularLinkedList{
     using  value_type  = typename Traits::value_type;
-    using  Node        = NodeLinkedList<Traits>;
+    using  Node        = NodeCircularLinkedList<Traits>;
     
 private:
     value_type m_data;
@@ -37,8 +37,8 @@ private:
     Node *m_pNext = nullptr;
 
 public:
-    NodeLinkedList(){}
-    NodeLinkedList( value_type _value, ref_type _ref = -1)
+    NodeCircularLinkedList(){}
+    NodeCircularLinkedList( value_type _value, ref_type _ref = -1)
         : m_data(_value), m_ref(_ref){   }
     value_type  GetValue   () const { return m_data; }
     value_type &GetValueRef() { return m_data; }
@@ -60,25 +60,42 @@ public:
     { return m_data < another.GetValue();   }
 };
 
-// Forward Iterator para listas enlazadas
+// Forward Iterator para listas enlazadas circulares
 template <typename Container>
-class LinkedListForwardIterator{
+class CircularLinkedListForwardIterator{
     using value_type = typename Container::value_type;
     using Node       = typename Container::Node;
     
 private:
     Node *m_pCurrent = nullptr;
+    Node *m_pRoot = nullptr;
+    bool m_firstIteration = true;
     
 public:
-    LinkedListForwardIterator(Node *pNode) : m_pCurrent(pNode) {}
+    CircularLinkedListForwardIterator(Node *pNode, Node *pRoot = nullptr) 
+        : m_pCurrent(pNode), m_pRoot(pRoot) {}
     
-    bool operator!=(const LinkedListForwardIterator &other) const {
-        return m_pCurrent != other.m_pCurrent;
+    bool operator!=(const CircularLinkedListForwardIterator &other) const {
+        // Para listas circulares  verificar si se dio la vuelta
+        if (m_pCurrent == nullptr && other.m_pCurrent == nullptr) {
+            return false;
+        }
+        if (m_pCurrent == nullptr || other.m_pCurrent == nullptr) {
+            return true;
+        }
+        
+        return m_pCurrent != other.m_pCurrent || m_firstIteration != other.m_firstIteration;
     }
     
-    LinkedListForwardIterator &operator++() {
+    CircularLinkedListForwardIterator &operator++() {
         if (m_pCurrent) {
-            m_pCurrent = m_pCurrent->GetNext(); 
+            m_firstIteration = false;
+            m_pCurrent = m_pCurrent->GetNext();
+            
+            // Si se dio la vuelta completa, marcar como fin
+            if (m_pCurrent == m_pRoot && !m_firstIteration) {
+                m_pCurrent = nullptr;
+            }
         }
         return *this;
     }
@@ -88,14 +105,14 @@ public:
     }  
 };
 
-// Clase LinkedList
+// Clase Circular LinkedList
 template <typename Traits>
-class CLinkedList {
+class CCircularLinkedList {
 public:
     using  value_type        = typename Traits::value_type;
-    using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
+    using  forward_iterator  = CircularLinkedListForwardIterator < CCircularLinkedList<Traits> >;
     friend forward_iterator;
-    using  Node = NodeLinkedList<Traits>;
+    using  Node = NodeCircularLinkedList<Traits>;
 
 private:
     Node *m_pRoot = nullptr;
@@ -105,25 +122,27 @@ private:
 
 public:
     // Constructor por defecto
-    CLinkedList(){}
+    CCircularLinkedList(){}
     
     // Constructor copia
-    CLinkedList(const CLinkedList<Traits> &other) {
+    CCircularLinkedList(const CCircularLinkedList<Traits> &other) {
         std::lock_guard<std::mutex> lock(other.mtx);
         
         m_pRoot = nullptr;
         m_pLast = nullptr;
         m_nElements = 0;
         
+        if (other.m_pRoot == nullptr) return;
+        
         Node *pCurrent = other.m_pRoot;
-        while (pCurrent != nullptr) {
+        do {
             push_back(pCurrent->GetValue(), pCurrent->GetRef());
             pCurrent = pCurrent->GetNext();
-        }
+        } while (pCurrent != other.m_pRoot);
     }
     
     // Move Constructor
-    CLinkedList(CLinkedList<Traits> &&other) noexcept 
+    CCircularLinkedList(CCircularLinkedList<Traits> &&other) noexcept 
         : m_pRoot(nullptr), m_pLast(nullptr), m_nElements(0) {
         std::lock_guard<std::mutex> lock(other.mtx);
         
@@ -133,8 +152,15 @@ public:
     }
     
     // Destructor seguro y virtual
-    virtual ~CLinkedList() {
+    virtual ~CCircularLinkedList() {
         std::lock_guard<std::mutex> lock(mtx);
+        
+        if (m_pRoot == nullptr) return;
+        
+        // Romper el círculo primero
+        if (m_pLast) {
+            m_pLast->GetNextRef() = nullptr;
+        }
         
         Node *pCurrent = m_pRoot;
         while (pCurrent) {
@@ -142,6 +168,7 @@ public:
             delete pCurrent;                   
             pCurrent = pNext;                  
         }
+        
         m_pRoot = nullptr;
         m_pLast = nullptr;
         m_nElements = 0;
@@ -165,11 +192,11 @@ public:
 
     // Iteradores
     forward_iterator begin() {
-        return forward_iterator(m_pRoot); 
+        return forward_iterator(m_pRoot, m_pRoot); 
     }
 
     forward_iterator end() {
-        return forward_iterator(nullptr); 
+        return forward_iterator(nullptr, m_pRoot); 
     }
 
     // Push back
@@ -181,9 +208,13 @@ public:
         if( !m_pRoot ) {
             m_pRoot = pNewNode;
             m_pLast = pNewNode;
+            // CIRCULAR: El último apunta al primero
+            pNewNode->GetNextRef() = m_pRoot;
         } else {
             m_pLast->GetNextRef() = pNewNode;
             m_pLast = pNewNode;
+            // CIRCULAR: El último apunta al primero
+            m_pLast->GetNextRef() = m_pRoot;
         }
         ++m_nElements;
     }
@@ -203,36 +234,58 @@ public:
     template <typename ObjFunc, typename ...Args>
     void Foreach(ObjFunc of, Args... args){
         std::lock_guard<std::mutex> lock(mtx);
-        ::Foreach(*this, of, args...);
+        
+        if (m_pRoot == nullptr) return;
+        
+        Node *pCurrent = m_pRoot;
+        do {
+            of(pCurrent->GetValueRef(), args...);
+            pCurrent = pCurrent->GetNext();
+        } while (pCurrent != m_pRoot);
     }
     
     // FirstThat
     template <typename ObjFunc, typename ...Args>
     auto FirstThat(ObjFunc of, Args... args){
         std::lock_guard<std::mutex> lock(mtx);
-        return ::FirstThat(*this, of, args...);
+        
+        if (m_pRoot == nullptr) return end();
+        
+        Node *pCurrent = m_pRoot;
+        do {
+            if (of(pCurrent->GetValueRef(), args...)) {
+                return forward_iterator(pCurrent, m_pRoot);
+            }
+            pCurrent = pCurrent->GetNext();
+        } while (pCurrent != m_pRoot);
+        
+        return end();
     }
 
     // Operator<< (salida/imprimir)
-    friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
+    friend ostream &operator<<(ostream &os, CCircularLinkedList<Traits> &container){
         std::lock_guard<std::mutex> lock(container.mtx);
         
-        os << "CLinkedList: size = " << container.m_nElements << endl;
+        os << "CCircularLinkedList: size = " << container.m_nElements << endl;
         os << "[";
-        Node *pCurrent = container.m_pRoot;
-        while (pCurrent != nullptr) {
-            os << "(" << pCurrent->GetValue() << ":" << pCurrent->GetRef() << ")";
-            if (pCurrent->GetNext() != nullptr) {
-                os << ", ";
-            }
-            pCurrent = pCurrent->GetNext();
+        
+        if (container.m_pRoot != nullptr) {
+            Node *pCurrent = container.m_pRoot;
+            do {
+                os << "(" << pCurrent->GetValue() << ":" << pCurrent->GetRef() << ")";
+                pCurrent = pCurrent->GetNext();
+                if (pCurrent != container.m_pRoot) {
+                    os << ", ";
+                }
+            } while (pCurrent != container.m_pRoot);
         }
-        os << "]" << endl;
+        
+        os << "] (circular)" << endl;
         return os;
     }
     
     // Operator>> (entrada/rellenar)
-    friend istream &operator>>(istream &is, CLinkedList<Traits> &container){
+    friend istream &operator>>(istream &is, CCircularLinkedList<Traits> &container){
         std::lock_guard<std::mutex> lock(container.mtx);
         
         value_type val;
@@ -255,10 +308,13 @@ public:
         }
         
         outFile << m_nElements << endl;
-        Node *pCurrent = m_pRoot;
-        while (pCurrent != nullptr) {
-            outFile << pCurrent->GetValue() << " " << pCurrent->GetRef() << endl;
-            pCurrent = pCurrent->GetNext();
+        
+        if (m_pRoot != nullptr) {
+            Node *pCurrent = m_pRoot;
+            do {
+                outFile << pCurrent->GetValue() << " " << pCurrent->GetRef() << endl;
+                pCurrent = pCurrent->GetNext();
+            } while (pCurrent != m_pRoot);
         }
         
         outFile.close();
@@ -274,12 +330,19 @@ public:
         }
         
         // Limpiar la lista actual
-        Node *pCurrent = m_pRoot;
-        while (pCurrent) {
-            Node *pNext = pCurrent->GetNext();
-            delete pCurrent;
-            pCurrent = pNext;
+        if (m_pRoot != nullptr) {
+            if (m_pLast) {
+                m_pLast->GetNextRef() = nullptr;
+            }
+            
+            Node *pCurrent = m_pRoot;
+            while (pCurrent) {
+                Node *pNext = pCurrent->GetNext();
+                delete pCurrent;
+                pCurrent = pNext;
+            }
         }
+        
         m_pRoot = nullptr;
         m_pLast = nullptr;
         m_nElements = 0;
@@ -297,9 +360,11 @@ public:
             if (!m_pRoot) {
                 m_pRoot = pNewNode;
                 m_pLast = pNewNode;
+                pNewNode->GetNextRef() = m_pRoot; // CIRCULAR
             } else {
                 m_pLast->GetNextRef() = pNewNode;
                 m_pLast = pNewNode;
+                m_pLast->GetNextRef() = m_pRoot; // CIRCULAR
             }
             ++m_nElements;
         }
@@ -309,21 +374,54 @@ public:
 
 private:
     void InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-        // Usa el comparador del Trait (Func) en lugar de hardcodear '>'
-        if( !rParent || typename Traits::Func()(rParent->GetValue(), val) ){
+        // Caso especial: lista vacía
+        if (m_nElements == 0) {
             Node *pNew = new Node(val, ref);
-            pNew->GetNextRef() = rParent;
+            m_pRoot = pNew;
+            m_pLast = pNew;
+            pNew->GetNextRef() = m_pRoot; // CIRCULAR
             rParent = pNew;
-            
-            if (!pNew->GetNext()) {
-                m_pLast = pNew;
-            }
-            
             ++m_nElements;
             return;
         }
-        InternalInsert(rParent->GetNextRef(), val, ref);
+        
+        // Caso: insertar al inicio
+        if (typename Traits::Func()(rParent->GetValue(), val)) {
+            Node *pNew = new Node(val, ref);
+            pNew->GetNextRef() = rParent;
+            
+            // Si rParent es la raíz, actualizar last para que apunte al nuevo root
+            if (rParent == m_pRoot) {
+                m_pLast->GetNextRef() = pNew; // CIRCULAR
+                m_pRoot = pNew;
+            }
+            
+            rParent = pNew;
+            ++m_nElements;
+            return;
+        }
+        
+        // Recorrer hasta encontrar la posición o llegar al último
+        Node *pCurrent = rParent;
+        
+        do {
+            if (pCurrent->GetNext() == m_pRoot || typename Traits::Func()(pCurrent->GetNext()->GetValue(), val)) {
+                Node *pNew = new Node(val, ref);
+                pNew->GetNextRef() = pCurrent->GetNext();
+                pCurrent->GetNextRef() = pNew;
+                
+                // Si se inserta después del último, actualizar m_pLast
+                if (pCurrent == m_pLast) {
+                    m_pLast = pNew;
+                }
+                
+                ++m_nElements;
+                return;
+            }
+            
+            pCurrent = pCurrent->GetNext();
+        } while (pCurrent != m_pRoot);
     }
 };
 
-#endif // __LINKEDLIST_H__
+#endif // __CLINKEDLIST_H__
