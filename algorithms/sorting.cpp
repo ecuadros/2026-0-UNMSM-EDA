@@ -1,6 +1,6 @@
 #include <iostream>
 #include "sorting.h"
-#include "containers/array.h"
+#include "../containers/array.h"
 using namespace std;
 
 // Bubble  
@@ -37,19 +37,19 @@ void DemoBurbuja(){
     // SortContainer(arr2, n);
 }
 
-// ContainerRange particionar(ContainerElemType* arr, ContainerRange first, ContainerRange last, CompFunc pComp) {
-//     auto pivote = arr[last];  // Pivote es el elemento de referencia
-//     auto i = (first - 1);
+ContainerRange particionar(ContainerElemType* arr, ContainerRange first, ContainerRange last, CompFunc pComp) {
+    auto pivote = arr[last];  // Pivote es el elemento de referencia
+    auto i = (first - 1);
 
-//     for (auto j = first; j <= last - 1; j++) {
-//         if (arr[j] == pivote) ++i;
-//         if ( (*pComp)(arr[j], pivote) ){
-//             ++i; intercambiar(arr[i], arr[j]);
-//         }
-//     }
-//     intercambiar(arr[i + 1], arr[last]);
-//     return (i + 1);
-// }
+     for (auto j = first; j <= last - 1; j++) {
+        if (arr[j] == pivote) ++i;
+        if ( (*pComp)(arr[j], pivote) ){
+             ++i; intercambiar(arr[i], arr[j]);
+         }
+     }
+     intercambiar(arr[i + 1], arr[last]);
+     return (i + 1);
+ }
 
 
 void QuickSort( ContainerElemType* arr, 
