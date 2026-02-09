@@ -51,7 +51,7 @@ public:
 
     CircularLinkedListForwardIterator(Container *pContainer, Size pos=0)
         : GeneralIterator<Container>(pContainer, pos),
-          pCurrent(pContainer ? pContainer->m_pRoot : nullptr) {
+          pCurrent(pContainer->m_pRoot) {
         if (!pCurrent) return;
         for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
     }
@@ -68,45 +68,6 @@ public:
     }
     CircularLinkedListForwardIterator<Container> operator++(int) {
         CircularLinkedListForwardIterator<Container> tmp(*this);
-        ++(*this);
-        return tmp;
-    }
-};
-
-template <typename Container>
-class CircularLinkedListBackwardIterator: public GeneralIterator<Container> {
-public:
-    using Parent     = GeneralIterator<Container>;
-    using value_type = typename Parent::value_type;
-    using Node       = typename Parent::Node;
-    Node *pCurrent = nullptr;
-
-    CircularLinkedListBackwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos),
-          pCurrent(pContainer->m_pLast)
-    {
-        if (!pCurrent) return;
-        for (Size i = 0; i < pos; ++i) {
-            auto trav = pContainer->m_pRoot;
-            while (trav && trav->GetNext() != pCurrent) trav = trav->GetNext();
-            pCurrent = trav;
-        }
-    }
-    CircularLinkedListBackwardIterator(CircularLinkedListBackwardIterator<Container> &another)
-        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
-
-    value_type &operator*() override { return pCurrent->GetValueRef(); }
-    CircularLinkedListBackwardIterator<Container> &operator++() {
-        if (pCurrent) {
-            auto trav = this->m_pContainer->m_pRoot;
-            while (trav && trav->GetNext() != pCurrent) trav = trav->GetNext();
-            pCurrent = trav;
-            ++this->m_pos;
-        }
-        return *this;
-    }
-    CircularLinkedListBackwardIterator<Container> operator++(int) {
-        CircularLinkedListBackwardIterator<Container> tmp(*this);
         ++(*this);
         return tmp;
     }
@@ -129,9 +90,7 @@ class CCircularLinkedList : public ListBase<Traits> {
 public:
     using value_type        = typename Traits::value_type;
     using forward_iterator  = CircularLinkedListForwardIterator<CCircularLinkedList<Traits>>;
-    using backward_iterator = CircularLinkedListBackwardIterator<CCircularLinkedList<Traits>>;
     friend forward_iterator;
-    friend backward_iterator;
     using Node = CircularLinkedList_Node<Traits>;
     Node *m_pRoot = nullptr;
     Node *m_pLast = nullptr;
@@ -158,8 +117,6 @@ public:
 
     forward_iterator  begin()  { return forward_iterator(this); }
     forward_iterator  end()    { return forward_iterator(this, m_nElements); }
-    backward_iterator rbegin() { return backward_iterator(this, 0); }
-    backward_iterator rend()   { return backward_iterator(this, m_nElements); }
 
     // operador []
     value_type &operator[](size_t index) {
@@ -269,7 +226,7 @@ template <typename Traits>
 void CCircularLinkedList<Traits>::push_back(
     const value_type &val, ref_type ref)
 {
-    // bloquea elmutex
+    // bloquea el mutex
     lock_guard<mutex> lock(mtx);
     // esto se define en compile-time, si la lista es ordenada o no
     if constexpr (Traits::ordered) {
@@ -325,27 +282,7 @@ void CCircularLinkedList<Traits>::_internal_insert(
     // funcion recursiva: se manejan los casos primero
     // y la llamada recursiva se encuentra al final
 
-    /*
-    if (!m_pRoot) {
-        Node *pNew = new Node(val, ref);
-        m_pRoot = m_pLast = pNew;
-        pNew->GetNextRef() = pNew;
-        ++m_nElements;
-        return;
-    }
-    */
-
-    // si se llego al final de la lista
-    if (rCurrentNode == m_pLast) {
-        Node *pNew = new Node(val, ref);
-        // el nuevo nodo apunta a root y se actualiza todo
-        pNew->GetNextRef() = m_pRoot;
-        m_pLast->GetNextRef() = pNew;
-        m_pLast = pNew;
-        ++m_nElements;
-        return;
-    }
-    // esta en orden en algun lugar de la lista
+    // si esta en orden en algun lugar de la lista
     if (this->compare(rCurrentNode->GetValueRef(), val)) {
         Node *pNew = new Node(val, ref);
         // si esta en la raiz
@@ -354,15 +291,19 @@ void CCircularLinkedList<Traits>::_internal_insert(
             m_pRoot = pNew;
             m_pLast->GetNextRef() = m_pRoot;
         } else {
-            /*
-            Node *prev = m_pRoot;
-            while (prev->GetNext() != rCurrentNode) prev = prev->GetNext();
-            pNew->GetNextRef() = rCurrentNode;
-            prev->GetNextRef() = pNew;
-            */
             pNew->GetNextRef() = rCurrentNode;
             rCurrentNode = pNew;
         }
+        ++m_nElements;
+        return;
+    }
+    // si se llego al final de la lista
+    if (rCurrentNode == m_pLast) {
+        Node *pNew = new Node(val, ref);
+        // el nuevo nodo apunta a root y se actualiza todo
+        pNew->GetNextRef() = m_pRoot;
+        m_pLast->GetNextRef() = pNew;
+        m_pLast = pNew;
         ++m_nElements;
         return;
     }
@@ -380,14 +321,6 @@ void CCircularLinkedList<Traits>::_insert_at_index(
     Node *pNew = new Node(val, ref);
     // si el index es 0
     if (!index) {
-        /*
-        if (!m_pRoot) {
-            m_pRoot = m_pLast = pNew;
-            pNew->GetNextRef() = pNew;
-            ++m_nElements;
-            return;
-        }
-        */
         pNew->GetNextRef() = m_pRoot;
         m_pRoot = pNew;
         m_pLast->GetNextRef() = m_pRoot;
@@ -397,7 +330,7 @@ void CCircularLinkedList<Traits>::_insert_at_index(
 
     // si el indice no es 0
     Node *pTrav = m_pRoot;
-    for (auto i = 0; i + 1 < index; ++i) pTrav = pTrav->GetNext();
+    for (size_t i = 0; i + 1 < index; ++i) pTrav = pTrav->GetNext();
     // pnew apunta al siguiente de ptrav
     // y ptrav conecta con pnew
     pNew->GetNextRef() = pTrav->GetNext();

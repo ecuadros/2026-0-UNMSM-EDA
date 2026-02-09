@@ -18,4 +18,6 @@ using LinkedList = CLinkedList<Trait<T>>;
 
 void DemoLists();
 
+void DemoCircularLinkedLists();
+
 #endif // __LISTS_H__
