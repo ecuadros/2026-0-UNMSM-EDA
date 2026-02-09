@@ -27,4 +27,4 @@ auto FirstThat(Container &container, FuncObj fn, Args ...args){
     return FirstThat(container.begin(), container.end(), fn, args...);
 }
 
-#endif
+#endif // __FOREACH_H__
