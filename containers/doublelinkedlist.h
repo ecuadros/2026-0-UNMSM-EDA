@@ -193,7 +193,7 @@ public:
     forward_iterator  begin()  { return forward_iterator(this); }
     forward_iterator  end()    { return forward_iterator(this, m_nElements); }
     backward_iterator rbegin() { return backward_iterator(this, static_cast<Size>(m_nElements - 1)); }
-    backward_iterator rend()   { return backward_iterator(this, 0); }
+    backward_iterator rend()   { return backward_iterator(this, -1); }
 
     size_t getSize() {
         lock_guard<mutex> lock(mtx);
