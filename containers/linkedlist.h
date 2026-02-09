@@ -97,7 +97,23 @@ template <typename Traits>
 istream &operator>>(istream &is, CLinkedList<Traits> &container);
 
 template <typename Traits>
-class CLinkedList {
+class ListBase {
+public:
+    using value_type = typename Traits::value_type;
+    using Node = NodeLinkedList<Traits>;
+
+protected:
+    bool compare(const value_type &a, const value_type &b) const {
+        if constexpr (Traits::ordered) {
+            typename Traits::Func compareFunc;
+            return compareFunc(a, b);
+        }
+        return false;
+    }
+};
+
+template <typename Traits>
+class CLinkedList : public ListBase<Traits> {
     // one mutex per instance
     mutable mutex mtx;
 public:
@@ -162,7 +178,6 @@ public:
 private:
     void InternalInsert(Node *&rCurrentNode, const value_type &val, ref_type ref);
     void InsertAtIndex(const value_type &val, ref_type ref, size_t index);
-    bool compare(const value_type &a, const value_type &b) const;
 
     // requiere que el caller tenga el lock
     void clear_unlocked() {
@@ -274,7 +289,8 @@ template <typename Container>
 LinkedListForwardIterator<Container>::LinkedListForwardIterator(Container *pContainer, Size pos)
     : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot) {
     // desplazarse a la posicion
-    for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
+    if (pCurrent)
+        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
 }
 
 template <typename Container>
@@ -371,7 +387,7 @@ void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     // el if constexpr se aplica para la clase: para las CLinkedList con
     // UnorderedTrait, esta condicional no existe
     if constexpr (Traits::ordered) {
-        if ( m_pLast && compare(m_pLast->GetValueRef(), val) ) {
+        if ( m_pLast && this->compare(m_pLast->GetValueRef(), val) ) {
             InternalInsert(m_pRoot, val, ref);
             return;
         }
@@ -406,7 +422,7 @@ void CLinkedList<Traits>::InternalInsert(
         return;
     }
     // caso base, el valor debe insertarse antes del nodo actual
-    if ( compare(rCurrentNode->GetValueRef(), val ) ) {
+    if ( this->compare(rCurrentNode->GetValueRef(), val ) ) {
         pNew->GetNextRef() = rCurrentNode;
         rCurrentNode = pNew;
         ++m_nElements;
@@ -476,15 +492,6 @@ void CLinkedList<Traits>::InsertAtIndex(const value_type &val, ref_type ref, siz
     trav->GetNextRef() = pNew;
     if (trav == m_pLast) m_pLast = pNew;
     ++m_nElements;
-}
-
-template <typename Traits>
-bool CLinkedList<Traits>::compare(const value_type &a, const value_type &b) const {
-    if constexpr (Traits::ordered) {
-        typename Traits::Func compareFunc;
-        return compareFunc(a, b);
-    }
-    return false;
 }
 
 // implementado operador []
