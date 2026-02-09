@@ -8,7 +8,7 @@
 #include "linkedlist.h"
 using namespace std;
 template <typename Container>
-class CircularFordwardIterator{
+class CircularForwardIterator{
     using value_type = typename Container::value_type;
     using Node       = typename Container::Node;
 
@@ -17,14 +17,14 @@ private:
     Node *m_pRoot;    
     public:
     // Guardamos el inicio (Root) para detectar la vuelta completa
-    CircularFordwardIterator(Node *pNode, Node *pRoot) 
+    CircularForwardIterator(Node *pNode, Node *pRoot) 
         : m_pCurrent(pNode), m_pRoot(pRoot) {}
 
-    bool operator!=(const CircularFordwardIterator &other) const {
+    bool operator!=(const CircularForwardIterator &other) const {
         return m_pCurrent != other.m_pCurrent;
     }
 
-    CircularFordwardIterator &operator++() {
+    CircularForwardIterator &operator++() {
         if (m_pCurrent) {
             m_pCurrent = m_pCurrent->GetNext(); 
             
@@ -42,8 +42,8 @@ private:
 template <typename Traits>
 class CLinkedListCircular{
     using value_type = typename Traits::value_type;
-    using  CircularForward_iterator=CircularForwardIterator< CLinkedListCircular<Traits> >;
-    friend CircularForward_iterator;
+    using  Forward_iterator=CircularForwardIterator< CLinkedListCircular<Traits> >;
+    friend Forward_iterator;
     using  Node = NodeLinkedList<Traits>;
     private:
     Node *m_pRoot = nullptr;
@@ -84,14 +84,14 @@ class CLinkedListCircular{
     
     size_t getSize() const { return m_nElements; }
 
-    CircularForward_iterator begin() { 
+    Forward_iterator begin() { 
         // (Inicio, Marca_De_Tope)
-        return circular_iterator(m_pRoot, m_pRoot); 
+        return Forward_iterator(m_pRoot, m_pRoot); 
     }
 
     // end(): El final virtual es nullptr
-    CircularForward_iterator end() { 
-        return circular_iterator(nullptr, m_pRoot); 
+    Forward_iterator end() { 
+        return Forward_iterator(nullptr, m_pRoot); 
     }
     template <typename ObjFunc, typename ...Args>
     void Foreach(ObjFunc of, Args... args){

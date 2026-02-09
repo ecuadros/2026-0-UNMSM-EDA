@@ -4,7 +4,7 @@ LDFLAGS = -pthread # Añadido -pthread
 
 TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
-     DemoLists.cpp \
+    DemoListsCircular.cpp DemoLists.cpp \
 	#sorting.cpp
 OBJS = $(SRCS:.cpp=.o)
 

@@ -2,54 +2,74 @@
 #include "containers/lists.h"
 #include <utility>
 using namespace std;
+void ImprimirNum(int &n) { cout << "[" << n << "] "; }
+bool EsPar(int &n)       { return n % 2 == 0; }
 bool Mult9(T1 &elem){
   return elem%9 == 0;
 }
 template <typename Q>
     void Print(Q &elem){    cout << elem << ",";     }
-void DemoListCircular(){
-    cout << "=======================================" << endl;
-    cout << "       DEMO LISTA CIRCULAR             " << endl;
-    cout << "=======================================" << endl;
+void DemoListsCircular(){
+    CLinkedListCircular< AscendingTrait<int> > listOriginal;
+    listOriginal.push_back(10, 1);
+    listOriginal.push_back(20, 2);
+    listOriginal.push_back(30, 3);
+    cout << "1. Lista Original creada: " << listOriginal;
 
-    // 1. Usamos la clase Circular
-    CLinkedListCircular< AscendingTrait<T1> > l1;
+    // --- PRUEBA 1: COPY CONSTRUCTOR ---
+    cout << "\n[TEST COPY] Creando 'listCopy' desde 'listOriginal'..." << endl;
+    CLinkedListCircular< AscendingTrait<int> > listCopy = listOriginal; 
+    
+    cout << "   -> Copia:    " << listCopy;
 
-    // 2. Insertamos datos (Mismas operaciones que en la lineal)
-    l1.push_back(10, 6);
-    l1.Insert(20, 4);
-    l1.Insert(20, 3);
-    l1.Insert(40, 3);
-    l1.Insert(90, 57);
+    cout << "   * Modificamos 'listOriginal' agregando 999..." << endl;
+    listOriginal.push_back(999, 0);
 
-    // 3. Imprimimos usando el operator<< de la clase
-    cout << "Estado Inicial: " << l1 << endl;
+    cout << "   -> Original: " << listOriginal;
+    cout << "   -> Copia:    " << listCopy;
+    
+    if(listCopy.getSize() != listOriginal.getSize()) {
+        cout << "   [OK] La copia es INDEPENDIENTE (Deep Copy exitosa)." << endl;
+    } else {
+        cout << "   [ERROR] La copia cambio con la original (Shallow Copy)." << endl;
+    }
 
-    // 4. Probamos el Foreach EXTERNO
-    // GRACIAS al iterador que hicimos, esto NO se cuelga, da 1 sola vuelta.
-    cout << "Foreach Externo: ";
-    ::Foreach(l1.begin(), l1.end(), &Print<T1>); 
+    // --- PRUEBA 2: MOVE CONSTRUCTOR ---
+    cout << "\n[TEST MOVE] Moviendo recursos de 'listCopy' a 'listMoved'..." << endl;
+    // Usamos std::move para forzar el Move Constructor
+    CLinkedListCircular< AscendingTrait<int> > listMoved = std::move(listCopy);
+
+    cout << "   -> Lista Nueva (Moved): " << listMoved;
+    cout << "   -> Lista Vieja (Source): " << listCopy; // Debería estar vacía
+
+    if (listCopy.getSize() == 0 && listMoved.getSize() > 0) {
+        cout << "   [OK] El robo de recursos fue exitoso (Move Constructor)." << endl;
+    } else {
+        cout << "   [ERROR] El movimiento fallo." << endl;
+    }
+    cout << "=======================================\n" << endl;
+
+    cout << "\n=== TEST INTERNO FOREACH / FIRSTTHAT ===" << endl;
+    
+    // 1. Crear lista
+    CLinkedListCircular< AscendingTrait<int> > milista;
+    milista.push_back(10, 1);
+    milista.push_back(35, 2);
+    milista.push_back(40, 3); // Este es par
+
+    // 2. Prueba FOREACH Interno
+    // Nota: Llamamos a milista.Foreach, no al ::Foreach global
+    cout << "Lista: ";
+    milista.Foreach(&ImprimirNum); 
     cout << endl;
 
-    // 5. Probamos FirstThat
-    // Buscará el 40 (que es múltiplo de 8)
-    auto iter = l1.FirstThat( &Mult9 ); 
-    if( iter != l1.end() )
-    {   
-        cout << "El primer multiplo de 8 es: " << *iter << endl; 
+    // 3. Prueba FIRSTTHAT Interno
+    // Buscamos el primer número par (debería ser 10 o 40 según orden)
+    auto it = milista.FirstThat(&EsPar);
+    
+    if (it != milista.end()) {
+        cout << "FirstThat encontro un PAR: " << *it << endl;
+    } else {
+        cout << "FirstThat no encontro nada." << endl;
     }
-    else 
-    {
-        cout << "No se encontro multiplo de 8." << endl;
-    }
-
-    // 6. Probamos el Operador [] (Modificación)
-    // Vamos a cambiar el elemento en el índice 3 (el 40) por un 50
-    cout << "Modificando indice 3 (valor 40) a 50..." << endl;
-    l1[3] = 50;
-
-    // 7. Verificamos el cambio final
-    cout << "Lista Final:     ";
-    ::Foreach(l1.begin(), l1.end(), &Print<T1>);
-    cout << endl << endl;
 }
