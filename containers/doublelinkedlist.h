@@ -8,7 +8,6 @@
 #include "linkedlist.h"
 using namespace std;
 
-
 template <typename Traits>
 class NodeDoubleLinkedList{
      using  value_type  = typename Traits::value_type;
@@ -35,12 +34,12 @@ private:
     Node       *GetPrev() const    { return m_pPrev; }
     Node      *&GetPrevRef()       { return m_pPrev; }
 
-    // Comparadores
     bool operator==(const Node &another) const { return m_data == another.GetValue(); }
     bool operator<(const Node &another) const  { return m_data < another.GetValue(); }
 };
+
 template <typename Container>
-class DoubleLinkedListIterator {
+class DoubleLinkedListForwardIterator {
     using value_type = typename Container::value_type;
     using Node       = typename Container::Node;
 
@@ -48,24 +47,46 @@ private:
     Node *m_pCurrent;
 
 public:
-    DoubleLinkedListIterator(Node *pNode) : m_pCurrent(pNode) {}
+    DoubleLinkedListForwardIterator(Node *pNode) : m_pCurrent(pNode) {}
 
-    bool operator!=(const DoubleLinkedListIterator &other) const {
+    bool operator!=(const DoubleLinkedListForwardIterator &other) const {
         return m_pCurrent != other.m_pCurrent;
     }
 
-    bool operator==(const DoubleLinkedListIterator &other) const {
+    bool operator==(const DoubleLinkedListForwardIterator &other) const {
         return m_pCurrent == other.m_pCurrent;
     }
 
-    // Avanzar (Next)
-    DoubleLinkedListIterator &operator++() {
+    DoubleLinkedListForwardIterator &operator++() {
         if (m_pCurrent) { m_pCurrent = m_pCurrent->GetNext(); }
         return *this;
     }
 
-    // Retroceder (Prev) - Exclusivo de lista doble
-    DoubleLinkedListIterator &operator--() {
+    value_type &operator*() {
+        return m_pCurrent->GetValueRef();
+    }
+};
+
+template <typename Container>
+class DoubleLinkedListBackwardIterator {
+    using value_type = typename Container::value_type;
+    using Node       = typename Container::Node;
+
+private:
+    Node *m_pCurrent;
+
+public:
+    DoubleLinkedListBackwardIterator(Node *pNode) : m_pCurrent(pNode) {}
+
+    bool operator!=(const DoubleLinkedListBackwardIterator &other) const {
+        return m_pCurrent != other.m_pCurrent;
+    }
+
+    bool operator==(const DoubleLinkedListBackwardIterator &other) const {
+        return m_pCurrent == other.m_pCurrent;
+    }
+
+    DoubleLinkedListBackwardIterator &operator++() {
         if (m_pCurrent) { m_pCurrent = m_pCurrent->GetPrev(); }
         return *this;
     }
@@ -79,9 +100,12 @@ template <typename Traits>
 class CDoubleLinkedList {
 public:
     using value_type       = typename Traits::value_type;
-    using Node             = NodeDoubleLinkedList<Traits>; // Usamos el nodo doble
-    using forward_iterator = DoubleLinkedListIterator<CDoubleLinkedList<Traits>>;
+    using Node             = NodeDoubleLinkedList<Traits>; 
+    using forward_iterator = DoubleLinkedListForwardIterator<CDoubleLinkedList<Traits>>;
+    using backward_iterator = DoubleLinkedListBackwardIterator<CDoubleLinkedList<Traits>>;
+    
     friend forward_iterator;
+    friend backward_iterator;
 
 private:
     Node *m_pRoot = nullptr;
@@ -92,7 +116,6 @@ private:
 public:
     CDoubleLinkedList() {}
 
-    // Constructor Copia (Deep Copy)
     CDoubleLinkedList(const CDoubleLinkedList &another) {
         std::lock_guard<std::mutex> lock(another.m_Block);
         Node *pTemp = another.m_pRoot;
@@ -102,7 +125,6 @@ public:
         }
     }
 
-    // Move Constructor (std::exchange)
     CDoubleLinkedList(CDoubleLinkedList &&another) noexcept {
         std::lock_guard<std::mutex> lock(another.m_Block);
         m_pRoot     = std::exchange(another.m_pRoot, nullptr);
@@ -113,15 +135,16 @@ public:
     virtual ~CDoubleLinkedList();
 
     void push_back(const value_type &val, ref_type ref);
-    void Insert(const value_type &val, ref_type ref); // Inserción ordenada
+    void Insert(const value_type &val, ref_type ref); 
     
     size_t getSize() const { return m_nElements; }
 
-    // Iteradores
     forward_iterator begin() { return forward_iterator(m_pRoot); }
     forward_iterator end()   { return forward_iterator(nullptr); }
 
-    // Wrappers para funciones globales
+    backward_iterator rbegin() { return backward_iterator(m_pLast); }
+    backward_iterator rend()   { return backward_iterator(nullptr); }
+
     template <typename ObjFunc, typename ...Args>
     void Foreach(ObjFunc of, Args... args) {
         std::lock_guard<std::mutex> lock(m_Block);
@@ -134,7 +157,6 @@ public:
         return ::FirstThat(*this, of, args...);
     }
 
-    // Operator << (Imprimir)
     friend ostream &operator<<(ostream &os, CDoubleLinkedList<Traits> &container) {
         std::lock_guard<std::mutex> lock(container.m_Block);
         os << "[";
@@ -142,7 +164,7 @@ public:
         while (pTemp != nullptr) {
             os << "(" << pTemp->GetValue() << "|" << pTemp->GetRef() << ")";
             if (pTemp->GetNext() != nullptr) {
-                os << " <-> "; // Visualmente indicamos doble enlace
+                os << " <-> "; 
             }
             pTemp = pTemp->GetNext();
         }
@@ -150,7 +172,6 @@ public:
         return os;
     }
 
-    // Operator >> (Leer)
     friend istream &operator>>(istream &is, CDoubleLinkedList<Traits> &container) {
         value_type val;
         ref_type   ref;
@@ -159,17 +180,16 @@ public:
         return is;
     }
 
-    // Operator [] (Acceso aleatorio)
     value_type &operator[](size_t index) {
         std::lock_guard<std::mutex> lock(m_Block);
         Node *pTemp = m_pRoot;
         for (size_t i = 0; i < index && pTemp; ++i) {
             pTemp = pTemp->GetNext();
         }
-        // Retorno inseguro si index fuera de rango (igual que en tus otros archivos)
         return pTemp->GetValueRef(); 
     }
 };
+
 template <typename Traits>
 CDoubleLinkedList<Traits>::~CDoubleLinkedList() {
     Node *pTemp = m_pRoot;
@@ -204,7 +224,6 @@ void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
     typename Traits::Func compare;
     Node *pNew = new Node(val, ref);
 
-    // Caso 1: Lista vacía
     if (!m_pRoot) {
         m_pRoot = pNew;
         m_pLast = pNew;
@@ -212,10 +231,9 @@ void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
         return;
     }
 
-    // Caso 2: Insertar al Inicio (Nuevo valor < Root)
     if (compare(m_pRoot->GetValue(), val)) {
         pNew->GetNextRef() = m_pRoot;
-        m_pRoot->GetPrevRef() = pNew; // ¡Doble enlace!
+        m_pRoot->GetPrevRef() = pNew; 
         m_pRoot = pNew;
         ++m_nElements;
         return;
@@ -241,4 +259,4 @@ void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref) {
     }
     ++m_nElements;
 }
-#endif // __DOUBLE_LINKED_LIST_H__
+#endif

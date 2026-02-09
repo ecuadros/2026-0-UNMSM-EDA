@@ -44,6 +44,7 @@ public:
         return m_pCurrent->GetValueRef();
     }
 };
+
 template <typename Container>
 class CircularDoubleBackwardIterator {
     using value_type = typename Container::value_type;
@@ -60,10 +61,14 @@ public:
     bool operator!=(const CircularDoubleBackwardIterator &other) const {
         return m_pCurrent != other.m_pCurrent;
     }
+
+    bool operator==(const CircularDoubleBackwardIterator &other) const {
+        return m_pCurrent == other.m_pCurrent;
+    }
+
     CircularDoubleBackwardIterator &operator++() {
         if (m_pCurrent) {
             m_pCurrent = m_pCurrent->GetPrev(); 
-            
             if (m_pCurrent == m_pStart) {
                 m_pCurrent = nullptr;
             }
@@ -111,7 +116,6 @@ public:
         m_nElements = 0;
     }
 
-    // Constructor Copia
     CDoubleLinkedListCircular(const CDoubleLinkedListCircular &another) {
         std::lock_guard<std::mutex> lock(another.m_Block);
         if (another.m_pRoot) {
@@ -123,7 +127,6 @@ public:
         }
     }
 
-    // Move Constructor
     CDoubleLinkedListCircular(CDoubleLinkedListCircular &&another) noexcept {
         std::lock_guard<std::mutex> lock(another.m_Block);
         m_pRoot     = std::exchange(another.m_pRoot, nullptr);
@@ -161,7 +164,7 @@ public:
         std::lock_guard<std::mutex> lock(m_Block);
         return ::FirstThat(*this, of, args...);
     }
-
+    
     friend ostream &operator<<(ostream &os, CDoubleLinkedListCircular<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
         os << "[";
@@ -178,7 +181,15 @@ public:
         os << "]" << endl;
         return os;
     }
-
+    
+    friend istream &operator>>(istream &is, CDoubleLinkedListCircular<Traits> &container) {
+        value_type val;
+        ref_type   ref;
+        is >> val >> ref; 
+        container.Insert(val, ref); 
+        return is;
+    }
+    
     value_type &operator[](size_t index) {
         std::lock_guard<std::mutex> lock(m_Block);
         Node *pTemp = m_pRoot;
@@ -200,7 +211,6 @@ void CDoubleLinkedListCircular<Traits>::push_back(const value_type &val, ref_typ
         pNew->GetNextRef() = m_pRoot;
         pNew->GetPrevRef() = m_pRoot;
     } else {
-        // Enlazar al final
         pNew->GetPrevRef()    = m_pLast; 
         pNew->GetNextRef()    = m_pRoot; 
         
@@ -218,7 +228,6 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
     typename Traits::Func compare;
     Node *pNew = new Node(val, ref);
 
-    // Caso 1: Vacía
     if (!m_pRoot) {
         m_pRoot = pNew;
         m_pLast = pNew;
@@ -240,7 +249,6 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
         return;
     }
 
-   
     Node *pTemp = m_pRoot;
     while (pTemp !=m_pLast && !compare(pTemp->GetNext()->GetValue(), val)) {
         pTemp = pTemp->GetNext();
@@ -254,7 +262,6 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
     pTemp->GetNextRef()     = pNew;
     pNextNode->GetPrevRef() = pNew;
 
-
     if (pTemp == m_pLast) {
         m_pLast = pNew;
     }
@@ -262,4 +269,4 @@ void CDoubleLinkedListCircular<Traits>::Insert(const value_type &val, ref_type r
     ++m_nElements;
 }
 
-#endif // __DOUBLELINKEDLISTCIRCULAR_H__
+#endif
