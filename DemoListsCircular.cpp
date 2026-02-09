@@ -10,7 +10,7 @@ bool Mult9(T1 &elem){
 template <typename Q>
     void Print(Q &elem){    cout << elem << ",";     }
 void DemoListsCircular(){
-    CLinkedListCircular< AscendingTrait<int> > listOriginal;
+    CLinkedListCircular< DescendingTrait<int> > listOriginal;
     listOriginal.push_back(10, 1);
     listOriginal.push_back(20, 2);
     listOriginal.push_back(30, 3);
@@ -18,7 +18,7 @@ void DemoListsCircular(){
 
     // --- PRUEBA 1: COPY CONSTRUCTOR ---
     cout << "\n[TEST COPY] Creando 'listCopy' desde 'listOriginal'..." << endl;
-    CLinkedListCircular< AscendingTrait<int> > listCopy = listOriginal; 
+    CLinkedListCircular< DescendingTrait<int> > listCopy = listOriginal; 
     
     cout << "   -> Copia:    " << listCopy;
 
@@ -37,7 +37,7 @@ void DemoListsCircular(){
     // --- PRUEBA 2: MOVE CONSTRUCTOR ---
     cout << "\n[TEST MOVE] Moviendo recursos de 'listCopy' a 'listMoved'..." << endl;
     // Usamos std::move para forzar el Move Constructor
-    CLinkedListCircular< AscendingTrait<int> > listMoved = std::move(listCopy);
+    CLinkedListCircular< DescendingTrait<int> > listMoved = std::move(listCopy);
 
     cout << "   -> Lista Nueva (Moved): " << listMoved;
     cout << "   -> Lista Vieja (Source): " << listCopy; // Debería estar vacía

@@ -182,9 +182,9 @@ void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref){
 
 template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-    
+    typename Traits::Func compare;
     // TODO: Agregar algo para el caso de circular
-    if( !rParent || rParent->GetValue() > val ){
+    if( !rParent || compare(rParent->GetValue(), val)){
         Node *pNew = new Node(val, ref);
         pNew->GetNextRef() = rParent;
         rParent = pNew;

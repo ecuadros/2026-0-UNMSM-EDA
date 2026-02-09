@@ -170,6 +170,7 @@ void CLinkedListCircular<Traits>::push_back(const value_type &val, ref_type ref)
  template <typename Traits>
 void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
     std::lock_guard<std::mutex> lock(m_Block);
+    typename Traits::Func compare;
     Node *pNew = new Node(val, ref);
 
     // Caso 1: Lista vacía
@@ -182,7 +183,7 @@ void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
     }
 
     // Caso 2: Insertar al inicio (Root cambia)
-    if (m_pRoot->GetValue() > val) {
+    if (compare(m_pRoot->GetValue(), val)) {
         pNew->GetNextRef() = m_pRoot;
         m_pRoot = pNew;
         m_pLast->GetNextRef() = m_pRoot; // ¡Crucial! Last apunta al nuevo Root
@@ -193,7 +194,7 @@ void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
     // Caso 3: Insertar en medio o final
     Node *pTemp = m_pRoot;
     // Buscamos posición, pero paramos si llegamos al Last para no dar vuelta
-    while (pTemp != m_pLast && pTemp->GetNext()->GetValue() < val) {
+    while (pTemp != m_pLast && !compare(pTemp->GetNext()->GetValue(), val)) {
         pTemp = pTemp->GetNext();
     }
 

@@ -9,7 +9,7 @@ bool Mult8(T1 &elem){
 template <typename Q>
     void Print(Q &elem){    cout << elem << ",";     }
 void DemoLists(){
-    CLinkedList< AscendingTrait<T1> > l1;
+    CLinkedList< DescendingTrait<T1> > l1;
     l1.push_back(10, 6);
     l1.Insert(20, 4);
     l1.Insert(20, 3);
