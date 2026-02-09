@@ -20,4 +20,6 @@ void DemoLists();
 
 void DemoCircularLinkedLists();
 
+void DemoDoubleLinkedLists();
+
 #endif // __LISTS_H__

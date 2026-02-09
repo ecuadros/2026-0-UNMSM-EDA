@@ -104,18 +104,23 @@ public:
     Node *pCurrent = nullptr;
 
     DoubleLinkedListBackwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pLast)
+        : GeneralIterator<Container>(pContainer, pos), pCurrent(nullptr)
     {
         size_t n = pContainer->m_nElements;
-        if (!pCurrent) return;
-        // actualize pCurrent dependiendo de su ubicacion en pContainer
+        // si la posicion es invalida
+        if (pos < 0 || pos >= static_cast<Size>(n)) {
+            pCurrent = nullptr;
+            return;
+        }
+        // ubicar el nodo en la posicion pos
         if (pos < static_cast<Size>(n / 2)) {
-            for (Size i = 0; i < pos; ++i)
-                pCurrent = pCurrent->GetPrev();
-        } else {
             pCurrent = pContainer->m_pRoot;
-            for (Size i = static_cast<Size>(n - 1); i > pos; --i)
+            for (Size i = 0; i < pos; ++i)
                 pCurrent = pCurrent->GetNext();
+        } else {
+            pCurrent = pContainer->m_pLast;
+            for (Size i = static_cast<Size>(n - 1); i > pos; --i)
+                pCurrent = pCurrent->GetPrev();
         }
     }
     DoubleLinkedListBackwardIterator(DoubleLinkedListBackwardIterator<Container> &another)
@@ -187,8 +192,8 @@ public:
 
     forward_iterator  begin()  { return forward_iterator(this); }
     forward_iterator  end()    { return forward_iterator(this, m_nElements); }
-    backward_iterator rbegin() { return backward_iterator(this, 0); }
-    backward_iterator rend()   { return backward_iterator(this, m_nElements); }
+    backward_iterator rbegin() { return backward_iterator(this, static_cast<Size>(m_nElements - 1)); }
+    backward_iterator rend()   { return backward_iterator(this, 0); }
 
     size_t getSize() {
         lock_guard<mutex> lock(mtx);
@@ -221,11 +226,11 @@ public:
     }
 
 private:
-    void _internal_insert(Node *&rCurrentNode, const value_type &val, ref_type ref);
+    void _internal_insert(const value_type &val, ref_type ref);
     void _insert_at_index(const value_type &val, ref_type ref, size_t index);
 
     void clear_unlocked() {
-        // un siple clear
+        // un simple clear
         auto trav = m_pRoot;
         while (trav) {
             auto temp = trav->GetNext();
@@ -264,7 +269,7 @@ void CDoubleLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     lock_guard<mutex> lock(mtx);
     if constexpr (Traits::ordered) {
         if ( m_pLast && this->compare(m_pLast->GetValueRef(), val) ) {
-            _internal_insert(m_pRoot, val, ref);
+            _internal_insert(val, ref);
             return;
         }
     }
@@ -272,7 +277,8 @@ void CDoubleLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     Node *pNewNode = new Node(val, ref, nullptr, m_pLast);
     if ( !m_pRoot ) {
         m_pRoot = m_pLast = pNewNode;
-    } else {
+    }
+    else {
         // ademas de cambiar el nextRef, tambien se cambia el prevRef
         m_pLast->GetNextRef() = pNewNode;
         pNewNode->GetPrevRef() = m_pLast;
@@ -283,33 +289,27 @@ void CDoubleLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
 
 
 template <typename Traits>
-void CDoubleLinkedList<Traits>::_internal_insert(
-    Node *&rCurrentNode, const value_type &val, ref_type ref
-    ) {
-    // el caso en que se llega al ultimo nodo
-    if (!rCurrentNode) {
-        Node *pNew = new Node(val, ref, nullptr, m_pLast);
+void CDoubleLinkedList<Traits>::_internal_insert(const value_type &val, ref_type ref) {
+    // por problemas tecnicos con referencias, se paso a una implementacion iterativa
+    Node *prev = nullptr;
+    Node *curr = m_pRoot;
 
-        if (!m_pRoot) m_pRoot = pNew;
-        if (m_pLast) m_pLast->GetNextRef() = pNew;
-        m_pLast = pNew;
-        ++m_nElements;
-        return;
+    // mientras no llegue al lugar adecuado para colocar el nuevo nodo
+    while (curr && !this->compare(curr->GetValueRef(), val)) {
+        prev = curr;
+        curr = curr->GetNext();
     }
+    // en este punto, curr es el siguiente al nodo a colocar
 
-    if ( this->compare(rCurrentNode->GetValueRef(), val ) ) {
-        Node *pNew = new Node(val, ref, rCurrentNode, rCurrentNode->GetPrev());
-        // en caso se inserte al inicio, se cambia la ref de root
-        // sino se cambia la referencia del nodo anterior
-        if (rCurrentNode == m_pRoot) m_pRoot = pNew;
-        else rCurrentNode->GetPrevRef()->GetNextRef() = pNew;
-        // current node apunta a pNew hacia atras
-        rCurrentNode->GetPrevRef() = pNew;
-        ++m_nElements;
-        return;
-    }
+    Node *pNew = new Node(val, ref, curr, prev);
+    // si hay un nodo anterior, conectarlo, sino actualizar nodo raiz
+    if (prev) prev->GetNextRef() = pNew;
+    else m_pRoot = pNew;
+    // lo mismo con el nodo siguiente
+    if (curr) curr->GetPrevRef() = pNew;
+    else m_pLast = pNew;
 
-    _internal_insert(rCurrentNode->GetNextRef(), val, ref);
+    ++m_nElements;
 }
 
 template <typename Traits>
@@ -322,7 +322,7 @@ void CDoubleLinkedList<Traits>::insert(const value_type &val, ref_type ref, size
     lock_guard<mutex> lock(mtx);
 
     if constexpr (Traits::ordered) {
-        _internal_insert(m_pRoot, val, ref);
+        _internal_insert(val, ref);
     } else {
         if (index == static_cast<size_t>(-1)) {
             index = m_nElements;
@@ -357,7 +357,7 @@ void CDoubleLinkedList<Traits>::_insert_at_index(const value_type &val, ref_type
     for (size_t i = 0; i + 1 < index; ++i) {
         trav = trav->GetNext();
     }
-    // ajuste de punteros
+    // ajuste de punteros (punteros, no referencias, so no problem)
     pNew->GetNextRef() = trav->GetNext();
     pNew->GetPrevRef() = trav;
     if (trav->GetNext()) trav->GetNext()->GetPrevRef() = pNew;

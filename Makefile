@@ -1,12 +1,16 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
 LDFLAGS = -pthread # Añadido -pthread
+DEBUGFLAGS = -g -O0 -DDEBUG
 
 TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
        DemoArray.cpp DemoLists.cpp DemoCircularLinkedLists.cpp \
-	   algorithms/sorting.cpp
+	   DemoDoublyLinkedList.cpp algorithms/sorting.cpp
 OBJS = $(SRCS:.cpp=.o)
+
+debug: CXXFLAGS += $(DEBUGFLAGS)
+debug: $(TARGET)
 
 all: $(TARGET)
 
@@ -19,4 +23,4 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean debug
