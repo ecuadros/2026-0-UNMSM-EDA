@@ -45,18 +45,22 @@ void DemoLists(){
     in.close();
 
     cout << "datalist -> list 3" << endl;
-    cout << l3;
     for (auto it = l3.begin(); it != l3.end(); ++it) { cout << *it << " , "; }
     cout << endl << "finish #4" << endl << endl;
 
     CLinkedList<AscendingTrait<T1>> l4(l3);
-    cout << "copia l3 a l4:" << endl;
+    cout << "Copia:" << endl;
     cout << l4;
     cout << "finish #5 contructor de copia" << endl << endl;
 
     CLinkedList<AscendingTrait<T1>> l5(std::move(l4));
-    cout << "movida l4 a l5:" << endl;
+    cout << "Movida:" << endl;
     cout << l4;
     cout << l5;
     cout << "finish #6 move constructor" << endl << endl;
+
+    auto it_ultimo = l3.begin() + (l3.getSize() - 1);
+    if (it_ultimo.m_pNode->GetNext() == l3.begin().m_pNode)
+        cout << "el ultimo apunta al primero. es circular." << endl;
+    cout << "finish #7 linkedlistcircular" << endl << endl;
 }

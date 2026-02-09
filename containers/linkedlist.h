@@ -29,13 +29,25 @@ class LinkedListIterator : public GeneralIterator<Container>{
 public:
     LinkedListIterator(Container *pContainer, Node *pNode)
                       : Parent(pContainer, pNode){}
-    LinkedListIterator(LinkedListIterator<Container> &another)
+    LinkedListIterator(const LinkedListIterator<Container> &another)
                       : Parent(another){}
 
     LinkedListIterator<Container> &operator++(){
-        if(Parent::m_pNode)
+        if(Parent::m_pNode){
             Parent::m_pNode = Parent::m_pNode->GetNext();
+            if (Parent::m_pNode == Parent::m_pContainer->m_pRoot)
+                Parent::m_pNode = nullptr;
+        }    
         return *this;
+    }
+    LinkedListIterator operator+(size_t n) const {
+        LinkedListIterator temp = *this;
+        for (size_t i=0; i<n && temp.m_pNode; ++i) {
+            temp.m_pNode = temp.m_pNode->GetNext();
+            if (temp.m_pNode == Parent::m_pContainer->m_pRoot)
+                temp.m_pNode = nullptr;
+        }
+        return temp;
     }
 };
 
@@ -78,9 +90,9 @@ public:
 template <typename Traits>
 class CLinkedList {
     using  value_type       = typename Traits::value_type;
-    using  Compare          = typename Traits::Func;
+    using Compare           = typename Traits::Func;
     using  Node             = NodeLinkedList<Traits>;
-    using  forward_iterator = LinkedListIterator <CLinkedList <Traits> >;
+    using forward_iterator  = LinkedListIterator <CLinkedList <Traits> >;
     
     friend forward_iterator;
     friend GeneralIterator< CLinkedList<Traits> >;
@@ -98,8 +110,10 @@ public:
     CLinkedList(const CLinkedList<Traits> &another){
         LOCK lock(another.m_mtx);
         Node *node_act = another.m_pRoot;
-        for (; node_act; node_act = node_act->GetNext())
+        for (size_t i = 0; i < another.m_nElements; ++i) {
             this->Insert(node_act->GetValue(), node_act->GetRef());
+            node_act = node_act->GetNext();
+        }
     }
     //move contructor
     CLinkedList(CLinkedList &&another) noexcept{
@@ -113,6 +127,7 @@ public:
     }
     //destructor
     virtual ~CLinkedList(){
+        if (m_pLast) m_pLast->GetNextRef() = nullptr;
         Node *node_act = m_pRoot;
         for(;node_act;){
             Node *node_next = node_act->GetNext();
@@ -145,9 +160,10 @@ private:
         os << "CLinkedList: size = " << container.m_nElements << endl;
         os << "[";
         Node *node_act = container.m_pRoot;
-        for (;node_act; node_act = node_act->GetNext()){
+        for (size_t i=0; i<container.m_nElements; ++i){ // Usar contador
             os << "(" << node_act->GetValue() << ":" << node_act->GetRef() << ")";
-            if(node_act->GetNext()) os << ",";
+            node_act = node_act->GetNext();
+            if(i < container.m_nElements - 1) os << ",";
         }
         os << "]" << endl;
         return os;
@@ -182,10 +198,13 @@ template <typename Traits>
 void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref){
     std::lock_guard<std::mutex> lock(m_mtx);
     Node *pNewNode = new Node(val, ref);
-    if( !m_pRoot )
+    if( !m_pRoot ) {
         m_pRoot = pNewNode;
-    else
+        pNewNode->GetNextRef() = m_pRoot;
+    } else {
         m_pLast->GetNextRef() = pNewNode;
+        pNewNode->GetNextRef() = m_pRoot;
+        }
     m_pLast = pNewNode;
     ++m_nElements;
 }
@@ -205,7 +224,9 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
     std::lock_guard<std::mutex> lock(m_mtx);
+    if (m_pLast) m_pLast->GetNextRef() = nullptr;
     InternalInsert(m_pRoot, val, ref);
+    if (m_pLast) m_pLast->GetNextRef() = m_pRoot;
 }
 
 #endif // __LINKEDLIST_H__

@@ -13,13 +13,17 @@ public:
 public:
   GeneralIterator(Container *pContainer, Node *pNode)
                  : m_pContainer(pContainer), m_pNode(pNode){}
-  GeneralIterator(GeneralIterator<Container> &another)
+  GeneralIterator(const GeneralIterator<Container> &another)
                  : m_pContainer(another.m_pContainer), m_pNode(another.m_pNode){}
   
   virtual ~GeneralIterator(){}
 
-  bool operator != (const GeneralIterator<Container> &another){
-    return m_pContainer != another.m_pContainer || m_pNode != another.m_pNode;
+  bool operator == (const GeneralIterator<Container> &another) const {
+        return m_pContainer == another.m_pContainer && m_pNode == another.m_pNode;
+  }
+
+  bool operator != (const GeneralIterator<Container> &another) const {
+        return !(*this == another);
   }
 
   value_type &operator*(){
