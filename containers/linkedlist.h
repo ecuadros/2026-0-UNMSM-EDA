@@ -250,7 +250,7 @@ void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
         m_pLast = pNew;
 
     ++m_nElements;
-}
+} 
 
 #endif // __LINKEDLIST_H__
  
