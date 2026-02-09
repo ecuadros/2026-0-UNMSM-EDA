@@ -2,6 +2,7 @@
 #define __TYPES_H__
 
 using T1 = int;
+using T2 = std::string;
 using T  = unsigned int;
 using TT = unsigned long long;
 using Size = int;
