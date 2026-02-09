@@ -345,11 +345,16 @@ void CCircularLinkedList<Traits>::_insert_at_index(
 
 template <typename Traits>
 ostream &operator<<(ostream &os, CCircularLinkedList<Traits> &container) {
+    using value_type = typename CCircularLinkedList<Traits>::value_type;
+    // bloquear el mutex
     lock_guard<mutex> lock(container.mtx);
+
     os << "CCircularLinkedList: size = " << container.m_nElements << " [";
     auto trav = container.m_pRoot;
+
     for (size_t i = 0; i < container.m_nElements; ++i) {
-        if constexpr (std::is_same_v<typename CCircularLinkedList<Traits>::value_type, std::string>) {
+        // si se trata de una lista de strings, se guardan con std::quoted
+        if constexpr (std::is_same_v<value_type, std::string>) {
             os << "(" << std::quoted(trav->GetValue()) << ":" << trav->GetRef() << "),";
         } else {
             os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
@@ -364,9 +369,13 @@ ostream &operator<<(ostream &os, CCircularLinkedList<Traits> &container) {
 // lee del input stream esperando el formato en el que se escribe
 template <typename Traits>
 istream &operator>>(istream &is, CCircularLinkedList<Traits> &container) {
+    using value_type = typename CCircularLinkedList<Traits>::value_type;
     if (!is) return is;
+
+    CCircularLinkedList<Traits> tmp;
     try {
-        CCircularLinkedList<Traits> tmp;
+        // bloquea el mutex dentro del try/catch
+        lock_guard<mutex> lock(container.mtx);
         string bar;
         getline(is, bar, '[');
 
@@ -374,10 +383,10 @@ istream &operator>>(istream &is, CCircularLinkedList<Traits> &container) {
         while (is.get(ch) && ch != ']') {
             if (ch != '(') continue;
 
-            typename CCircularLinkedList<Traits>::value_type val;
+            value_type val;
             ref_type ref;
 
-            if constexpr (std::is_same_v<typename CCircularLinkedList<Traits>::value_type, std::string>) {
+            if constexpr (std::is_same_v<value_type, std::string>) {
                 is >> std::quoted(val);
                 getline(is, bar, ':');
             } else {
@@ -389,10 +398,11 @@ istream &operator>>(istream &is, CCircularLinkedList<Traits> &container) {
 
             tmp.push_back(val, ref);
         }
-        container = std::move(tmp);
     } catch (const exception& e) {
         is.setstate(ios::failbit);
     }
+    // hacer esto al final sin miedo de deadlocks
+    container = std::move(tmp);
     return is;
 }
 

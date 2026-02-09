@@ -47,21 +47,31 @@ private:
     Node *m_pNext = nullptr;
 
 public:
-    NodeLinkedList();
-    NodeLinkedList(value_type _value, ref_type _ref = -1);
-    NodeLinkedList(value_type _value, ref_type _ref, Node *pNext);
-    value_type  GetValue   () const;
-    value_type &GetValueRef();
+    NodeLinkedList() {}
+    NodeLinkedList(value_type _value, ref_type _ref = -1)
+        : m_data(_value), m_ref(_ref) {}
+    NodeLinkedList(value_type _value, ref_type _ref, Node *pNext)
+        : m_data(_value), m_ref(_ref), m_pNext(pNext) {}
+    value_type  GetValue   () const { return m_data; }
+    value_type &GetValueRef() { return m_data; }
 
-    ref_type    GetRef     () const;
-    ref_type   &GetRefRef  ();
+    ref_type    GetRef     () const { return m_ref; }
+    ref_type   &GetRefRef  () { return m_ref; }
 
-    Node      * GetNext     () const;
-    Node      *&GetNextRef  ();
+    Node      * GetNext     () const { return m_pNext; }
+    Node      *&GetNextRef  () { return m_pNext; }
 
-    Node &operator=(const Node &another);
-    bool operator==(const Node &another) const;
-    bool operator<(const Node &another) const;
+    Node &operator=(const Node &another) {
+        m_data = another.GetValue();
+        m_ref = another.GetRef();
+        return *this;
+    }
+    bool operator==(const Node &another) const {
+        return m_data == another.GetValue();
+    }
+    bool operator<(const Node &another) const {
+        return m_data < another.GetValue();
+    }
 };
 
 
@@ -77,13 +87,29 @@ public:
     // para optimizar este proceso, se crea el puntero a nodo pCurrent
     Node *pCurrent = nullptr;
 
-    LinkedListForwardIterator(Container *pContainer, Size pos=0);
-    LinkedListForwardIterator(LinkedListForwardIterator<Container> &another);
+    LinkedListForwardIterator(Container *pContainer, Size pos=0)
+        : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot)
+    {
+        // desplazarse a la posicion
+        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
+    }
+    LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
+        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
 
     // se sobrecarga el operador * y ++
-    value_type &operator*() override;
-    LinkedListForwardIterator<Container> &operator++();
-    LinkedListForwardIterator<Container> operator++(int);
+    value_type &operator*() override { return pCurrent->GetValueRef(); }
+    LinkedListForwardIterator<Container> &operator++() {
+        if (pCurrent) {
+            pCurrent = pCurrent->GetNext();
+            ++this->m_pos;
+        }
+        return *this;
+    }
+    LinkedListForwardIterator<Container> operator++(int) {
+        LinkedListForwardIterator<Container> tmp(*this);
+        ++(*this);
+        return tmp;
+    }
 };
 
 
@@ -217,109 +243,6 @@ private:
         }
     }
 };
-
-// ======================
-// === NodeLinkedList ===
-// ======================
-
-template <typename Traits>
-NodeLinkedList<Traits>::NodeLinkedList(){}
-
-template <typename Traits>
-NodeLinkedList<Traits>::NodeLinkedList(value_type _value, ref_type _ref)
-    : m_data(_value), m_ref(_ref){   }
-
-template <typename Traits>
-NodeLinkedList<Traits>::NodeLinkedList(value_type _value, ref_type _ref, Node *pNext)
-    : m_data(_value), m_ref(_ref), m_pNext(pNext){   }
-
-template <typename Traits>
-typename NodeLinkedList<Traits>::value_type NodeLinkedList<Traits>::GetValue() const {
-    return m_data;
-}
-
-template <typename Traits>
-typename NodeLinkedList<Traits>::value_type &NodeLinkedList<Traits>::GetValueRef() {
-    return m_data;
-}
-
-template <typename Traits>
-ref_type NodeLinkedList<Traits>::GetRef() const {
-    return m_ref;
-}
-
-template <typename Traits>
-ref_type &NodeLinkedList<Traits>::GetRefRef() {
-    return m_ref;
-}
-
-template <typename Traits>
-typename NodeLinkedList<Traits>::Node *NodeLinkedList<Traits>::GetNext() const {
-    return m_pNext;
-}
-
-template <typename Traits>
-typename NodeLinkedList<Traits>::Node *&NodeLinkedList<Traits>::GetNextRef() {
-    return m_pNext;
-}
-
-template <typename Traits>
-NodeLinkedList<Traits> &NodeLinkedList<Traits>::operator=(const Node &another){
-    m_data = another.GetValue();
-    m_ref  = another.GetRef();
-    return *this;
-}
-
-template <typename Traits>
-bool NodeLinkedList<Traits>::operator==(const Node &another) const {
-    return m_data == another.GetValue();
-}
-
-template <typename Traits>
-bool NodeLinkedList<Traits>::operator<(const Node &another) const {
-    return m_data < another.GetValue();
-}
-
-
-// =================================
-// === LinkedListForwardIterator ===
-// =================================
-
-template <typename Container>
-LinkedListForwardIterator<Container>::LinkedListForwardIterator(Container *pContainer, Size pos)
-    : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot) {
-    // desplazarse a la posicion
-    if (pCurrent)
-        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
-}
-
-template <typename Container>
-LinkedListForwardIterator<Container>
-::LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
-    : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
-
-template <typename Container>
-typename LinkedListForwardIterator<Container>::value_type &LinkedListForwardIterator<Container>::operator*() {
-    if (!pCurrent) throw std::runtime_error("Cannot dereference null iterator");
-    return pCurrent->GetValueRef();
-}
-
-template <typename Container>
-LinkedListForwardIterator<Container> &LinkedListForwardIterator<Container>::operator++() {
-    if (pCurrent) {
-        pCurrent = pCurrent->GetNext();
-        ++this->m_pos;
-    }
-    return *this;
-}
-
-template <typename Container>
-LinkedListForwardIterator<Container> LinkedListForwardIterator<Container>::operator++(int) {
-    LinkedListForwardIterator<Container> tmp(*this);
-    ++(*this);
-    return tmp;
-}
-
 
 // ===================
 // === CLinkedList ===
@@ -540,11 +463,14 @@ CLinkedList<Traits>& CLinkedList<Traits>::operator=(const CLinkedList &to_copy) 
 // operador right shift
 template <typename Traits>
 ostream &operator<<(ostream &os, CLinkedList<Traits> &container) {
+    using value_type = typename CLinkedList<Traits>::value_type;
+
     lock_guard<mutex> lock(container.mtx);
     os << "CLinkedList: size = " << container.m_nElements << " [";
     // cambio: variable del loop es un traveler del que se extrae el value y el Ref
     for (auto trav = container.m_pRoot; trav; trav = trav->GetNext()) {
-        if constexpr (std::is_same_v<typename CLinkedList<Traits>::value_type, std::string>) {
+        // si es una lista de strings: se pasan con std::quoted
+        if constexpr (std::is_same_v<value_type, std::string>) {
             os << "(" << std::quoted(trav->GetValue()) << ":" << trav->GetRef() << "),";
         } else {
             os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
@@ -558,27 +484,27 @@ ostream &operator<<(ostream &os, CLinkedList<Traits> &container) {
 // lee del input stream esperando el formato en el que se escribe
 template <typename Traits>
 istream &operator>>(istream &is, CLinkedList<Traits> &container) {
-    // WARNING: esta operacion no bloquea para evitar deadlock con operator=
-    // no es segura frente a concurrencia
+    using value_type = typename CLinkedList<Traits>::value_type;
     // verificar el buen estado del stream
     if (!is) return is;
 
+    // crea un contenedor temporal
+    CLinkedList<Traits> tmp;
     try {
-        // crea un contenedor temporal
-        CLinkedList<Traits> tmp;
+        // este lock_guard deberia desaparecer fuera del try
+        lock_guard<mutex> lock(container.mtx);
         // ignorar texto hasta el primer '['
         string bar;
         getline(is, bar, '[');
-
         // leer elementos continuamente
         char ch;
         while (is.get(ch) && ch != ']') {
             if (ch != '(') continue;
 
-            typename CLinkedList<Traits>::value_type val;
+            value_type val;
             ref_type ref;
-
-            if constexpr (std::is_same_v<typename CLinkedList<Traits>::value_type, std::string>) {
+            // si se leeran strings, se leen con std::quoted
+            if constexpr (std::is_same_v<value_type, std::string>) {
                 // leer string con comillas y escapes
                 is >> std::quoted(val);
                 getline(is, bar, ':');
@@ -591,13 +517,13 @@ istream &operator>>(istream &is, CLinkedList<Traits> &container) {
 
             tmp.push_back(val, ref);
         }
-        // si la lectura salio bien, intercambia los contenidos
-        container = std::move(tmp);
     } catch (const exception& e) {
         // si algo paso, setea el estado del stream en failbit
         // (hubo fallo al leer el contenido)
         is.setstate(ios::failbit);
     }
+    // si la lectura salio bien, intercambia los contenidos sin deadlock
+    container = std::move(tmp);
     return is;
 }
 
