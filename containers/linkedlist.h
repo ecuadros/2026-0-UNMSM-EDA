@@ -3,6 +3,8 @@
 #include <iostream>
 #include "../general/types.h"
 #include "../util.h"
+#include <mutex>
+#include <utility>
 using namespace std;
 
 // TODO: Traits para listas enlazadas
@@ -67,32 +69,44 @@ class LinkedListForwardIterator{
        Node *m_pCurrent =nullptr;
        public:
       LinkedListForwardIterator(Node *pNode) : m_pCurrent(pNode) {}
-      bool operator!=(const LinkedListForwardIterator &other) const {
-        return m_pCurrent != other.m_pCurrent;
-    }
+      bool operator!=(const LinkedListForwardIterator &another) const { return m_pCurrent != another.m_pCurrent; }
       LinkedListForwardIterator &operator++() {
-        if (m_pCurrent) {
-            m_pCurrent = m_pCurrent->GetNext(); 
-        }
-        return *this;
+      if (m_pCurrent) { m_pCurrent = m_pCurrent->GetNext(); } 
+      return *this;
     }
     value_type &operator*() {
-        return m_pCurrent->GetValueRef();
+      return m_pCurrent->GetValueRef();
     }  
 };
 template <typename Traits>
 class CLinkedList {
-    using  value_type  = typename Traits::value_type;
-     using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
-     friend forward_iterator;
-    
+    using  value_type        = typename Traits::value_type;
+    using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
+    friend forward_iterator;
     using  Node = NodeLinkedList<Traits>;
-
+private:
     Node *m_pRoot = nullptr;
     Node *m_pLast = nullptr;
     size_t m_nElements = 0;
+    mutable std::mutex m_Block;
+    void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
+   
 public:
     CLinkedList(){}
+    CLinkedList(const CLinkedList &another) {
+        std::lock_guard<std::mutex> lock(another.m_Block); 
+        Node *p_Temp = another.m_pRoot;
+        while(p_Temp) {
+            this->push_back(p_Temp->GetValue(), p_Temp->GetRef());
+            p_Temp = p_Temp->GetNext();
+        }
+    }
+    CLinkedList(CLinkedList &&another) noexcept {
+        std::lock_guard<std::mutex> lock(another.m_Block); 
+        m_pRoot     = std::exchange(another.m_pRoot, nullptr);
+        m_pLast     = std::exchange(another.m_pLast, nullptr);
+        m_nElements = std::exchange(another.m_nElements, 0);
+    }
     virtual ~CLinkedList();
     // TODO: Constructor copia
     // TODO: Move Constructor
@@ -104,46 +118,71 @@ public:
     void push_back(const value_type &val, ref_type ref);
     void Insert(const value_type &val, ref_type ref);
     size_t getSize(){ return m_nElements;  }
-    forward_iterator begin() {
-        return forward_iterator(m_pRoot); 
+    forward_iterator begin() { return forward_iterator(m_pRoot); }
+    forward_iterator end()   { return forward_iterator(nullptr); }
+    template <typename ObjFunc, typename ...Args>
+    void Foreach(ObjFunc of, Args... args){
+        std::lock_guard<std::mutex> lock(m_Block);
+        ::Foreach(*this, of, args...);
+    }
+    template <typename ObjFunc, typename ...Args>
+    auto FirstThat(ObjFunc of, Args... args){
+        std::lock_guard<std::mutex> lock(m_Block);
+        return ::FirstThat(*this, of, args...);
     }
 
-    forward_iterator end() {
-        return forward_iterator(nullptr); 
-    }
-private:
-    void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
 
     // TODO: Persistencia (write)
     friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
+        std::lock_guard<std::mutex> lock(container.m_Block);
         os << "CLinkedList: size = " << container.getSize() << endl;
         os << "[";
-        Node *pCurrent = container.m_pRoot;
-        while (pCurrent != nullptr) {
-            os << "(" << pCurrent->GetValue() << ":" << pCurrent->GetRef() << ")";
-            if (pCurrent->GetNext() != nullptr) {
+        Node *p_Temp = container.m_pRoot;
+        while (p_Temp != nullptr) {
+            os << "(" << p_Temp->GetValue() << "|" << p_Temp->GetRef() << ")";
+            if (p_Temp->GetNext() != nullptr) {
                 os << ", ";
             }
-            pCurrent = pCurrent->GetNext();
+            p_Temp = p_Temp->GetNext();
         }
-        
         os << "]" << endl;
         return os;
     }
-    // TODO: Persistencia (read)
+
+    friend istream &operator>>(istream &is, CLinkedList<Traits> &container) {
+        value_type val;
+        ref_type   ref;
+        is >> val >> ref; 
+        container.Insert(val, ref);
+        return is;
+    }    
+
+    value_type &operator[](size_t index) {
+        std::lock_guard<std::mutex> lock(m_Block);
+        Node *p_Temp = m_pRoot;
+        for(size_t i = 0; i < index && p_Temp; ++i) {
+            p_Temp = p_Temp->GetNext();
+        }
+        return p_Temp->GetValueRef();
+    }
 };
+
+    
 
 template <typename Traits>
 void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref){
+    std::lock_guard<std::mutex> lock(m_Block);
     Node *pNewNode = new Node(val, ref);
     if( !m_pRoot )
-        m_pRoot = pNewNode;
+    m_pRoot = pNewNode;
+    else  {m_pLast->GetNextRef() = pNewNode;}
     m_pLast = pNewNode;
     ++m_nElements;
-};
+}
 
 template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
+    
     // TODO: Agregar algo para el caso de circular
     if( !rParent || rParent->GetValue() > val ){
         Node *pNew = new Node(val, ref);
@@ -157,18 +196,22 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
+    std::lock_guard<std::mutex> lock(m_Block);
     InternalInsert(m_pRoot, val, ref);
 }
 
 template <typename Traits>
 CLinkedList<Traits>::~CLinkedList() {
-    Node *pCurrent = m_pRoot;
-    while (pCurrent) {
-        Node *pNext = pCurrent->GetNext(); 
-        delete pCurrent;                   
-        pCurrent = pNext;                  
+    Node *p_Temp = m_pRoot;
+    while (p_Temp) {
+        Node *pNext = p_Temp->GetNext(); 
+        delete p_Temp;                   
+        p_Temp = pNext;                  
     }
     m_pRoot = nullptr; 
 }
+
+
+
 
 #endif // __LINKEDLIST_H__
