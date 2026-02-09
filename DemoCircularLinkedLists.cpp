@@ -199,6 +199,26 @@ void testCircularConcurrency() {
     logFile << "OK: size == " << list.getSize() << endl;
 }
 
+void testCircularForeachFirstThat() {
+    logFile << "Prueba: forEach y firstThat en circular" << endl;
+    UnorderedCLL list;
+    list.insert(10, 1);
+    list.insert(20, 2);
+    list.insert(30, 3);
+    list.insert(40, 4);
+    list.insert(50, 5);
+    list.insert(60, 6);
+
+    auto firstMultipleOfThree = list.firstThat([](const T1 &x) { return x % 3 == 0; });
+    logFile << "primer multiplo de 3: " << firstMultipleOfThree << endl;
+    assert(firstMultipleOfThree == 30);
+
+    list.forEach([](T1 &x) { x /= 10; });
+    assert(list.getSize() == 6);
+    assert(list.firstThat([](const T1 &x) { return x % 3 == 0; }) == 3);
+    logFile << list << endl;
+    logFile << "OK: forEach y firstThat circular" << endl;
+}
 
 void DemoCircularLinkedLists() {
     testCircularBasic();
@@ -209,4 +229,5 @@ void DemoCircularLinkedLists() {
     testCircularAssignment();
     testCircularQuotedStringIO();
     testCircularConcurrency();
+    testCircularForeachFirstThat();
 }
