@@ -147,9 +147,9 @@ public:
     }
 
     template <typename ObjFunc, typename ...Args>
-    auto firstThat(ObjFunc foo, Args... args) {
+    value_type firstThat(ObjFunc foo, Args... args) {
         lock_guard<mutex> lock(mtx);
-        return ::FirstThat(*this, foo, args...);
+        return *::FirstThat(*this, foo, args...);
     }
 
     void clear() {
