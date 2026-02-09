@@ -64,6 +64,8 @@ template <typename Derived, typename Container>
  * container es el container
  */
 class LLBasicIterator : public GeneralIterator<Container> {
+protected:
+    virtual void advance() = 0;
 public:
     using Parent = GeneralIterator<Container>;
     using value_type = typename Container::value_type;
@@ -134,7 +136,7 @@ public:
         this->pCurrent = another.pCurrent;
     }
 
-    void advance() {
+    void advance() override {
         if (this->pCurrent) {
             this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
@@ -152,13 +154,16 @@ ostream &operator<<(ostream &os, CLinkedList<Traits> &container);
 template <typename Traits>
 istream &operator>>(istream &is, CLinkedList<Traits> &container);
 
-template <typename Traits>
+template <typename Traits, typename NodeT>
 class ListBase {
 public:
     using value_type = typename Traits::value_type;
-    using Node = NodeLinkedList<Traits>;
+    using Node = NodeT;
 
-protected:
+    Node *m_pRoot = nullptr;
+    Node *m_pLast = nullptr;
+    size_t m_nElements = 0;
+
     bool compare(const value_type &a, const value_type &b) const {
         if constexpr (Traits::ordered) {
             typename Traits::Func compareFunc;
@@ -169,7 +174,7 @@ protected:
 };
 
 template <typename Traits>
-class CLinkedList : public ListBase<Traits> {
+class CLinkedList : public ListBase<Traits, NodeLinkedList<Traits>> {
     // one mutex per instance
     mutable mutex mtx;
 public:
@@ -180,9 +185,6 @@ public:
     friend GeneralIterator<CLinkedList<Traits>>;
     using Node = NodeLinkedList<Traits>;
 
-    Node *m_pRoot = nullptr;
-    Node *m_pLast = nullptr;
-    size_t m_nElements = 0;
     CLinkedList(){}
     // TODO: Constructor copia
     CLinkedList(const CLinkedList &to_copy);
@@ -237,14 +239,14 @@ private:
 
     // requiere que el caller tenga el lock
     void clear_unlocked() {
-        auto trav = m_pRoot;
+        auto trav = this->m_pRoot;
         while (trav) {
             auto temp = trav->GetNext();
             delete trav;
             trav = temp;
         }
-        m_pRoot = m_pLast = nullptr;
-        m_nElements = 0;
+        this->m_pRoot = this->m_pLast = nullptr;
+        this->m_nElements = 0;
     }
 
     // TODO: Persistencia (write)
@@ -279,7 +281,7 @@ private:
 // ===================
 
 template <typename Traits>
-CLinkedList<Traits>::CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), m_pLast(nullptr) {
+CLinkedList<Traits>::CLinkedList(const CLinkedList &to_copy) {
     // bloquea solo al objeto fuente para copiar un estado consistente
     lock_guard<mutex> lock(to_copy.mtx);
     // usa la helper function implementada
@@ -287,14 +289,16 @@ CLinkedList<Traits>::CLinkedList(const CLinkedList &to_copy): m_pRoot(nullptr), 
 }
 
 template <typename Traits>
-CLinkedList<Traits>::CLinkedList(CLinkedList &&to_move)
-: m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast), m_nElements(to_move.m_nElements) {
+CLinkedList<Traits>::CLinkedList(CLinkedList &&to_move) {
     // bloquea solo al objeto fuente antes de mover
     lock_guard<mutex> lock(to_move.mtx);
     // solo mueve los punteros y el numero de elementos
     // reinicia los de la lista a mover
-    to_move.m_pRoot     = nullptr;
-    to_move.m_pLast     = nullptr;
+    this->m_pRoot = to_move.m_pRoot;
+    this->m_pLast = to_move.m_pLast;
+    this->m_nElements = to_move.m_nElements;
+    to_move.m_pRoot = nullptr;
+    to_move.m_pLast = nullptr;
     to_move.m_nElements = 0;
 }
 
@@ -318,14 +322,14 @@ typename CLinkedList<Traits>::forward_iterator CLinkedList<Traits>::begin() {
 
 template <typename Traits>
 typename CLinkedList<Traits>::forward_iterator CLinkedList<Traits>::end() {
-    return forward_iterator(this, m_nElements);
+    return forward_iterator(this, this->m_nElements);
 }
 
 template <typename Traits>
 size_t CLinkedList<Traits>::getSize() {
     // bloquear por si acaso
     lock_guard<mutex> lock(mtx);
-    return m_nElements;
+    return this->m_nElements;
 }
 
 template <typename Traits>
@@ -334,28 +338,28 @@ void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     lock_guard<mutex> lock(mtx);
 
     // si el valor a añadir no sigue el orden (ascendente/descendente)
-    // si es ascendente:  val > m_pLast->GetValue()
-    // si es descendente: val < m_pLast->GetValue()
+    // si es ascendente:  val > this->m_pLast->GetValue()
+    // si es descendente: val < this->m_pLast->GetValue()
     // si invertimos los operandos y es verdadero, no está en orden
     // el if constexpr se aplica para la clase: para las CLinkedList con
     // UnorderedTrait, esta condicional no existe
     if constexpr (Traits::ordered) {
-        if ( m_pLast && this->compare(m_pLast->GetValueRef(), val) ) {
-            InternalInsert(m_pRoot, val, ref);
+        if ( this->m_pLast && this->compare(this->m_pLast->GetValueRef(), val) ) {
+            InternalInsert(this->m_pRoot, val, ref);
             return;
         }
     }
 
     // si no tiene la flag ordered, se prosigue con el push_back normal
     Node *pNewNode = new Node(val, ref);
-    if ( !m_pRoot ) m_pRoot = m_pLast = pNewNode;
+    if ( !this->m_pRoot ) this->m_pRoot = this->m_pLast = pNewNode;
     else {
         // que el ultimo nodo actual apunte al nuevo nodo
-        m_pLast->GetNextRef() = pNewNode;
+        this->m_pLast->GetNextRef() = pNewNode;
         // que el puntero de la lista apunte al ultimo nodo
-        m_pLast = pNewNode;
+        this->m_pLast = pNewNode;
     }
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 
@@ -370,15 +374,15 @@ void CLinkedList<Traits>::InternalInsert(
     // caso ultimo nodo
     if ( !rCurrentNode ) {
         rCurrentNode = pNew;
-        m_pLast = pNew;  // no olvidarse de reasignar m_pLast
-        ++m_nElements;
+        this->m_pLast = pNew;  // no olvidarse de reasignar this->m_pLast
+        ++this->m_nElements;
         return;
     }
     // caso base, el valor debe insertarse antes del nodo actual
     if ( this->compare(rCurrentNode->GetValueRef(), val ) ) {
         pNew->GetNextRef() = rCurrentNode;
         rCurrentNode = pNew;
-        ++m_nElements;
+        ++this->m_nElements;
         return;
     }
 
@@ -399,12 +403,12 @@ void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref, size_t ind
 
     // si es una lista no ordenada, se pasa al else (se usa el indice)
     // si es una lista ordenada, se procede con la logica regular
-    if constexpr (Traits::ordered) InternalInsert(m_pRoot, val, ref);
+    if constexpr (Traits::ordered) InternalInsert(this->m_pRoot, val, ref);
     else {
         // si algun chistoso pone de indice -1
         // se le perdonara y añadira el item al final
         if (index == static_cast<size_t>(-1)) {
-            index = m_nElements;
+            index = this->m_nElements;
         }
         InsertAtIndex(val, ref, index);
     }
@@ -416,7 +420,7 @@ void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref, size_t ind
  */
 template <typename Traits>
 void CLinkedList<Traits>::InsertAtIndex(const value_type &val, ref_type ref, size_t index) {
-    if (index > m_nElements) throw std::out_of_range("Index out of range");
+    if (index > this->m_nElements) throw std::out_of_range("Index out of range");
 
     // crear nodo, no hay que manejar el caso de lista vacia
     // en Insert ya se maneja llamando a push_back
@@ -424,9 +428,9 @@ void CLinkedList<Traits>::InsertAtIndex(const value_type &val, ref_type ref, siz
 
     // manejar el caso de que index = 0
     if (!index) {
-        pNew->GetNextRef() = m_pRoot;
-        m_pRoot = pNew;
-        ++m_nElements;
+        pNew->GetNextRef() = this->m_pRoot;
+        this->m_pRoot = pNew;
+        ++this->m_nElements;
         return;
     }
     /*
@@ -437,14 +441,14 @@ void CLinkedList<Traits>::InsertAtIndex(const value_type &val, ref_type ref, siz
      * pNew->GetNextRef() a trav->GetNext()
      * y trav->GetNextRef() a pNew
      */
-    Node *trav = m_pRoot;
+    Node *trav = this->m_pRoot;
     for (size_t i = 0; i + 1 < index; ++i) {
         trav = trav->GetNext();
     }
     pNew->GetNextRef() = trav->GetNext();
     trav->GetNextRef() = pNew;
-    if (trav == m_pLast) m_pLast = pNew;
-    ++m_nElements;
+    if (trav == this->m_pLast) this->m_pLast = pNew;
+    ++this->m_nElements;
 }
 
 // implementado operador []
@@ -454,10 +458,10 @@ CLinkedList<Traits>::operator[](const size_t index) {
     // aqui tambien se bloquea
     lock_guard<mutex> lock(mtx);
 
-    if (index >= m_nElements) {
+    if (index >= this->m_nElements) {
         throw std::out_of_range("Index out of range");
     }
-    Node *trav = m_pRoot;
+    Node *trav = this->m_pRoot;
     for (size_t i = 0; i < index; ++i)
         trav = trav->GetNext();
     // WARNING: se retorna una referencia que puede invalidarse con modificaciones concurrentes

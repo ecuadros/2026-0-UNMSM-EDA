@@ -36,9 +36,9 @@ void testDoubleBasic() {
 void testDoubleOrderedInsert() {
     logFile << "Prueba: insert ordenado double" << endl;
     DescendingDLL list; // DescendingTrait => orden ascendente
-    list.insert(20, 1);
-    list.insert(10, 2);
-    list.insert(30, 3);
+    list.Insert(20, 1);
+    list.Insert(10, 2);
+    list.Insert(30, 3);
     assert(list.getSize() == 3);
     assert(list[0] == 30);
     assert(list[1] == 20);
@@ -49,10 +49,10 @@ void testDoubleOrderedInsert() {
 void testDoubleUnorderedInsert() {
     logFile << "Prueba: insert por indice double no ordenada" << endl;
     UnorderedDLL list;
-    list.insert(10, 1);
-    list.insert(30, 3);
-    list.insert(20, 2, 1);
-    list.insert(5, 4, 0);
+    list.Insert(10, 1);
+    list.Insert(30, 3);
+    list.Insert(20, 2, 1);
+    list.Insert(5, 4, 0);
     assert(list.getSize() == 4);
     assert(list[0] == 5);
     assert(list[1] == 10);
@@ -64,9 +64,9 @@ void testDoubleUnorderedInsert() {
 void testDoubleIterators() {
     logFile << "Prueba: iteradores double (forward/backward)" << endl;
     UnorderedDLL list;
-    list.insert(1, 1);
-    list.insert(2, 2);
-    list.insert(3, 3);
+    list.Insert(1, 1);
+    list.Insert(2, 2);
+    list.Insert(3, 3);
     logFile << list << endl;
     T1 sumF = 0;
     size_t countF = 0;
@@ -135,12 +135,12 @@ static void testDoubleAssignment() {
 static void testDoubleForeachFirstThat() {
     logFile << "Prueba: forEach y firstThat double" << endl;
     UnorderedDLL list;
-    list.insert(10, 1);
-    list.insert(20, 2);
-    list.insert(30, 3);
-    list.insert(40, 4);
-    list.insert(50, 5);
-    list.insert(60, 6);
+    list.Insert(10, 1);
+    list.Insert(20, 2);
+    list.Insert(30, 3);
+    list.Insert(40, 4);
+    list.Insert(50, 5);
+    list.Insert(60, 6);
 
     const auto firstMultipleOfThree = list.firstThat(
         [](const T1 &x) { return x % 3 == 0; }

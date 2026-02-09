@@ -71,7 +71,7 @@ public:
         this->pCurrent = another.pCurrent;
     }
 
-    void advance() {
+    void advance() override {
         if (this->pCurrent) {
             this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
@@ -132,7 +132,7 @@ istream &operator>>(istream &is, CDoubleLinkedList<Traits> &container);
 
 
 template <typename Traits>
-class CDoubleLinkedList : public ListBase<Traits> {
+class CDoubleLinkedList : public ListBase<Traits, NodeDoubleLinkedList<Traits>> {
     mutable mutex mtx;
 public:
     using value_type       = typename Traits::value_type;
@@ -144,25 +144,18 @@ public:
     friend backward_iterator;
     friend GeneralIterator<CDoubleLinkedList<Traits>>;
 
-    Node *m_pRoot = nullptr;
-    Node *m_pLast = nullptr;
-    size_t m_nElements = 0;
-
-    // bloquear el mutex en los copy y move constructors
-
     CDoubleLinkedList(){}
-    CDoubleLinkedList(const CDoubleLinkedList &to_copy)
-    : m_pRoot(nullptr), m_pLast(nullptr) {
+    CDoubleLinkedList(const CDoubleLinkedList &to_copy) {
         lock_guard<mutex> lock(to_copy.mtx);
         _copyNodesFrom(to_copy);
     }
-    CDoubleLinkedList(CDoubleLinkedList &&to_move)
-    : m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast),
-      m_nElements(to_move.m_nElements)
-    {
+    CDoubleLinkedList(CDoubleLinkedList &&to_move) {
         lock_guard<mutex> lock(to_move.mtx);
-        to_move.m_pRoot     = nullptr;
-        to_move.m_pLast     = nullptr;
+        this->m_pRoot = to_move.m_pRoot;
+        this->m_pLast = to_move.m_pLast;
+        this->m_nElements = to_move.m_nElements;
+        to_move.m_pRoot = nullptr;
+        to_move.m_pLast = nullptr;
         to_move.m_nElements = 0;
     }
     virtual ~CDoubleLinkedList() {
@@ -170,20 +163,20 @@ public:
     }
 
     forward_iterator  begin()  { return forward_iterator(this); }
-    forward_iterator  end()    { return forward_iterator(this, m_nElements); }
-    backward_iterator rbegin() { return backward_iterator(this, static_cast<Size>(m_nElements - 1)); }
+    forward_iterator  end()    { return forward_iterator(this, this->m_nElements); }
+    backward_iterator rbegin() { return backward_iterator(this, static_cast<Size>(this->m_nElements - 1)); }
     backward_iterator rend()   { return backward_iterator(this, -1); }
 
     size_t getSize() {
         lock_guard<mutex> lock(mtx);
-        return m_nElements;
+        return this->m_nElements;
     }
 
     value_type &operator[](size_t index);
     CDoubleLinkedList &operator=(const CDoubleLinkedList &to_copy);
 
     void push_back(const value_type &val, ref_type ref);
-    void insert(const value_type &val, ref_type ref, size_t index = static_cast<size_t>(-1));
+    void Insert(const value_type &val, ref_type ref, size_t index = static_cast<size_t>(-1));
 
     // foreach: bloquea el mutex
     template <typename ObjFunc, typename ...Args>
@@ -210,14 +203,14 @@ private:
 
     void clear_unlocked() {
         // un simple clear
-        auto trav = m_pRoot;
+        auto trav = this->m_pRoot;
         while (trav) {
             auto temp = trav->GetNext();
             delete trav;
             trav = temp;
         }
-        m_pRoot = m_pLast = nullptr;
-        m_nElements = 0;
+        this->m_pRoot = this->m_pLast = nullptr;
+        this->m_nElements = 0;
     }
 
     friend ostream &operator<< <>(ostream &os, CDoubleLinkedList<Traits> &container);
@@ -247,23 +240,23 @@ template <typename Traits>
 void CDoubleLinkedList<Traits>::push_back(const value_type &val, ref_type ref) {
     lock_guard<mutex> lock(mtx);
     if constexpr (Traits::ordered) {
-        if ( m_pLast && this->compare(m_pLast->GetValueRef(), val) ) {
+        if ( this->m_pLast && this->compare(this->m_pLast->GetValueRef(), val) ) {
             _internal_insert(val, ref);
             return;
         }
     }
 
-    Node *pNewNode = new Node(val, ref, nullptr, m_pLast);
-    if ( !m_pRoot ) {
-        m_pRoot = m_pLast = pNewNode;
+    Node *pNewNode = new Node(val, ref, nullptr, this->m_pLast);
+    if ( !this->m_pRoot ) {
+        this->m_pRoot = this->m_pLast = pNewNode;
     }
     else {
         // ademas de cambiar el nextRef, tambien se cambia el prevRef
-        m_pLast->GetNextRef() = pNewNode;
-        pNewNode->GetPrevRef() = m_pLast;
-        m_pLast = pNewNode;
+        this->m_pLast->GetNextRef() = pNewNode;
+        pNewNode->GetPrevRef() = this->m_pLast;
+        this->m_pLast = pNewNode;
     }
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 
@@ -271,7 +264,7 @@ template <typename Traits>
 void CDoubleLinkedList<Traits>::_internal_insert(const value_type &val, ref_type ref) {
     // por problemas tecnicos con referencias, se paso a una implementacion iterativa
     Node *prev = nullptr;
-    Node *curr = m_pRoot;
+    Node *curr = this->m_pRoot;
 
     // mientras no llegue al lugar adecuado para colocar el nuevo nodo
     while (curr && !this->compare(curr->GetValueRef(), val)) {
@@ -283,16 +276,16 @@ void CDoubleLinkedList<Traits>::_internal_insert(const value_type &val, ref_type
     Node *pNew = new Node(val, ref, curr, prev);
     // si hay un nodo anterior, conectarlo, sino actualizar nodo raiz
     if (prev) prev->GetNextRef() = pNew;
-    else m_pRoot = pNew;
+    else this->m_pRoot = pNew;
     // lo mismo con el nodo siguiente
     if (curr) curr->GetPrevRef() = pNew;
-    else m_pLast = pNew;
+    else this->m_pLast = pNew;
 
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 template <typename Traits>
-void CDoubleLinkedList<Traits>::insert(const value_type &val, ref_type ref, size_t index) {
+void CDoubleLinkedList<Traits>::Insert(const value_type &val, ref_type ref, size_t index) {
     if (!getSize()) {
         push_back(val, ref);
         return;
@@ -304,7 +297,7 @@ void CDoubleLinkedList<Traits>::insert(const value_type &val, ref_type ref, size
         _internal_insert(val, ref);
     } else {
         if (index == static_cast<size_t>(-1)) {
-            index = m_nElements;
+            index = this->m_nElements;
         }
         _insert_at_index(val, ref, index);
     }
@@ -316,22 +309,22 @@ void CDoubleLinkedList<Traits>::insert(const value_type &val, ref_type ref, size
  */
 template <typename Traits>
 void CDoubleLinkedList<Traits>::_insert_at_index(const value_type &val, ref_type ref, size_t index) {
-    if (index > m_nElements) throw std::out_of_range("Index out of range");
+    if (index > this->m_nElements) throw std::out_of_range("Index out of range");
 
     Node *pNew = new Node(val, ref, nullptr, nullptr);
 
     // logica para insertar al inicio
     if (!index) {
-        pNew->GetNextRef() = m_pRoot;
-        if (m_pRoot) m_pRoot->GetPrevRef() = pNew;
-        m_pRoot = pNew;
+        pNew->GetNextRef() = this->m_pRoot;
+        if (this->m_pRoot) this->m_pRoot->GetPrevRef() = pNew;
+        this->m_pRoot = pNew;
         // por siacaso
-        if (!m_pLast) m_pLast = pNew;
-        ++m_nElements;
+        if (!this->m_pLast) this->m_pLast = pNew;
+        ++this->m_nElements;
         return;
     }
 
-    Node *trav = m_pRoot;
+    Node *trav = this->m_pRoot;
     // traveler termina un nodo antes del indice
     for (size_t i = 0; i + 1 < index; ++i) {
         trav = trav->GetNext();
@@ -341,8 +334,8 @@ void CDoubleLinkedList<Traits>::_insert_at_index(const value_type &val, ref_type
     pNew->GetPrevRef() = trav;
     if (trav->GetNext()) trav->GetNext()->GetPrevRef() = pNew;
     trav->GetNextRef() = pNew;
-    if (trav == m_pLast) m_pLast = pNew;
-    ++m_nElements;
+    if (trav == this->m_pLast) this->m_pLast = pNew;
+    ++this->m_nElements;
 }
 
 // implementado operador []
@@ -351,17 +344,17 @@ typename CDoubleLinkedList<Traits>::value_type &
 CDoubleLinkedList<Traits>::operator[](const size_t index) {
     lock_guard<mutex> lock(mtx);
 
-    if (index >= m_nElements) throw std::out_of_range("Index out of range");
+    if (index >= this->m_nElements) throw std::out_of_range("Index out of range");
 
     Node *trav;
     // se decide de donde empezar a iterar dependiendo de index
-    if (index < m_nElements / 2) {
-        trav = m_pRoot;
+    if (index < this->m_nElements / 2) {
+        trav = this->m_pRoot;
         for (size_t i = 0; i < index; ++i)
             trav = trav->GetNext();
     } else {
-        trav = m_pLast;
-        for (size_t i = m_nElements - 1; i > index; --i)
+        trav = this->m_pLast;
+        for (size_t i = this->m_nElements - 1; i > index; --i)
             trav = trav->GetPrev();
     }
     return trav->GetValueRef();

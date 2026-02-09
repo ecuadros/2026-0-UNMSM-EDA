@@ -51,7 +51,7 @@ public:
         this->pCurrent = another.pCurrent;
     }
 
-    void advance() {
+    void advance() override {
         if (this->pCurrent) {
             this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
@@ -71,16 +71,13 @@ istream &operator>>(istream &is, CCircularLinkedList<Traits> &container);
 
 
 template <typename Traits>
-class CCircularLinkedList : public ListBase<Traits> {
+class CCircularLinkedList : public ListBase<Traits, CircularLinkedList_Node<Traits>> {
     mutable mutex mtx;
 public:
     using value_type        = typename Traits::value_type;
     using forward_iterator  = CircularLinkedListForwardIterator<CCircularLinkedList<Traits>>;
     friend forward_iterator;
     using Node = CircularLinkedList_Node<Traits>;
-    Node *m_pRoot = nullptr;
-    Node *m_pLast = nullptr;
-    size_t m_nElements = 0;
 
     CCircularLinkedList() {}
     // copy constructor
@@ -89,9 +86,11 @@ public:
         _copyNodesFrom(to_copy);
     }
     // move constructor
-    CCircularLinkedList(CCircularLinkedList &&to_move)
-        : m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast), m_nElements(to_move.m_nElements) {
+    CCircularLinkedList(CCircularLinkedList &&to_move) {
         lock_guard<mutex> lock(to_move.mtx);
+        this->m_pRoot = to_move.m_pRoot;
+        this->m_pLast = to_move.m_pLast;
+        this->m_nElements = to_move.m_nElements;
         to_move.m_pRoot = nullptr;
         to_move.m_pLast = nullptr;
         to_move.m_nElements = 0;
@@ -102,13 +101,13 @@ public:
     }
 
     forward_iterator  begin()  { return forward_iterator(this); }
-    forward_iterator  end()    { return forward_iterator(this, m_nElements); }
+    forward_iterator  end()    { return forward_iterator(this, this->m_nElements); }
 
     // operador []
     value_type &operator[](size_t index) {
         lock_guard<mutex> lock(mtx);
-        if (index >= m_nElements) throw std::out_of_range("Index out of range");
-        Node *pTrav = m_pRoot;
+        if (index >= this->m_nElements) throw std::out_of_range("Index out of range");
+        Node *pTrav = this->m_pRoot;
         for (size_t i = 0; i < index; ++i) pTrav = pTrav->GetNext();
         return pTrav->GetValueRef();
     }
@@ -123,7 +122,7 @@ public:
 
     size_t getSize() const {
         lock_guard<mutex> lock(mtx);
-        return m_nElements;
+        return this->m_nElements;
     }
 
     template <typename ObjFunc, typename ...Args>
@@ -149,15 +148,15 @@ private:
     void _insert_at_index(const value_type &val, ref_type ref, size_t index);
 
     void clear_unlocked() {
-        if (!m_pRoot) return;
-        Node *pTrav = m_pRoot;
-        for (size_t i = 0; i < m_nElements; ++i) {
+        if (!this->m_pRoot) return;
+        Node *pTrav = this->m_pRoot;
+        for (size_t i = 0; i < this->m_nElements; ++i) {
             Node *temp = pTrav->GetNext();
             delete pTrav;
             pTrav = temp;
         }
-        m_pRoot = m_pLast = nullptr;
-        m_nElements = 0;
+        this->m_pRoot = this->m_pLast = nullptr;
+        this->m_nElements = 0;
     }
 
     void _copyNodesFrom(const CCircularLinkedList &to_copy) {
@@ -218,24 +217,24 @@ void CCircularLinkedList<Traits>::push_back(
     if constexpr (Traits::ordered) {
         // si es ordenada, utiliza el _internal_insert
         // porque se pondria algo al final que no respete el orden?
-        if (m_pLast && this->compare(m_pLast->GetValueRef(), val)) {
-            _internal_insert(m_pRoot, val, ref);
+        if (this->m_pLast && this->compare(this->m_pLast->GetValueRef(), val)) {
+            _internal_insert(this->m_pRoot, val, ref);
             return;
         }
     }
     // si no es ordenada, poner al final
     Node *pNewNode = new Node(val, ref);
-    if (!m_pRoot) {
+    if (!this->m_pRoot) {
         // pNewNode apunta a si mismo (unico nodo)
-        m_pRoot = m_pLast = pNewNode;
+        this->m_pRoot = this->m_pLast = pNewNode;
         pNewNode->GetNextRef() = pNewNode;
     } else {
-        // actuailizar m_pLast
-        m_pLast->GetNextRef() = pNewNode;
-        m_pLast = pNewNode;
-        m_pLast->GetNextRef() = m_pRoot;
+        // actuailizar this->m_pLast
+        this->m_pLast->GetNextRef() = pNewNode;
+        this->m_pLast = pNewNode;
+        this->m_pLast->GetNextRef() = this->m_pRoot;
     }
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 template <typename Traits>
@@ -243,7 +242,7 @@ void CCircularLinkedList<Traits>::insert(
     const value_type &val, ref_type ref, size_t index)
 {
     // antes de bloquear el lock, verifica si no hay elementos
-    if (!m_nElements) {
+    if (!this->m_nElements) {
         // seria el equivalente a un push_back
         push_back(val, ref);
         return;
@@ -253,9 +252,9 @@ void CCircularLinkedList<Traits>::insert(
     // dependiendo si la lista es ordenada, se inserta siguiendo orden
     // o en algun lugar en especifico (al final por default)
     if constexpr (Traits::ordered) {
-        _internal_insert(m_pRoot, val, ref);
+        _internal_insert(this->m_pRoot, val, ref);
     } else {
-        if (index == static_cast<size_t>(-1)) index = m_nElements;
+        if (index == static_cast<size_t>(-1)) index = this->m_nElements;
         _insert_at_index(val, ref, index);
     }
 }
@@ -272,25 +271,25 @@ void CCircularLinkedList<Traits>::_internal_insert(
     if (this->compare(rCurrentNode->GetValueRef(), val)) {
         Node *pNew = new Node(val, ref);
         // si esta en la raiz
-        if (rCurrentNode == m_pRoot) {
-            pNew->GetNextRef() = m_pRoot;
-            m_pRoot = pNew;
-            m_pLast->GetNextRef() = m_pRoot;
+        if (rCurrentNode == this->m_pRoot) {
+            pNew->GetNextRef() = this->m_pRoot;
+            this->m_pRoot = pNew;
+            this->m_pLast->GetNextRef() = this->m_pRoot;
         } else {
             pNew->GetNextRef() = rCurrentNode;
             rCurrentNode = pNew;
         }
-        ++m_nElements;
+        ++this->m_nElements;
         return;
     }
     // si se llego al final de la lista
-    if (rCurrentNode == m_pLast) {
+    if (rCurrentNode == this->m_pLast) {
         Node *pNew = new Node(val, ref);
         // el nuevo nodo apunta a root y se actualiza todo
-        pNew->GetNextRef() = m_pRoot;
-        m_pLast->GetNextRef() = pNew;
-        m_pLast = pNew;
-        ++m_nElements;
+        pNew->GetNextRef() = this->m_pRoot;
+        this->m_pLast->GetNextRef() = pNew;
+        this->m_pLast = pNew;
+        ++this->m_nElements;
         return;
     }
 
@@ -302,31 +301,31 @@ void CCircularLinkedList<Traits>::_insert_at_index(
     const value_type &val, ref_type ref, size_t index)
 {
     // si el indice es mayor, suelta un error
-    if (index > m_nElements) throw std::out_of_range("Index out of range");
+    if (index > this->m_nElements) throw std::out_of_range("Index out of range");
 
     Node *pNew = new Node(val, ref);
     // si el index es 0
     if (!index) {
-        pNew->GetNextRef() = m_pRoot;
-        m_pRoot = pNew;
-        m_pLast->GetNextRef() = m_pRoot;
-        ++m_nElements;
+        pNew->GetNextRef() = this->m_pRoot;
+        this->m_pRoot = pNew;
+        this->m_pLast->GetNextRef() = this->m_pRoot;
+        ++this->m_nElements;
         return;
     }
 
     // si el indice no es 0
-    Node *pTrav = m_pRoot;
+    Node *pTrav = this->m_pRoot;
     for (size_t i = 0; i + 1 < index; ++i) pTrav = pTrav->GetNext();
     // pnew apunta al siguiente de ptrav
     // y ptrav conecta con pnew
     pNew->GetNextRef() = pTrav->GetNext();
     pTrav->GetNextRef() = pNew;
 
-    if (pTrav == m_pLast) {
-        m_pLast = pNew;
-        m_pLast->GetNextRef() = m_pRoot;
+    if (pTrav == this->m_pLast) {
+        this->m_pLast = pNew;
+        this->m_pLast->GetNextRef() = this->m_pRoot;
     }
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 template <typename Traits>

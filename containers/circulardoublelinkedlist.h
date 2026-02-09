@@ -70,7 +70,7 @@ public:
         this->pCurrent = another.pCurrent;
     }
 
-    void advance() {
+    void advance() override {
         if (this->pCurrent) {
             this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
@@ -111,7 +111,7 @@ public:
         this->pCurrent = another.pCurrent;
     }
 
-    void advance() {
+    void advance() override {
         if (this->pCurrent) {
             this->pCurrent = this->pCurrent->GetPrev();
             --this->m_pos;
@@ -131,7 +131,7 @@ istream &operator>>(istream &is, CCircularDoubleLinkedList<Traits> &container);
 
 
 template <typename Traits>
-class CCircularDoubleLinkedList : public ListBase<Traits> {
+class CCircularDoubleLinkedList : public ListBase<Traits, NodeCircularDoubleLinkedList<Traits>> {
     mutable mutex mtx;
 public:
     using value_type = typename Traits::value_type;
@@ -141,18 +141,17 @@ public:
     friend forward_iterator;
     friend GeneralIterator<CCircularDoubleLinkedList<Traits>>;
 
-    Node *m_pRoot = nullptr;
-    Node *m_pLast = nullptr;
-    size_t m_nElements = 0;
-
     CCircularDoubleLinkedList() {}
     CCircularDoubleLinkedList(const CCircularDoubleLinkedList &to_copy) {
         lock_guard<mutex> lock(to_copy.mtx);
         _copyNodesFrom(to_copy);
     }
     CCircularDoubleLinkedList(CCircularDoubleLinkedList &&to_move)
-        : m_pRoot(to_move.m_pRoot), m_pLast(to_move.m_pLast), m_nElements(to_move.m_nElements) {
+        {
         lock_guard<mutex> lock(to_move.mtx);
+        this->m_pRoot = to_move.m_pRoot;
+        this->m_pLast = to_move.m_pLast;
+        this->m_nElements = to_move.m_nElements;
         to_move.m_pRoot = nullptr;
         to_move.m_pLast = nullptr;
         to_move.m_nElements = 0;
@@ -160,12 +159,12 @@ public:
     virtual ~CCircularDoubleLinkedList() { clear_unlocked(); }
 
     forward_iterator begin() { return forward_iterator(this); }
-    forward_iterator end() { return forward_iterator(this, m_nElements); }
+    forward_iterator end() { return forward_iterator(this, this->m_nElements); }
 
     value_type &operator[](size_t index) {
         lock_guard<mutex> lock(mtx);
-        if (index >= m_nElements) throw std::out_of_range("Index out of range");
-        Node *trav = m_pRoot;
+        if (index >= this->m_nElements) throw std::out_of_range("Index out of range");
+        Node *trav = this->m_pRoot;
         for (size_t i = 0; i < index; ++i) trav = trav->GetNext();
         return trav->GetValueRef();
     }
@@ -177,7 +176,7 @@ public:
 
     size_t getSize() const {
         lock_guard<mutex> lock(mtx);
-        return m_nElements;
+        return this->m_nElements;
     }
 
     template <typename ObjFunc, typename ...Args>
@@ -202,15 +201,15 @@ private:
     void _insert_at_index(const value_type &val, ref_type ref, size_t index);
 
     void clear_unlocked() {
-        if (!m_pRoot) return;
-        Node *trav = m_pRoot;
-        for (size_t i = 0; i < m_nElements; ++i) {
+        if (!this->m_pRoot) return;
+        Node *trav = this->m_pRoot;
+        for (size_t i = 0; i < this->m_nElements; ++i) {
             Node *temp = trav->GetNext();
             delete trav;
             trav = temp;
         }
-        m_pRoot = m_pLast = nullptr;
-        m_nElements = 0;
+        this->m_pRoot = this->m_pLast = nullptr;
+        this->m_nElements = 0;
     }
 
     void _copyNodesFrom(const CCircularDoubleLinkedList &to_copy) {
@@ -233,63 +232,63 @@ void CCircularDoubleLinkedList<Traits>::push_back(const value_type &val, ref_typ
     lock_guard<mutex> lock(mtx);
 
     if constexpr (Traits::ordered) {
-        if (m_pLast && this->compare(m_pLast->GetValueRef(), val)) {
+        if (this->m_pLast && this->compare(this->m_pLast->GetValueRef(), val)) {
             _internal_insert(val, ref);
             return;
         }
     }
 
     Node *pNew = new Node(val, ref, nullptr, nullptr);
-    if (!m_pRoot) {
-        m_pRoot = m_pLast = pNew;
+    if (!this->m_pRoot) {
+        this->m_pRoot = this->m_pLast = pNew;
         pNew->GetNextRef() = pNew;
         pNew->GetPrevRef() = pNew;
     } else {
-        pNew->GetPrevRef() = m_pLast;
-        pNew->GetNextRef() = m_pRoot;
-        m_pLast->GetNextRef() = pNew;
-        m_pRoot->GetPrevRef() = pNew;
-        m_pLast = pNew;
+        pNew->GetPrevRef() = this->m_pLast;
+        pNew->GetNextRef() = this->m_pRoot;
+        this->m_pLast->GetNextRef() = pNew;
+        this->m_pRoot->GetPrevRef() = pNew;
+        this->m_pLast = pNew;
     }
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 
 template <typename Traits>
 void CCircularDoubleLinkedList<Traits>::_internal_insert(const value_type &val, ref_type ref) {
-    if (!m_pRoot) {
+    if (!this->m_pRoot) {
         Node *pNew = new Node(val, ref, nullptr, nullptr);
-        m_pRoot = m_pLast = pNew;
+        this->m_pRoot = this->m_pLast = pNew;
         pNew->GetNextRef() = pNew;
         pNew->GetPrevRef() = pNew;
-        ++m_nElements;
+        ++this->m_nElements;
         return;
     }
 
-    Node *curr = m_pRoot;
-    for (size_t i = 0; i < m_nElements; ++i) {
+    Node *curr = this->m_pRoot;
+    for (size_t i = 0; i < this->m_nElements; ++i) {
         if (this->compare(curr->GetValueRef(), val)) {
             Node *pNew = new Node(val, ref, curr, curr->GetPrev());
             curr->GetPrevRef()->GetNextRef() = pNew;
             curr->GetPrevRef() = pNew;
-            if (curr == m_pRoot) m_pRoot = pNew;
-            ++m_nElements;
+            if (curr == this->m_pRoot) this->m_pRoot = pNew;
+            ++this->m_nElements;
             return;
         }
         curr = curr->GetNext();
     }
 
-    Node *pNew = new Node(val, ref, m_pRoot, m_pLast);
-    m_pLast->GetNextRef() = pNew;
-    m_pRoot->GetPrevRef() = pNew;
-    m_pLast = pNew;
-    ++m_nElements;
+    Node *pNew = new Node(val, ref, this->m_pRoot, this->m_pLast);
+    this->m_pLast->GetNextRef() = pNew;
+    this->m_pRoot->GetPrevRef() = pNew;
+    this->m_pLast = pNew;
+    ++this->m_nElements;
 }
 
 
 template <typename Traits>
 void CCircularDoubleLinkedList<Traits>::insert(const value_type &val, ref_type ref, size_t index) {
-    if (!m_nElements) {
+    if (!this->m_nElements) {
         push_back(val, ref);
         return;
     }
@@ -298,7 +297,7 @@ void CCircularDoubleLinkedList<Traits>::insert(const value_type &val, ref_type r
     if constexpr (Traits::ordered) {
         _internal_insert(val, ref);
     } else {
-        if (index == static_cast<size_t>(-1)) index = m_nElements;
+        if (index == static_cast<size_t>(-1)) index = this->m_nElements;
         _insert_at_index(val, ref, index);
     }
 }
@@ -306,45 +305,45 @@ void CCircularDoubleLinkedList<Traits>::insert(const value_type &val, ref_type r
 
 template <typename Traits>
 void CCircularDoubleLinkedList<Traits>::_insert_at_index(const value_type &val, ref_type ref, size_t index) {
-    if (index > m_nElements) throw std::out_of_range("Index out of range");
+    if (index > this->m_nElements) throw std::out_of_range("Index out of range");
 
     Node *pNew = new Node(val, ref, nullptr, nullptr);
 
-    if (!m_pRoot) {
-        m_pRoot = m_pLast = pNew;
+    if (!this->m_pRoot) {
+        this->m_pRoot = this->m_pLast = pNew;
         pNew->GetNextRef() = pNew;
         pNew->GetPrevRef() = pNew;
-        ++m_nElements;
+        ++this->m_nElements;
         return;
     }
 
     if (index == 0) {
-        pNew->GetNextRef() = m_pRoot;
-        pNew->GetPrevRef() = m_pLast;
-        m_pRoot->GetPrevRef() = pNew;
-        m_pLast->GetNextRef() = pNew;
-        m_pRoot = pNew;
-        ++m_nElements;
+        pNew->GetNextRef() = this->m_pRoot;
+        pNew->GetPrevRef() = this->m_pLast;
+        this->m_pRoot->GetPrevRef() = pNew;
+        this->m_pLast->GetNextRef() = pNew;
+        this->m_pRoot = pNew;
+        ++this->m_nElements;
         return;
     }
 
-    if (index == m_nElements) {
-        pNew->GetPrevRef() = m_pLast;
-        pNew->GetNextRef() = m_pRoot;
-        m_pLast->GetNextRef() = pNew;
-        m_pRoot->GetPrevRef() = pNew;
-        m_pLast = pNew;
-        ++m_nElements;
+    if (index == this->m_nElements) {
+        pNew->GetPrevRef() = this->m_pLast;
+        pNew->GetNextRef() = this->m_pRoot;
+        this->m_pLast->GetNextRef() = pNew;
+        this->m_pRoot->GetPrevRef() = pNew;
+        this->m_pLast = pNew;
+        ++this->m_nElements;
         return;
     }
 
-    Node *trav = m_pRoot;
+    Node *trav = this->m_pRoot;
     for (size_t i = 0; i < index; ++i) trav = trav->GetNext();
     pNew->GetNextRef() = trav;
     pNew->GetPrevRef() = trav->GetPrev();
     trav->GetPrevRef()->GetNextRef() = pNew;
     trav->GetPrevRef() = pNew;
-    ++m_nElements;
+    ++this->m_nElements;
 }
 
 
