@@ -9,67 +9,53 @@
 
 
 template <typename Traits>
-class CircularLinkedList_Node {
+class CircularLinkedList_Node : public LLBasicNode<Traits> {
     using value_type = typename Traits::value_type;
     using Node       = CircularLinkedList_Node<Traits>;
-    value_type m_data;
-    ref_type   m_ref;
     Node *pNext = nullptr;
 
 public:
-    CircularLinkedList_Node() {}
+    CircularLinkedList_Node() = default;
     CircularLinkedList_Node(value_type _value, ref_type _ref = -1)
-        : m_data(_value), m_ref(_ref) {}
+        : LLBasicNode<Traits>(_value, _ref) {}
     CircularLinkedList_Node(value_type _value, ref_type _ref, Node *pNext)
-        : m_data(_value), m_ref(_ref), pNext(pNext) {}
+        : LLBasicNode<Traits>(_value, _ref), pNext(pNext) {}
 
-    value_type  GetValue() const { return m_data; }
-    value_type &GetValueRef() { return m_data; }
-    ref_type    GetRef() const { return m_ref; }
-    ref_type   &GetRefRef() { return m_ref; }
     Node       *GetNext() const { return pNext; }
     Node      *&GetNextRef() { return pNext; }
 
     Node &operator=(const Node &another) {
-        m_data = another.GetValue();
-        m_ref = another.GetRef();
+        this->m_data = another.GetValue();
+        this->m_ref = another.GetRef();
         return *this;
     }
-    bool operator==(const Node &another) const { return m_data == another.GetValue(); }
-    bool operator<(const Node &another) const { return m_data < another.GetValue(); }
 };
 
 
 template <typename Container>
-class CircularLinkedListForwardIterator : public GeneralIterator<Container> {
+class CircularLinkedListForwardIterator
+    : public LLBasicIterator<CircularLinkedListForwardIterator<Container>, Container> {
 public:
-    using Parent     = GeneralIterator<Container>;
-    using value_type = typename Parent::value_type;
-    using Node       = typename Parent::Node;
-
-    Node *pCurrent = nullptr;
+    using Base = LLBasicIterator<CircularLinkedListForwardIterator<Container>, Container>;
+    using Parent = typename Base::Parent;
+    using Node = typename Base::Node;
 
     CircularLinkedListForwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos),
-          pCurrent(pContainer->m_pRoot) {
-        if (!pCurrent) return;
-        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
+        : LLBasicIterator<CircularLinkedListForwardIterator<Container>, Container>(pContainer, pos) {
+        this->pCurrent = pContainer->m_pRoot;
+        if (!this->pCurrent) return;
+        for (Size i = 0; i < pos; ++i) this->pCurrent = this->pCurrent->GetNext();
     }
     CircularLinkedListForwardIterator(CircularLinkedListForwardIterator<Container> &another)
-        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+        : LLBasicIterator<CircularLinkedListForwardIterator<Container>, Container>(another) {
+        this->pCurrent = another.pCurrent;
+    }
 
-    value_type &operator*() override { return pCurrent->GetValueRef(); }
-    CircularLinkedListForwardIterator<Container> &operator++() {
-        if (pCurrent) {
-            pCurrent = pCurrent->GetNext();
+    void advance() {
+        if (this->pCurrent) {
+            this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
         }
-        return *this;
-    }
-    CircularLinkedListForwardIterator<Container> operator++(int) {
-        CircularLinkedListForwardIterator<Container> tmp(*this);
-        ++(*this);
-        return tmp;
     }
 };
 

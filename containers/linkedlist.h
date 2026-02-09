@@ -37,78 +37,108 @@ struct UnorderedTrait :
 // Iterators para listas enlazadas
 
 template <typename Traits>
-class NodeLinkedList{
+class LLBasicNode {
+    using value_type = typename Traits::value_type;
+public:
+    value_type m_data;
+    ref_type   m_ref;
+
+    LLBasicNode() = default;
+    LLBasicNode(value_type _value, ref_type _ref = -1)
+        : m_data(_value), m_ref(_ref) {}
+
+    value_type  GetValue() const { return m_data; }
+    value_type &GetValueRef() { return m_data; }
+
+    ref_type    GetRef() const { return m_ref; }
+    ref_type   &GetRefRef() { return m_ref; }
+};
+
+
+template <typename Derived, typename Container>
+/*
+ * Abstraccion de los iteradores
+ * esta clase contiene lo que se repite en todos los iteradores
+ * de las LinkedLists implementadas
+ * template Derived: es el iterador derivado
+ * container es el container
+ */
+class LLBasicIterator : public GeneralIterator<Container> {
+public:
+    using Parent = GeneralIterator<Container>;
+    using value_type = typename Container::value_type;
+    using Node = typename Container::Node;
+
+    LLBasicIterator(Container *pContainer, Size pos=0)
+        : GeneralIterator<Container>(pContainer, pos) {}
+
+    value_type &operator*() override { return pCurrent->GetValueRef(); }
+    Derived &operator++() {
+        static_cast<Derived*>(this)->advance();
+        return *static_cast<Derived*>(this);
+    }
+    Derived operator++(int) {
+        Derived tmp(*static_cast<Derived*>(this));
+        ++(*this);
+        return tmp;
+    }
+
+protected:
+    // no se deberia acceder al pCurrent desde afuera
+    // pero si por las clases heredadas
+    Node *pCurrent = nullptr;
+};
+
+template <typename Traits>
+class NodeLinkedList : public LLBasicNode<Traits> {
 
     using  value_type  = typename Traits::value_type;
     using  Node        = NodeLinkedList<Traits>;
 private:
-    value_type m_data;
-    ref_type   m_ref;
     Node *m_pNext = nullptr;
 
 public:
-    NodeLinkedList() {}
+    NodeLinkedList() = default;
     NodeLinkedList(value_type _value, ref_type _ref = -1)
-        : m_data(_value), m_ref(_ref) {}
+        : LLBasicNode<Traits>(_value, _ref) {}
     NodeLinkedList(value_type _value, ref_type _ref, Node *pNext)
-        : m_data(_value), m_ref(_ref), m_pNext(pNext) {}
-    value_type  GetValue   () const { return m_data; }
-    value_type &GetValueRef() { return m_data; }
-
-    ref_type    GetRef     () const { return m_ref; }
-    ref_type   &GetRefRef  () { return m_ref; }
+        : LLBasicNode<Traits>(_value, _ref), m_pNext(pNext) {}
 
     Node      * GetNext     () const { return m_pNext; }
     Node      *&GetNextRef  () { return m_pNext; }
 
     Node &operator=(const Node &another) {
-        m_data = another.GetValue();
-        m_ref = another.GetRef();
+        this->m_data = another.GetValue();
+        this->m_ref = another.GetRef();
         return *this;
-    }
-    bool operator==(const Node &another) const {
-        return m_data == another.GetValue();
-    }
-    bool operator<(const Node &another) const {
-        return m_data < another.GetValue();
     }
 };
 
-
 template <typename Container>
-class LinkedListForwardIterator : public GeneralIterator<Container> {
+class LinkedListForwardIterator
+    : public LLBasicIterator<LinkedListForwardIterator<Container>, Container> {
 public:
-    using Parent     = GeneralIterator<Container>;
-    using value_type = typename Container::value_type;
-    using Node       = typename Container::Node;
-
-    // como el operador * originalmente regresa un nodo con el operador []
-    // itera sobre todos los nodos cada vez que se llama
-    // para optimizar este proceso, se crea el puntero a nodo pCurrent
-    Node *pCurrent = nullptr;
+    using Base = LLBasicIterator<LinkedListForwardIterator<Container>, Container>;
+    using Parent = typename Base::Parent;
+    using Node = typename Base::Node;
 
     LinkedListForwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot)
+        : LLBasicIterator<LinkedListForwardIterator<Container>, Container>(pContainer, pos)
     {
-        // desplazarse a la posicion
-        for (Size i = 0; i < pos; ++i) pCurrent = pCurrent->GetNext();
+        this->pCurrent = pContainer->m_pRoot;
+        for (Size i = 0; i < pos; ++i) this->pCurrent = this->pCurrent->GetNext();
     }
     LinkedListForwardIterator(LinkedListForwardIterator<Container> &another)
-        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+        : LLBasicIterator<LinkedListForwardIterator<Container>, Container>(another)
+    {
+        this->pCurrent = another.pCurrent;
+    }
 
-    // se sobrecarga el operador * y ++
-    value_type &operator*() override { return pCurrent->GetValueRef(); }
-    LinkedListForwardIterator<Container> &operator++() {
-        if (pCurrent) {
-            pCurrent = pCurrent->GetNext();
+    void advance() {
+        if (this->pCurrent) {
+            this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
         }
-        return *this;
-    }
-    LinkedListForwardIterator<Container> operator++(int) {
-        LinkedListForwardIterator<Container> tmp(*this);
-        ++(*this);
-        return tmp;
     }
 };
 

@@ -14,26 +14,18 @@ using namespace std;
 // reutilizo todo lo que ya hay
 
 template <typename Traits>
-class NodeCircularDoubleLinkedList {
+class NodeCircularDoubleLinkedList : public LLBasicNode<Traits> {
     using value_type = typename Traits::value_type;
     using Node = NodeCircularDoubleLinkedList<Traits>;
 
-    value_type m_data;
-    ref_type m_ref;
     Node *m_pNext = nullptr;
     Node *m_pPrev = nullptr;
 public:
-    NodeCircularDoubleLinkedList() {}
+    NodeCircularDoubleLinkedList() = default;
     NodeCircularDoubleLinkedList(value_type _value, ref_type _ref = -1)
-        : m_data(_value), m_ref(_ref) {}
+        : LLBasicNode<Traits>(_value, _ref) {}
     NodeCircularDoubleLinkedList(value_type _value, ref_type _ref, Node *pNext, Node *pPrev)
-        : m_data(_value), m_ref(_ref), m_pNext(pNext), m_pPrev(pPrev) {}
-
-    value_type  GetValue() const { return m_data; }
-    value_type &GetValueRef() { return m_data; }
-
-    ref_type    GetRef() const { return m_ref; }
-    ref_type   &GetRefRef() { return m_ref; }
+        : LLBasicNode<Traits>(_value, _ref), m_pNext(pNext), m_pPrev(pPrev) {}
 
     Node      * GetNext() const { return m_pNext; }
     Node      *&GetNextRef() { return m_pNext; }
@@ -42,104 +34,88 @@ public:
     Node      *&GetPrevRef() { return m_pPrev; }
 
     Node &operator=(const Node &another) {
-        m_data = another.GetValue();
-        m_ref = another.GetRef();
+        this->m_data = another.GetValue();
+        this->m_ref = another.GetRef();
         return *this;
     }
-    bool operator==(const Node &another) const { return m_data == another.GetValue(); }
-    bool operator<(const Node &another) const { return m_data < another.GetValue(); }
 };
 
 
 template <typename Container>
-class CircularDoubleLinkedListForwardIterator : public GeneralIterator<Container> {
+class CircularDoubleLinkedListForwardIterator
+    : public LLBasicIterator<CircularDoubleLinkedListForwardIterator<Container>, Container> {
 public:
-    using Parent     = GeneralIterator<Container>;
-    using value_type = typename Container::value_type;
-    using Node       = typename Container::Node;
-
-    Node *pCurrent = nullptr;
+    using Base = LLBasicIterator<CircularDoubleLinkedListForwardIterator<Container>, Container>;
+    using Parent = typename Base::Parent;
+    using Node = typename Base::Node;
 
     CircularDoubleLinkedListForwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos), pCurrent(pContainer->m_pRoot)
+        : LLBasicIterator<CircularDoubleLinkedListForwardIterator<Container>, Container>(pContainer, pos)
     {
-        if (!pCurrent) return;
+        this->pCurrent = pContainer->m_pRoot;
+        if (!this->pCurrent) return;
         size_t n = pContainer->m_nElements;
         if (pos < static_cast<Size>(n / 2)) {
-            // ir desde el inicio
             for (Size i = 0; i < pos; ++i)
-                pCurrent = pCurrent->GetNext();
+                this->pCurrent = this->pCurrent->GetNext();
         } else {
-            pCurrent = pContainer->m_pLast;
-            // ir desde el final
+            this->pCurrent = pContainer->m_pLast;
             for (Size i = static_cast<Size>(n - 1); i > pos; --i)
-                pCurrent = pCurrent->GetPrev();
+                this->pCurrent = this->pCurrent->GetPrev();
         }
     }
     CircularDoubleLinkedListForwardIterator(CircularDoubleLinkedListForwardIterator<Container> &another)
-        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+        : LLBasicIterator<CircularDoubleLinkedListForwardIterator<Container>, Container>(another)
+    {
+        this->pCurrent = another.pCurrent;
+    }
 
-    value_type &operator*() override { return pCurrent->GetValueRef(); }
-    CircularDoubleLinkedListForwardIterator<Container> &operator++() {
-        if (pCurrent) {
-            pCurrent = pCurrent->GetNext();
+    void advance() {
+        if (this->pCurrent) {
+            this->pCurrent = this->pCurrent->GetNext();
             ++this->m_pos;
         }
-        return *this;
-    }
-    CircularDoubleLinkedListForwardIterator<Container> operator++(int) {
-        CircularDoubleLinkedListForwardIterator<Container> tmp(*this);
-        ++(*this);
-        return tmp;
     }
 };
 
 
 template <typename Container>
-class CircularDoubleLinkedListBackwardIterator : public GeneralIterator<Container> {
+class CircularDoubleLinkedListBackwardIterator
+    : public LLBasicIterator<CircularDoubleLinkedListBackwardIterator<Container>, Container> {
 public:
-    using Parent     = GeneralIterator<Container>;
-    using value_type = typename Container::value_type;
-    using Node       = typename Container::Node;
-
-    Node *pCurrent = nullptr;
+    using Base = LLBasicIterator<CircularDoubleLinkedListBackwardIterator<Container>, Container>;
+    using Parent = typename Base::Parent;
+    using Node = typename Base::Node;
 
     CircularDoubleLinkedListBackwardIterator(Container *pContainer, Size pos=0)
-        : GeneralIterator<Container>(pContainer, pos), pCurrent(nullptr)
+        : LLBasicIterator<CircularDoubleLinkedListBackwardIterator<Container>, Container>(pContainer, pos)
     {
         size_t n = pContainer->m_nElements;
-
         if (pos < 0 || pos >= static_cast<Size>(n)) {
-            pCurrent = nullptr;
+            this->pCurrent = nullptr;
             return;
         }
-        // ubicar el nodo en la posicion pos
         if (pos < static_cast<Size>(n / 2)) {
-            pCurrent = pContainer->m_pRoot;
+            this->pCurrent = pContainer->m_pRoot;
             for (Size i = 0; i < pos; ++i)
-                pCurrent = pCurrent->GetNext();
+                this->pCurrent = this->pCurrent->GetNext();
         } else {
-            pCurrent = pContainer->m_pLast;
+            this->pCurrent = pContainer->m_pLast;
             for (Size i = static_cast<Size>(n - 1); i > pos; --i)
-                pCurrent = pCurrent->GetPrev();
+                this->pCurrent = this->pCurrent->GetPrev();
         }
     }
     CircularDoubleLinkedListBackwardIterator(CircularDoubleLinkedListBackwardIterator<Container> &another)
-        : GeneralIterator<Container>(another), pCurrent(another.pCurrent) {}
+        : LLBasicIterator<CircularDoubleLinkedListBackwardIterator<Container>, Container>(another)
+    {
+        this->pCurrent = another.pCurrent;
+    }
 
-    // override necesario del GeneralIterator
-    value_type &operator*() override { return pCurrent->GetValueRef(); }
-    CircularDoubleLinkedListBackwardIterator<Container> &operator++() {
-        if (pCurrent) {
-            pCurrent = pCurrent->GetPrev();
+    void advance() {
+        if (this->pCurrent) {
+            this->pCurrent = this->pCurrent->GetPrev();
             --this->m_pos;
         }
-        return *this;
-    }
-    CircularDoubleLinkedListBackwardIterator<Container> operator++(int) {
-        CircularDoubleLinkedListBackwardIterator<Container> tmp(*this);
-        ++(*this);
-        return tmp;
     }
 };
 
