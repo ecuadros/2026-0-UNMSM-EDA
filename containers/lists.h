@@ -4,6 +4,7 @@
 
 #include "linkedlist.h"
 #include "circularlinkedlist.h"
+#include "circulardoublelinkedlist.h"
 
 // Type aliases to help IDEs infer concrete list types quickly.
 template <typename T>
