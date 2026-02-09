@@ -135,7 +135,6 @@ public:
     // TODO: Persistencia (write)
     friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
-        os << "CLinkedList: size = " << container.getSize() << endl;
         os << "[";
         Node *p_Temp = container.m_pRoot;
         while (p_Temp != nullptr) {
@@ -189,6 +188,9 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
         pNew->GetNextRef() = rParent;
         rParent = pNew;
         ++m_nElements;
+        if (pNew->GetNext() == nullptr) {
+            m_pLast = pNew;
+        }
         return;
     }
     InternalInsert(rParent->GetNextRef(), val, ref);

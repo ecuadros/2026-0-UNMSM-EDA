@@ -1,75 +1,69 @@
 #include <iostream>
 #include "containers/lists.h"
 #include <utility>
+
 using namespace std;
-void ImprimirNum(int &n) { cout << "[" << n << "] "; }
-bool EsPar(int &n)       { return n % 2 == 0; }
-bool Mult9(T1 &elem){
-  return elem%9 == 0;
+using T1 = int;
+
+// --- NAMESPACE ANONIMO (Funciones privadas para este archivo) ---
+namespace {
+    bool Mult9(T1 &elem){
+      return elem % 9 == 0;
+    }
+
+    template <typename Q>
+    void Print(Q &elem){    
+        cout << elem << ",";     
+    }
 }
-template <typename Q>
-    void Print(Q &elem){    cout << elem << ",";     }
+
 void DemoListsCircular(){
-    CLinkedListCircular< DescendingTrait<int> > listOriginal;
-    listOriginal.push_back(10, 1);
-    listOriginal.push_back(20, 2);
-    listOriginal.push_back(30, 3);
-    cout << "1. Lista Original creada: " << listOriginal;
-
-    // --- PRUEBA 1: COPY CONSTRUCTOR ---
-    cout << "\n[TEST COPY] Creando 'listCopy' desde 'listOriginal'..." << endl;
-    CLinkedListCircular< DescendingTrait<int> > listCopy = listOriginal; 
-    
-    cout << "   -> Copia:    " << listCopy;
-
-    cout << "   * Modificamos 'listOriginal' agregando 999..." << endl;
-    listOriginal.push_back(999, 0);
-
-    cout << "   -> Original: " << listOriginal;
-    cout << "   -> Copia:    " << listCopy;
-    
-    if(listCopy.getSize() != listOriginal.getSize()) {
-        cout << "   [OK] La copia es INDEPENDIENTE (Deep Copy exitosa)." << endl;
-    } else {
-        cout << "   [ERROR] La copia cambio con la original (Shallow Copy)." << endl;
-    }
-
-    // --- PRUEBA 2: MOVE CONSTRUCTOR ---
-    cout << "\n[TEST MOVE] Moviendo recursos de 'listCopy' a 'listMoved'..." << endl;
-    // Usamos std::move para forzar el Move Constructor
-    CLinkedListCircular< DescendingTrait<int> > listMoved = std::move(listCopy);
-
-    cout << "   -> Lista Nueva (Moved): " << listMoved;
-    cout << "   -> Lista Vieja (Source): " << listCopy; // Debería estar vacía
-
-    if (listCopy.getSize() == 0 && listMoved.getSize() > 0) {
-        cout << "   [OK] El robo de recursos fue exitoso (Move Constructor)." << endl;
-    } else {
-        cout << "   [ERROR] El movimiento fallo." << endl;
-    }
-    cout << "=======================================\n" << endl;
-
-    cout << "\n=== TEST INTERNO FOREACH / FIRSTTHAT ===" << endl;
-    
-    // 1. Crear lista
-    CLinkedListCircular< AscendingTrait<int> > milista;
-    milista.push_back(10, 1);
-    milista.push_back(35, 2);
-    milista.push_back(40, 3); // Este es par
-
-    // 2. Prueba FOREACH Interno
-    // Nota: Llamamos a milista.Foreach, no al ::Foreach global
-    cout << "Lista: ";
-    milista.Foreach(&ImprimirNum); 
+    cout << " LINKED LIST (CIRCULAR) " << endl;
+    // 1. LISTA DESCENDENTE (Trait)
+    cout << "Lista Descendente (Insert y Push_back)" << endl;
+    CLinkedListCircular< DescendingTrait<T1> > l1;  
+    l1.Insert(20, 4);
+    l1.Insert(20, 3);
+    l1.Insert(40, 3);
+    l1.Insert(70, 57);
+    l1.push_back(10, 6);
+    l1.push_back(17, 8);
+    cout << "Estado L1: " << l1; 
+    // 2. CONSTRUCTOR COPIA (Deep Copy)
+    cout << "Constructor Copia (L2 copia de L1)" << endl;
+    CLinkedListCircular< DescendingTrait<T1> > l2 = l1;
+    cout << "Modificando L1 " << endl;
+    l1.Insert(999, 0); 
+    cout << "L1 (Original): " << l1;
+    cout << "L2 (Copia):    " << l2;
+    // 3. CONSTRUCTOR MOVE (Robo de recursos)
+    cout << "Constructor Move (L3 roba a L2)" << endl;
+    CLinkedListCircular< DescendingTrait<T1> > l3 = std::move(l2);
+    cout << "L2 (Vacia): " << l2; 
+    cout << "L3 (Nueva): " << l3; 
+    // 4. FOREACH Y FIRSTTHAT (Externos)
+    cout << "Algoritmos Externos (Foreach & FirstThat)" << endl;
+    cout << "Foreach: ";
+    ::Foreach(l3.begin(), l3.end(), &Print<T1>);
     cout << endl;
-
-    // 3. Prueba FIRSTTHAT Interno
-    // Buscamos el primer número par (debería ser 10 o 40 según orden)
-    auto it = milista.FirstThat(&EsPar);
-    
-    if (it != milista.end()) {
-        cout << "FirstThat encontro un PAR: " << *it << endl;
+    auto it = ::FirstThat(l3.begin(), l3.end(), &Mult9);
+    if (it != l3.end()) { 
+        cout << "FirstThat (Multiplo 9): " << *it << endl;
     } else {
-        cout << "FirstThat no encontro nada." << endl;
+        cout << "FirstThat: No encontrado." << endl;
     }
+    // 5. OPERATOR >> (Input Stream)
+    cout << "Operator >> (Escribe un numero y su ref): ";
+    cin >> l3;
+    cout << "L3 Actualizada: " << l3;
+    // 6. LISTA ASCENDENTE (Cambio de Trait)
+    cout << "Lista Ascendente (Nuevo Trait)" << endl;
+    CLinkedListCircular< AscendingTrait<T1> > ASC;
+    ASC.Insert(100, 1);
+    ASC.Insert(50, 2);  
+    ASC.Insert(10, 3); 
+    cout << "L_Ascendente: " << ASC;
+    // Acceso por índice []
+    cout << "Elemento indice [1]: " << ASC[1] << endl;
+    cout<<endl;
 }

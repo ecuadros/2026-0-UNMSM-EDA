@@ -11,9 +11,7 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    cout<<"Listas enlazadas            : "<<endl;
     DemoLists();
-    cout<<"Listas Enlazadas Circulares : "<<endl;
     DemoListsCircular();
     return 0;
 }

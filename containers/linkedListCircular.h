@@ -16,7 +16,6 @@ private:
     Node *m_pCurrent; 
     Node *m_pRoot;    
     public:
-    // Guardamos el inicio (Root) para detectar la vuelta completa
     CircularForwardIterator(Node *pNode, Node *pRoot) 
         : m_pCurrent(pNode), m_pRoot(pRoot) {}
 
@@ -41,6 +40,7 @@ private:
 };
 template <typename Traits>
 class CLinkedListCircular{
+    public:
     using value_type = typename Traits::value_type;
     using  Forward_iterator=CircularForwardIterator< CLinkedListCircular<Traits> >;
     friend Forward_iterator;
@@ -89,14 +89,13 @@ class CLinkedListCircular{
         return Forward_iterator(m_pRoot, m_pRoot); 
     }
 
-    // end(): El final virtual es nullptr
+    // end(): 
     Forward_iterator end() { 
         return Forward_iterator(nullptr, m_pRoot); 
     }
     template <typename ObjFunc, typename ...Args>
     void Foreach(ObjFunc of, Args... args){
         std::lock_guard<std::mutex> lock(m_Block);
-        // Usamos el iterador inteligente, así que ::Foreach funciona sin colgarse
         ::Foreach(*this, of, args...);
     }
 
@@ -106,10 +105,9 @@ class CLinkedListCircular{
         return ::FirstThat(*this, of, args...);
     }
 
-    // Operator << (Imprimir)
+    // Operator << 
     friend ostream &operator<<(ostream &os, CLinkedListCircular<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
-        os << "CircularList: size = " << container.m_nElements << endl;
         os << "[";
         if (container.m_pRoot) {
             Node *pTemp = container.m_pRoot;
@@ -125,26 +123,23 @@ class CLinkedListCircular{
         return os;
     }
 
-    // Operator >> (Leer)
+    // Operator >> 
     friend istream &operator>>(istream &is, CLinkedListCircular<Traits> &container) {
         value_type val;
         ref_type   ref;
         is >> val >> ref; 
-        container.Insert(val, ref); // Usamos Insert para mantener orden
+        container.Insert(val, ref); 
         return is;
     } 
 
-    // Operator [] (Acceso aleatorio)
+    // Operator [] 
     value_type &operator[](size_t index) {
         std::lock_guard<std::mutex> lock(m_Block);
         Node *pTemp = m_pRoot;
-        // Nota: En circular esto podría dar vueltas infinitas si el index es enorme.
-        // Limitamos al size o dejamos que de vueltas según lógica (aquí limitamos para seguridad básica)
+
         for(size_t i = 0; i < index && pTemp; ++i) {
             pTemp = pTemp->GetNext();
         }
-        // Si pTemp es null o algo falló, comportamiento indefinido. 
-        // Asumimos uso correcto o añadimos checks.
         return pTemp->GetValueRef();
     } 
 
@@ -157,10 +152,10 @@ void CLinkedListCircular<Traits>::push_back(const value_type &val, ref_type ref)
     
     if (!m_pRoot) {
         m_pRoot = pNew;
-        pNew->GetNextRef() = m_pRoot; // Se apunta a sí mismo
+        pNew->GetNextRef() = m_pRoot; 
     } else {
-        m_pLast->GetNextRef() = pNew; // El anterior apunta al nuevo
-        pNew->GetNextRef() = m_pRoot; // El nuevo cierra el círculo
+        m_pLast->GetNextRef() = pNew; 
+        pNew->GetNextRef() = m_pRoot; 
     }
     m_pLast = pNew;
     ++m_nElements;
@@ -182,18 +177,17 @@ void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
         return;
     }
 
-    // Caso 2: Insertar al inicio (Root cambia)
+    // Caso 2: Insertar al inicio 
     if (compare(m_pRoot->GetValue(), val)) {
         pNew->GetNextRef() = m_pRoot;
         m_pRoot = pNew;
-        m_pLast->GetNextRef() = m_pRoot; // ¡Crucial! Last apunta al nuevo Root
+        m_pLast->GetNextRef() = m_pRoot; 
         ++m_nElements;
         return;
     }
 
     // Caso 3: Insertar en medio o final
     Node *pTemp = m_pRoot;
-    // Buscamos posición, pero paramos si llegamos al Last para no dar vuelta
     while (pTemp != m_pLast && !compare(pTemp->GetNext()->GetValue(), val)) {
         pTemp = pTemp->GetNext();
     }
@@ -201,8 +195,6 @@ void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
     // Insertamos
     pNew->GetNextRef() = pTemp->GetNext();
     pTemp->GetNextRef() = pNew;
-
-    // Si insertamos después del Last actual, actualizamos m_pLast
     if (pTemp == m_pLast) {
         m_pLast = pNew;
     }
