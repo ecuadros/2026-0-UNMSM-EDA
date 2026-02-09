@@ -118,6 +118,49 @@ static void testCircularAssignment() {
     assert(b.getSize() == a.getSize());
 }
 
+void testCircularQuotedStringIO() {
+    logFile << "Prueba de IO con strings y std::quoted" << endl;
+
+    using StringList = CCircularLinkedList<AscendingTrait<string>>;
+    StringList list;
+    list.push_back(string("a: b) c"), 7);
+
+    logFile << "lista de string: " << list << endl;
+    stringstream ss;
+    ss << list;
+
+    StringList readBack;
+    ss >> readBack;
+    logFile << "lista leida: " << readBack << endl;
+    assert(readBack.getSize() == 1);
+    assert(readBack.m_pRoot != nullptr);
+    assert(readBack.m_pRoot->GetValue() == "a: b) c");
+    assert(readBack.m_pRoot->GetRef() == 7);
+
+    logFile << "OK: strings con ':' y ')' se leen/escriben bien" << endl;
+
+    logFile << "Strings con escaped quotes" << endl;
+    list.clear();
+    readBack.clear();
+
+    list.insert("1 string \"", 1);
+    list.insert("2 string \'", 2);
+    list.insert("\"3 string \"", 3);
+    list.insert("\'4 string \'", 4);
+
+    logFile << "La lista con escaped quotes: " << list << endl;
+    ss.str("");
+    ss << list;
+    ss >> readBack;
+    logFile << "Lista leida: " << readBack << endl;
+    assert(readBack.getSize() == 4);
+    logFile << readBack[0] << endl;
+    assert(readBack[0] == "\"3 string \"");
+    assert(readBack[1] == "\'4 string \'");
+    assert(readBack[2] == "1 string \"");
+    assert(readBack[3] == "2 string \'");
+}
+
 void testCircularConcurrency() {
     logFile << "Prueba: concurrencia circular (push_back + iterador)" << endl;
     UnorderedCLL list;
@@ -156,6 +199,7 @@ void testCircularConcurrency() {
     logFile << "OK: size == " << list.getSize() << endl;
 }
 
+
 void DemoCircularLinkedLists() {
     testCircularBasic();
     testCircularOrderedInsert();
@@ -163,5 +207,6 @@ void DemoCircularLinkedLists() {
     testCircularIterators();
     testCircularIO();
     testCircularAssignment();
+    testCircularQuotedStringIO();
     testCircularConcurrency();
 }

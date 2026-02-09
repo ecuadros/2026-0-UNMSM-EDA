@@ -10,10 +10,9 @@ using namespace std;
 
 using AscendingLL = CLinkedList<AscendingTrait<T1>>;
 using DescendingLL = CLinkedList<DescendingTrait<T1>>;
-
+using UnorderedLL = CLinkedList<UnorderedTrait<T1>>;
 
 static ofstream logFile("linkedlist_tests.log");
-// if (logFile.is_open()) return logFile;
 
 void testInsert(AscendingLL& original) {
     logFile << "=== Prueba de inserciones basicas ===" << endl;
@@ -211,8 +210,8 @@ void testWriteRead(string outFilePath = "linkedlist_write.log") {
 
 void testLLConcurrency() {
     logFile << "=== Prueba de concurrencia: push_back, iteraciones, lectura y escritura ===" << endl;
-    AscendingLL list;
-    AscendingLL temp;
+    UnorderedLL list;
+    UnorderedLL temp;
     const Size threads = 6;
     const Size perThread = 50;
 
@@ -236,13 +235,12 @@ void testLLConcurrency() {
     }
     workers.emplace_back([&]() {
         logFile << "LinkedList: iterador " << endl;
-        for (auto it = list.begin(); it != list.end(); ++it)
-            try {
+        try {
+            for (auto it = list.begin(); it != list.end(); ++it)
                 logFile << "(" << *it << ")";
-            } catch (const exception& e) {
-                logFile << e.what();
-                break;
-            }
+        } catch (const exception& e) {
+            logFile << e.what();
+        }
         logFile << endl;
     });
 
