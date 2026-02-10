@@ -11,6 +11,16 @@ template <typename _T>
 struct Trait1
 {
     using T = _T;
+    using value_type = T;
+    static bool Compare(T a, T b) { return a < b; }
+};
+
+template <typename _T>
+struct TraitDescendente {
+    using T = _T;
+    static bool Compare(T a, T b) {
+        return a > b; 
+    }
 };
 
 template <typename Container>
