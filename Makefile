@@ -1,22 +1,26 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
-LDFLAGS = -pthread # Añadido -pthread
+CXXFLAGS = -std=c++17 -Wall -g -pthread
+LDFLAGS = -pthread
 
-TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp DemoLists.cpp \
-	   sorting.cpp
+TARGET = main.exe
+
+    #DemoLists.cpp
+    #sorting.cpp
+
+SRCS = main.cpp util.cpp pointers.cpp DemoArray.cpp DemoDoubleLinkedLists.cpp DemoDoubleLinkedListsCircular.cpp
+
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) $^ -o $@
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)
+
 
 .PHONY: all clean
