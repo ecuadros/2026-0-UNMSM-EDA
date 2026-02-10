@@ -58,4 +58,43 @@ void DemoLists(){
     } else {
         cout << "No hay elementos menores a 376 en la lista 3" << endl;
     }
+
+    cout << endl << "Implementacion de manejo de archivos:" << endl;
+
+    CLinkedList<DescendingTrait<T1>> lista_guardada;
+    cout<<"Ingrese el contenido de la lista a guardar de este modo [(a:b), ... ]:"<<endl;
+    cin>>lista_guardada;
+    lista_guardada.push_back(50, 1);
+    lista_guardada.push_back(89, 2);
+    lista_guardada.Insert(150, 5);
+
+    cout << endl << "Lista Original en Memoria RAM:" << endl;
+    cout << lista_guardada << endl;
+
+    ofstream archivoSalida("mi_lista_guardada.txt");
+
+    if (archivoSalida.is_open()) {
+        archivoSalida << lista_guardada; 
+        archivoSalida.close();
+        cout << "Exito: Lista guardada en 'mi_lista_guardada.txt'" << endl;
+    } else {
+        cerr << "Error al crear el archivo." << endl;
+    }
+
+    CLinkedList<DescendingTrait<T1>> listaRecuperada;
+
+    ifstream archivoEntrada("mi_lista_guardada.txt");
+
+    cout<<endl;
+
+    if (archivoEntrada.is_open()) {
+        cout << " -> Leyendo archivo desde el disco..." << endl;
+        archivoEntrada >> listaRecuperada;
+        archivoEntrada.close();
+    } else {
+        cerr << "Error al abrir el archivo." << endl;
+    }
+
+    cout << "Lista Recuperada del Disco:" << endl;
+    cout << listaRecuperada << endl;
 }
