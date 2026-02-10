@@ -21,7 +21,7 @@ void BurbujaRecursivo(T arr[], ContainerRange n,
 
 void DemoBurbuja();
 
-// ContainerRange  particionar(ContainerElemType* arr, ContainerRange first, ContainerRange last, CompFunc pComp);
+ContainerRange  particionar(ContainerElemType* arr, ContainerRange first, ContainerRange last, CompFunc pComp);
 // void QuickSort  (ContainerElemType* arr, ContainerRange first, ContainerRange last, CompFunc pComp);
 // void DemoQuickSort();
 
