@@ -13,6 +13,14 @@ void intercambiar(T &a, T &b){
 
 TT fact(T n);
 
+using FuncObj = void(*)(T &val, T factor);
+
+void multiplicar(T &val, T factor){
+    val *= factor;
+}
+
+bool Mod16(int val);
+
 void DemoUtil();
 
 #endif // __UTIL_H__

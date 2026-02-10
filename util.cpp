@@ -12,3 +12,7 @@ void DemoUtil(){
     TT result = fact(n);
     std::cout << "Factorial of " << n << " is " << result << std::endl;
 }
+
+bool Mod16(int val) {
+    return val % 16 == 0;
+}
