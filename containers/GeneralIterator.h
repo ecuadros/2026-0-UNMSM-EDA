@@ -41,9 +41,7 @@ struct GeneralIterator
 
   value_type &operator*(){
     if(m_node) return m_node->GetValueRef();
-    for containers that
-    
-    return m_pContainer->m_data[m_pos].GetValueRef();
+    return m_pContainer->operator[](m_pos);
   }
 };
 

@@ -1,5 +1,6 @@
-#ifndef __LINKEDLIST_H__
-#define __LINKEDLIST_H__
+#ifndef __DOUBLE_LINKED_LIST_H__
+#define __DOUBLE_LINKED_LIST_H__
+
 #include <iostream>
 #include <cassert>
 #include <utility>
@@ -7,38 +8,36 @@
 #include "../general/types.h"
 #include "../util.h"
 #include "GeneralIterator.h"
-
 using namespace std;
 
-// Traits para listas enlazadas
+// Traits para listas doblemente enlazadas (misma idea que en linkedlist.h)
 template <typename T, typename _Func>
-struct ListTrait{
+struct DoubleListTrait{
     using value_type = T;
     using Func       = _Func;
 };
 
-// AscendingTrait
 template <typename T>
-struct AscendingTrait : public ListTrait<T, std::greater<T> >{};
+struct DoubleAscendingTrait : public DoubleListTrait<T, std::greater<T> >{};
 
-//DescendingTrait
 template <typename T>
-struct DescendingTrait : public ListTrait<T, std::less<T> >{};
+struct DoubleDescendingTrait : public DoubleListTrait<T, std::less<T> >{};
 
-// Iterador forward para listas enlazadas
+// Iterador forward para listas doblemente enlazadas
 template <typename Container>
-class LinkedListForwardIterator : public GeneralIterator<Container>
+class DoubleLinkedForwardIterator : public GeneralIterator<Container>
 {
     using Parent = GeneralIterator<Container>;
     using Node   = typename Container::Node;
 
 public:
-    LinkedListForwardIterator(Container *pContainer = nullptr, Node* pNode = nullptr, Node* pStart = nullptr)
+    DoubleLinkedForwardIterator(Container *pContainer = nullptr, Node* pNode = nullptr, Node* pStart = nullptr)
         : Parent(pContainer, 0), m_pCurrent(pNode), m_pStart(pStart){}
 
-    LinkedListForwardIterator<Container> &operator++(){
+    DoubleLinkedForwardIterator<Container> &operator++(){
         if(m_pCurrent != nullptr){
             Node* next = m_pCurrent->GetNext();
+            
             if(m_pStart != nullptr && next == m_pStart) m_pCurrent = nullptr;
             else m_pCurrent = next;
         }
@@ -49,52 +48,94 @@ public:
         return m_pCurrent->GetValueRef();
     }
 
-    bool operator!=(const LinkedListForwardIterator<Container>& another) const {
+    bool operator!=(const DoubleLinkedForwardIterator<Container>& another) const {
         return !(*this == another);
     }
-    bool operator==(const LinkedListForwardIterator<Container>& another) const {
+    bool operator==(const DoubleLinkedForwardIterator<Container>& another) const {
         return m_pCurrent == another.m_pCurrent && this->m_pContainer == another.m_pContainer;
     }
 private:
     Node* m_pCurrent = nullptr;
-    Node* m_pStart = nullptr;
+    Node* m_pStart = nullptr; // si no es null, delimitador para iteración circular
 };
 
-// Nodo simple para lista enlazada
+// Iterador backward para listas doblemente enlazadas
+template <typename Container>
+class DoubleLinkedBackwardIterator : public GeneralIterator<Container>
+{
+    using Parent = GeneralIterator<Container>;
+    using Node   = typename Container::Node;
+
+public:
+    DoubleLinkedBackwardIterator(Container *pContainer = nullptr, Node* pNode = nullptr, Node* pStart = nullptr)
+        : Parent(pContainer, 0), m_pCurrent(pNode), m_pStart(pStart){}
+
+    // Avanzar el iterador recorre hacia prev 
+    DoubleLinkedBackwardIterator<Container> &operator++(){
+        if(m_pCurrent != nullptr){
+            Node* prev = m_pCurrent->GetPrev();
+            if(m_pStart != nullptr && prev == m_pStart) m_pCurrent = nullptr;
+            else m_pCurrent = prev;
+        }
+        return *this;
+    }
+
+    typename Container::value_type& operator*(){
+        return m_pCurrent->GetValueRef();
+    }
+
+    bool operator!=(const DoubleLinkedBackwardIterator<Container>& another) const {
+        return !(*this == another);
+    }
+    bool operator==(const DoubleLinkedBackwardIterator<Container>& another) const {
+        return m_pCurrent == another.m_pCurrent && this->m_pContainer == another.m_pContainer;
+    }
+private:
+    Node* m_pCurrent = nullptr;
+    Node* m_pStart = nullptr; // delimita el final en iteración backward circular
+};
+
+// Nodo doble para lista doblemente enlazada
 template <typename Traits>
-class NodeLinkedList{
+class NodeDoubleLinkedList{
 public:
     using value_type = typename Traits::value_type;
     using ref_type = ::ref_type;
 
-    NodeLinkedList(const value_type &v, ref_type r = -1, NodeLinkedList* next = nullptr)
-        : m_data(v), m_ref(r), m_pNext(next) {}
+    NodeDoubleLinkedList(const value_type &v, ref_type r = -1, NodeDoubleLinkedList* prev = nullptr, NodeDoubleLinkedList* next = nullptr)
+        : m_data(v), m_ref(r), m_pPrev(prev), m_pNext(next) {}
 
-    NodeLinkedList() : m_data(), m_ref(-1), m_pNext(nullptr) {}
+    NodeDoubleLinkedList() : m_data(), m_ref(-1), m_pPrev(nullptr), m_pNext(nullptr) {}
 
     value_type GetValue() const { return m_data; }
     value_type& GetValueRef() { return m_data; }
     ref_type GetRef() const { return m_ref; }
     ref_type& GetRefRef() { return m_ref; }
 
-    NodeLinkedList* GetNext() const { return m_pNext; }
-    NodeLinkedList*& GetNextRef() { return m_pNext; }
+    NodeDoubleLinkedList* GetNext() const { return m_pNext; }
+    NodeDoubleLinkedList*& GetNextRef() { return m_pNext; }
+
+    NodeDoubleLinkedList* GetPrev() const { return m_pPrev; }
+    NodeDoubleLinkedList*& GetPrevRef() { return m_pPrev; }
 
 private:
     value_type m_data;
     ref_type  m_ref;
-    NodeLinkedList* m_pNext;
+    NodeDoubleLinkedList* m_pPrev;
+    NodeDoubleLinkedList* m_pNext;
 };
 
-// Base de Lista enlazada 
+// Base de lista doblemente enlazada
 template <typename Traits>
-class CLinkedList {
+class CDoubleLinkedList {
 public:
     using value_type = typename Traits::value_type;
-    using forward_iterator = LinkedListForwardIterator< CLinkedList<Traits> >;
-    using Node = NodeLinkedList<Traits>;
+    using forward_iterator = DoubleLinkedForwardIterator< CDoubleLinkedList<Traits> >;
+    using backward_iterator = DoubleLinkedBackwardIterator< CDoubleLinkedList<Traits> >;
+    using Node = NodeDoubleLinkedList<Traits>;
 
     friend forward_iterator;
+    friend backward_iterator;
 
 protected:
     Node *m_pRoot = nullptr;
@@ -103,23 +144,24 @@ protected:
     mutable recursive_mutex m_mutex;
 
 public:
-    CLinkedList(): m_pRoot(nullptr), m_pLast(nullptr), m_nElements(0) {}
+    CDoubleLinkedList(): m_pRoot(nullptr), m_pLast(nullptr), m_nElements(0) {}
 
     // Constructor copia
-    CLinkedList(const CLinkedList<Traits> &another)
+    CDoubleLinkedList(const CDoubleLinkedList<Traits> &another)
         : m_pRoot(nullptr), m_pLast(nullptr), m_nElements(0)
     {
         lock_guard<recursive_mutex> lock(another.m_mutex);
         Node* cur = another.m_pRoot;
         if (!cur) return;
-        do {
+        while (cur) {
             push_back(cur->GetValue(), cur->GetRef());
             cur = cur->GetNext();
-        } while (cur && cur != another.m_pRoot);
+            if (cur == another.m_pRoot) break; // protección por si es circular
+        }
     }
 
     // Move constructor
-    CLinkedList(CLinkedList<Traits> &&another) noexcept
+    CDoubleLinkedList(CDoubleLinkedList<Traits> &&another) noexcept
         : m_pRoot(nullptr), m_pLast(nullptr), m_nElements(0)
     {
         lock_guard<recursive_mutex> lock(another.m_mutex);
@@ -128,7 +170,7 @@ public:
         m_nElements = exchange(another.m_nElements, 0);
     }
 
-    virtual ~CLinkedList(){
+    virtual ~CDoubleLinkedList(){
         lock_guard<recursive_mutex> lock(m_mutex);
         Node* cur = m_pRoot;
         while (cur) {
@@ -145,6 +187,8 @@ public:
     // Iterators
     forward_iterator begin(){ return forward_iterator(this, m_pRoot); }
     forward_iterator end(){ return forward_iterator(this, nullptr); }
+    backward_iterator rbegin(){ return backward_iterator(this, m_pLast); }
+    backward_iterator rend(){ return backward_iterator(this, nullptr); }
 
     // Acceso por índice (lineal)
     value_type& operator[](size_t index){
@@ -165,12 +209,13 @@ public:
 
     void push_back(const value_type &val, ref_type ref = -1){
         lock_guard<recursive_mutex> lock(m_mutex);
-        Node* node = new Node(val, ref, nullptr);
+        Node* node = new Node(val, ref, m_pLast, nullptr);
         if (!m_pRoot) {
             m_pRoot = node;
             m_pLast = node;
         } else {
             m_pLast->GetNextRef() = node;
+            node->GetPrevRef() = m_pLast;
             m_pLast = node;
         }
         ++m_nElements;
@@ -180,20 +225,19 @@ public:
     void Insert(const value_type &val, ref_type ref = -1){
         lock_guard<recursive_mutex> lock(m_mutex);
         if (!m_pRoot) { push_back(val, ref); return; }
-        
-        Node **pp = &m_pRoot;
-        Node *prev = nullptr;
-        while (*pp) {
-            if (typename Traits::Func()((*pp)->GetValue(), val)) break;
-            prev = *pp;
-            pp = &((*pp)->GetNextRef());
-            if (*pp == m_pRoot) break; // en caso circular
+        Node* cur = m_pRoot;
+        Node* prev = nullptr;
+        while (cur) {
+            if (typename Traits::Func()(cur->GetValue(), val)) break;
+            prev = cur;
+            cur = cur->GetNext();
+            if (cur == m_pRoot) break; // si es circular
         }
-        Node* inserted = new Node(val, ref, *pp);
+        Node* inserted = new Node(val, ref, prev, cur);
         if (prev) prev->GetNextRef() = inserted;
         else m_pRoot = inserted;
-        
-        if (inserted->GetNext() == nullptr) m_pLast = inserted;
+        if (cur) cur->GetPrevRef() = inserted;
+        if (!inserted->GetNext()) m_pLast = inserted;
         ++m_nElements;
     }
 
@@ -223,10 +267,9 @@ public:
         return end();
     }
 
-    
-    friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
+    friend ostream &operator<<(ostream &os, CDoubleLinkedList<Traits> &container){
         lock_guard<recursive_mutex> lock(container.m_mutex);
-        os << "CLinkedList: size = " << container.getSize() << endl;
+        os << "CDoubleLinkedList: size = " << container.getSize() << endl;
         os << "[";
         Node* pTemp = container.m_pRoot;
         bool first = true;
@@ -241,7 +284,7 @@ public:
         return os;
     }
 
-    friend istream &operator>>(istream &is, CLinkedList<Traits> &container) {
+    friend istream &operator>>(istream &is, CDoubleLinkedList<Traits> &container) {
         lock_guard<recursive_mutex> lock(container.m_mutex);
         char c;
         value_type val;
@@ -275,41 +318,55 @@ public:
     }
 };
 
-// Lista Circular simple 
+// Variante circular: conecta primero y último
 template <typename Traits>
-class CCircularLinkedList : public CLinkedList<Traits> {
-    using Node = typename CLinkedList<Traits>::Node;
+class CCircularDoubleLinkedList : public CDoubleLinkedList<Traits> {
+    using Node = typename CDoubleLinkedList<Traits>::Node;
     using value_type = typename Traits::value_type;
 public:
-    CCircularLinkedList() : CLinkedList<Traits>() {}
-    CCircularLinkedList(const CCircularLinkedList<Traits> &another)
-        : CLinkedList<Traits>(another)
+    CCircularDoubleLinkedList() : CDoubleLinkedList<Traits>() {}
+    CCircularDoubleLinkedList(const CCircularDoubleLinkedList<Traits> &another)
+        : CDoubleLinkedList<Traits>(another)
     {
         lock_guard<recursive_mutex> lock(this->m_mutex);
-        if (this->m_pLast) this->m_pLast->GetNextRef() = this->m_pRoot;
+        if (this->m_pLast) {
+            this->m_pLast->GetNextRef() = this->m_pRoot;
+            if (this->m_pRoot) this->m_pRoot->GetPrevRef() = this->m_pLast;
+        }
     }
 
-    CCircularLinkedList(CCircularLinkedList<Traits> &&another) noexcept
-        : CLinkedList<Traits>(move(another)) {}
+    CCircularDoubleLinkedList(CCircularDoubleLinkedList<Traits> &&another) noexcept
+        : CDoubleLinkedList<Traits>(move(another)) {}
 
-    ~CCircularLinkedList(){
+    ~CCircularDoubleLinkedList(){
         lock_guard<recursive_mutex> lock(this->m_mutex);
         if (this->m_pLast) this->m_pLast->GetNextRef() = nullptr;
+        if (this->m_pRoot) this->m_pRoot->GetPrevRef() = nullptr;
     }
 
     void push_back(const value_type &val, long ref = -1) {
         lock_guard<recursive_mutex> lock(this->m_mutex);
-        CLinkedList<Traits>::push_back(val, ref);
-        if (this->m_pLast) this->m_pLast->GetNextRef() = this->m_pRoot;
+        CDoubleLinkedList<Traits>::push_back(val, ref);
+        if (this->m_pLast && this->m_pRoot) {
+            this->m_pLast->GetNextRef() = this->m_pRoot;
+            this->m_pRoot->GetPrevRef() = this->m_pLast;
+        }
     }
 
-    
-    typename CLinkedList<Traits>::forward_iterator begin(){
-        return typename CLinkedList<Traits>::forward_iterator(this, this->m_pRoot, this->m_pRoot);
+    // Overriding begin/end to support finite iteration over circular structure
+    typename CDoubleLinkedList<Traits>::forward_iterator begin(){
+        return typename CDoubleLinkedList<Traits>::forward_iterator(this, this->m_pRoot, this->m_pRoot);
     }
-    typename CLinkedList<Traits>::forward_iterator end(){
-        return typename CLinkedList<Traits>::forward_iterator(this, nullptr, nullptr);
+    typename CDoubleLinkedList<Traits>::forward_iterator end(){
+        return typename CDoubleLinkedList<Traits>::forward_iterator(this, nullptr, nullptr);
+    }
+
+    typename CDoubleLinkedList<Traits>::backward_iterator rbegin(){
+        return typename CDoubleLinkedList<Traits>::backward_iterator(this, this->m_pLast, this->m_pLast);
+    }
+    typename CDoubleLinkedList<Traits>::backward_iterator rend(){
+        return typename CDoubleLinkedList<Traits>::backward_iterator(this, nullptr, nullptr);
     }
 };
 
-#endif // __LINKEDLIST_H__
+#endif // __DOUBLE_LINKED_LIST_H__

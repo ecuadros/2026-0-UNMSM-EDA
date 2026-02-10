@@ -1,6 +1,7 @@
 #include <iostream>
 #include "containers/lists.h"
 #include "variadic-util.h"
+#include "containers/doublelinkedlist.h"
 
 using namespace std;
 
@@ -73,4 +74,33 @@ void DemoLists(){
     }
 
     cout << "--- fin DemoLists ---" << endl;
+
+    // --- Demo Double Linked List ---
+    cout << "\n--- DemoDoubleLinkedList: ---" << endl;
+    CDoubleLinkedList< DoubleAscendingTrait<T1> > dlist;
+    dlist.push_back(3, 10);
+    dlist.push_back(1, 20);
+    dlist.Insert(2, 15);
+    cout << "DList (inicial): " << dlist << endl;
+
+    cout << "Forward iteration (double): ";
+    for (auto it = dlist.begin(); it != dlist.end(); ++it) cout << *it << " ";
+    cout << endl;
+
+    cout << "Backward iteration (double): ";
+    for (auto it = dlist.rbegin(); it != dlist.rend(); ++it) cout << *it << " ";
+    cout << endl;
+
+    auto found = dlist.FirstThat(EsMayorQue<T1>, 1);
+    if (found != dlist.end()) cout << "FirstThat >1: " << *found << endl;
+
+    // Demo circular double
+    CCircularDoubleLinkedList< DoubleAscendingTrait<T1> > cdlist;
+    cdlist.push_back(100, 1);
+    cdlist.push_back(50, 2);
+    cdlist.Insert(75, 3);
+    cout << "Circular DList: " << cdlist << endl;
+    cout << "Forward (circular): "; for (auto it = cdlist.begin(); it != cdlist.end(); ++it) cout << *it << " "; cout << endl;
+    cout << "Backward (circular): "; for (auto it = cdlist.rbegin(); it != cdlist.rend(); ++it) cout << *it << " "; cout << endl;
+
 }
