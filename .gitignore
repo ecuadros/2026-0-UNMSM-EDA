@@ -1,5 +1,4 @@
 main
 Info.plist
 *.o
-*.txt
 *.json
