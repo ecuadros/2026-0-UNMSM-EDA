@@ -49,12 +49,12 @@ private:
 public:
     DoubleLinkedListForwardIterator(Node *pNode) : m_pCurrent(pNode) {}
 
-    bool operator!=(const DoubleLinkedListForwardIterator &other) const {
-        return m_pCurrent != other.m_pCurrent;
+    bool operator!=(const DoubleLinkedListForwardIterator &another) const {
+        return m_pCurrent != another.m_pCurrent;
     }
 
-    bool operator==(const DoubleLinkedListForwardIterator &other) const {
-        return m_pCurrent == other.m_pCurrent;
+    bool operator==(const DoubleLinkedListForwardIterator &another) const {
+        return m_pCurrent == another.m_pCurrent;
     }
 
     DoubleLinkedListForwardIterator &operator++() {
@@ -78,12 +78,12 @@ private:
 public:
     DoubleLinkedListBackwardIterator(Node *pNode) : m_pCurrent(pNode) {}
 
-    bool operator!=(const DoubleLinkedListBackwardIterator &other) const {
-        return m_pCurrent != other.m_pCurrent;
+    bool operator!=(const DoubleLinkedListBackwardIterator &another) const {
+        return m_pCurrent != another.m_pCurrent;
     }
 
-    bool operator==(const DoubleLinkedListBackwardIterator &other) const {
-        return m_pCurrent == other.m_pCurrent;
+    bool operator==(const DoubleLinkedListBackwardIterator &another) const {
+        return m_pCurrent == another.m_pCurrent;
     }
 
     DoubleLinkedListBackwardIterator &operator++() {

@@ -22,12 +22,12 @@ public:
     CircularDoubleForwardIterator(Node *pNode, Node *pStart) 
         : m_pCurrent(pNode), m_pStart(pStart) {}
 
-    bool operator!=(const CircularDoubleForwardIterator &other) const {
-        return m_pCurrent != other.m_pCurrent;
+    bool operator!=(const CircularDoubleForwardIterator &another) const {
+        return m_pCurrent != another.m_pCurrent;
     }
 
-    bool operator==(const CircularDoubleForwardIterator &other) const {
-        return m_pCurrent == other.m_pCurrent;
+    bool operator==(const CircularDoubleForwardIterator &another) const {
+        return m_pCurrent == another.m_pCurrent;
     }
 
     CircularDoubleForwardIterator &operator++() {
@@ -58,12 +58,12 @@ public:
     CircularDoubleBackwardIterator(Node *pNode, Node *pStart) 
         : m_pCurrent(pNode), m_pStart(pStart) {}
 
-    bool operator!=(const CircularDoubleBackwardIterator &other) const {
-        return m_pCurrent != other.m_pCurrent;
+    bool operator!=(const CircularDoubleBackwardIterator &another) const {
+        return m_pCurrent != another.m_pCurrent;
     }
 
-    bool operator==(const CircularDoubleBackwardIterator &other) const {
-        return m_pCurrent == other.m_pCurrent;
+    bool operator==(const CircularDoubleBackwardIterator &another) const {
+        return m_pCurrent == another.m_pCurrent;
     }
 
     CircularDoubleBackwardIterator &operator++() {
