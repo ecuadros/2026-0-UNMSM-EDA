@@ -21,6 +21,47 @@ struct DescendingTrait :
     public ListTrait<T, std::less<T> >{
 };
 
+template <typename Container>
+class LinkedListForwardIterator : public GeneralIterator<Container> {
+    using Parent = GeneralIterator<Container>;
+    using Node = typename Container::Node;
+public:
+    LinkedListForwardIterator(Container *pContainer, Size pos=0) 
+    : Parent(pContainer, pos){}
+    LinkedListForwardIterator(LinkedListForwardIterator<Container> &another) 
+    : Parent(another){}
+
+    LinkedListForwardIterator<Container> &operator++(){
+        if( Parent::m_data && Parent::m_pos < Parent::m_pContainer->getSize() )
+            Parent::m_data = Parent::m_data->GetNext();
+        ++Parent::m_pos;
+        return *this;
+    }
+    bool operator==(const LinkedListForwardIterator<Container> &another) const{
+        return Parent::m_pContainer == another.m_pContainer &&
+               Parent::m_pos        == another.m_pos;         
+    }
+    bool operator!=(const LinkedListForwardIterator<Container> &another) const{
+        return !(*this == another);
+    }
+    LinkedListForwardIterator<Container> operator=(LinkedListForwardIterator<Container> &another){
+        Parent::m_pContainer = another.m_pContainer;
+        Parent::m_data       = another.m_data;
+        Parent::m_pos        = another.m_pos;
+        return *this;
+    }
+    auto &operator*(){
+        return Parent::m_data->GetValueRef();
+    }
+
+    template <typename T>
+    friend std::ostream& operator<<(std::ostream& os, const LinkedListForwardIterator<T>& it){
+        os << "Iterator(pos=" << it.m_pos << ")";
+        if (it.m_data) os << " value=" << it.m_data->GetValue();
+        return os;
+    }
+};
+
 template <typename Traits>
 class NodeLinkedList{
 
@@ -55,49 +96,178 @@ public:
     { return m_data < another.GetValue();   }
 };
 
+
+
 template <typename Traits>
 class CLinkedList {
+public:
     using  value_type  = typename Traits::value_type;
-    // using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
-    // friend forward_iterator;
-    // friend GeneralIterator< CLinkedList<Traits> >;
+    using forward_iterator = LinkedListForwardIterator< CLinkedList<Traits> >;
+    friend forward_iterator;
+
     using  Node = NodeLinkedList<Traits>;
 
+private:
     Node *m_pRoot = nullptr;
     Node *m_pLast = nullptr;
     size_t m_nElements = 0;
+    mutable std::mutex m_mutex;    
+
 public:
     CLinkedList(){}
+    // TODO: Concurrencia (mutex) - ( pushback,operator[], etc )
 
-    void push_back(value_type &val, ref_type ref);
+    // Constructor copia 
+    CLinkedList(const CLinkedList<Traits> &another){
+        std::lock_guard<std::mutex> lock(another.m_mutex);
+
+        Node *pOriginal = another.m_pRoot;
+
+        while (pOriginal) {
+            Node *pNewNode = new Node(pOriginal->GetValue(), pOriginal->GetRef());
+            if (!m_pRoot) {
+                m_pRoot = pNewNode;
+                m_pLast = pNewNode;
+            } else {
+                m_pLast->GetNextRef() = pNewNode;
+                m_pLast = pNewNode;
+            }
+            ++m_nElements;
+            pOriginal = pOriginal->GetNext();
+        }
+    }
+
+
+    // Move Constructor
+    CLinkedList(CLinkedList<Traits> &&another) noexcept {
+        std::lock_guard<std::mutex> lock(another.m_mutex);
+        m_pRoot = std::exchange(another.m_pRoot, nullptr);
+        m_pLast = std::exchange(another.m_pLast, nullptr);
+        m_nElements = std::exchange(another.m_nElements, 0);
+    }
+
+    // Destructor seguro y virtual
+    virtual ~CLinkedList(){ 
+    std::lock_guard<std::mutex> lock(m_mutex);
+    Node *pNode = m_pRoot;
+    while(pNode){
+        Node *pNext = pNode->GetNext();
+        delete pNode;
+        pNode = pNext;
+    }
+    m_pRoot = nullptr;
+    m_pLast = nullptr;
+    m_nElements = 0;
+    }
+
+    // TODO: Operadores de acceso []
+    value_type &operator[](Size index){
+        std::lock_guard<std::mutex> lock(m_mutex);
+        Node* pNode = m_pRoot;
+        for (size_t i=0; i < index; ++i)
+        pNode = pNode->GetNext();
+        return pNode->GetValueRef();
+    }
+
+    const value_type &operator[](Size index) const{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        Node* pNode = m_pRoot;
+        for (size_t i=0; i < index; ++i)
+        pNode = pNode->GetNext();
+        return pNode->GetValue();
+    }
+
+    // TODO: Iterators begin() end()
+    forward_iterator begin()
+    { return forward_iterator(this);  } 
+    forward_iterator end()
+    { return forward_iterator(this, getSize());  }
+
+    Node* getRoot() const { return m_pRoot; }
+
+    template <typename ObjFunc, typename ...Args>
+    void Foreach(ObjFunc of, Args... args){
+        ::Foreach(*this, of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    auto FirstThat(ObjFunc of, Args... args){
+        return ::FirstThat(*this, of, args...);
+    }
+
+    void push_back(const value_type &val, ref_type ref);
+    void clear() noexcept;
     void Insert(const value_type &val, ref_type ref);
-    size_t getSize(){ return m_nElements;  }
+    Size getSize(){ return m_nElements;  }
+    
 private:
     void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
 
-    friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
-        os << "CLinkedList: size = " << container.getSize() << endl;
+    friend std::ostream &operator<<(std::ostream &os, const CLinkedList<Traits> &container){
+        std::lock_guard<std::mutex> lock(container.m_mutex);
+        os << "CLinkedList: size = " << container.m_nElements << endl;
         os << "[";
-        for (auto i = 0; i < container.getSize(); ++i){
-            // os << "(" << arr.m_data[i].GetValue() << ":" << arr.m_data[i].GetRef() << "),";
+        for (const Node *p = container.m_pRoot; p; p = p->GetNext()){
+            os << "(" << p->GetValue() << ":" << p->GetRef() << ")";
+            if (p->GetNext()) 
+            os << ",";
         }
-        os << "]" << endl;
+        os << "]";
         return os;
+    }
+
+    friend std::istream &operator>>(std::istream &is, CLinkedList<Traits> &container){
+        std::lock_guard<std::mutex> lock(container.m_mutex);
+
+        Node *pNode = container.m_pRoot;
+        while (pNode){
+            Node *pNext = pNode->GetNext();
+            delete pNode;
+            pNode = pNext;
+        }
+        container.m_pRoot = nullptr;
+        container.m_pLast = nullptr;
+        container.m_nElements = 0;
+
+        std::cout << "¿Cuántos elementos desea añadir? ";
+        size_t count;
+        std::cin >> count;
+
+        for (size_t i = 0; i < count; ++i){
+            value_type val;
+            ref_type ref;
+            std::cout << "Elemento " << (i+1) << " - value ref: ";
+            std::cin >> val >> ref;
+            
+            Node *pNew = new Node(val, ref);
+            if (!container.m_pRoot) container.m_pRoot = pNew;
+            else container.m_pLast->GetNextRef() = pNew;
+            container.m_pLast = pNew;
+            ++container.m_nElements;
+        }
+        return is;
     }
 };
 
 template <typename Traits>
-void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
+void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref){
+    std::lock_guard<std::mutex> lock(m_mutex);
     Node *pNewNode = new Node(val, ref);
-    if( !m_pRoot )
+    if (!m_pRoot) {
         m_pRoot = pNewNode;
-    m_pLast = pNewNode;
+        m_pLast = pNewNode;
+    } else {
+        m_pLast->GetNextRef() = pNewNode;
+        m_pLast = pNewNode;
+    }
     ++m_nElements;
 }
 
+
+
 template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-    if( !rParent || rParent->m_data > val ){
+    if (!rParent || rParent->GetValue() > val) {
         Node *pNew = new Node(val, ref, rParent);
         rParent = pNew;
         ++m_nElements;
@@ -108,6 +278,7 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
 
 template <typename Traits>
 void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
+    std::lock_guard<std::mutex> lock(m_mutex);
     InternalInsert(m_pRoot, val, ref);
 }
 
