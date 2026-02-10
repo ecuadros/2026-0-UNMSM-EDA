@@ -4,13 +4,19 @@
 #include "containers/array.h"
 #include "containers/lists.h"
 
-// g++ -std=c++17 -Wall -g -pthread main.cpp -o main
+// g++ -std=c++17 -Wall -g -pthread main.cpp DemoLinkedList.cpp DemoLinkedListCircular.cpp Demos.cpp -o main
 
 int main() {
-    std::cout << "Hello EDA-UNMSM!" << std::endl;
+    std::cout << "Hello EDA-UNMSM!" << std::endl << std::endl;
+    
+    // Demos disponibles:
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();  // Demo original del profesor
+    
+    // Nuevos demos completos:
+    DemoLinkedList();           
+    DemoLinkedListCircular();  
     return 0;
 }
