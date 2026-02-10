@@ -1,6 +1,6 @@
 #include <iostream>
 #include "sorting.h"
-#include "containers/array.h"
+#include "../containers/array.h"
 using namespace std;
 
 // Bubble  
@@ -51,7 +51,7 @@ void DemoBurbuja(){
 //     return (i + 1);
 // }
 
-
+/*
 void QuickSort( ContainerElemType* arr, 
                 ContainerRange first, 
                 ContainerRange last, CompFunc pComp) {
@@ -190,4 +190,4 @@ void DemoTemplates(){
     Print(str1, str2);
     Print(c1, c2);
 }
-
+*/
