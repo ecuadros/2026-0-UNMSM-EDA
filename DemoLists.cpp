@@ -58,6 +58,48 @@ void DemoLists(){
     if (it2 != l3.end()) {
         cout << "El primer elemento menor que 376 de la lista 3 es: " << *it2 <<endl;
     } else {
-        cout << "No hay elementos menores a 376 en la lista 3" << endl;
+        cout << "No hay elementos menores a 376 en la lista 3" <<endl;
     }
+
+    cout<<endl;
+
+    cout<<"Implementacion de manejo de archivos:"<<endl<<endl;
+    CDoubleLinkedList<AscendingTrait<int>> lista_guardada;
+    cout<<"Ingrese el contenido de la lista a guardar de este modo [(a:b), ... ]:"<<endl;
+    cin>>lista_guardada;
+    lista_guardada.push_back(100, 1);
+    lista_guardada.push_back(200, 2);
+    lista_guardada.Insert(150, 5);
+
+    cout << endl << "Lista Original en Memoria RAM:" << endl;
+    cout << lista_guardada << endl;
+
+    ofstream archivoSalida("mi_lista_guardada.txt");
+
+    if (archivoSalida.is_open()) {
+        archivoSalida << lista_guardada; 
+        archivoSalida.close();
+        cout << " Exito: Lista guardada en 'mi_lista_guardada.txt'" << endl;
+    } else {
+        cerr << "Error al crear el archivo." << endl;
+    }
+
+    CDoubleLinkedList<AscendingTrait<int>> listaRecuperada;
+
+    ifstream archivoEntrada("mi_lista_guardada.txt");
+
+    cout<<endl;
+
+    if (archivoEntrada.is_open()) {
+        cout << " -> Leyendo archivo desde el disco..." << endl;
+        archivoEntrada >> listaRecuperada;
+        archivoEntrada.close();
+    } else {
+        cerr << "Error al abrir el archivo." << endl;
+    }
+
+    cout << "Lista Recuperada del Disco:" << endl;
+    cout << listaRecuperada << endl;
 }
+
+

@@ -5,6 +5,7 @@
 #include <cassert>
 #include <utility>
 #include <mutex>
+#include <fstream>
 #include "../general/types.h"
 #include "../util.h"
 #include "GeneralIterator.h"
