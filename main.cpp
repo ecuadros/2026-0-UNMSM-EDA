@@ -12,5 +12,6 @@ int main() {
     // DemoPointers1();
     // DemoArray();
     DemoLists();
+    DemoListsCircular();
     return 0;
 }
