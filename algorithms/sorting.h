@@ -8,15 +8,18 @@
 
 
 // Bubble
-template <typename T>
-void BurbujaRecursivo(T arr[], ContainerRange n, 
-                      bool (*pComp)(const T &, const T &) ) {
+template <typename T, typename CompFunc>
+void BurbujaRecursivo(T& arr, 
+                      ContainerRange n,
+                      CompFunc pComp,
+                      ContainerRange start = 0) {
+    auto end = start;
     if (n <= 1)
         return;
-    for (auto j = 1; j < n; ++j)
-        if ( pComp(arr[j], arr[0]) )
-            intercambiar(arr[0], arr[j]);
-    BurbujaRecursivo(arr+1, n-1, pComp);
+    for (auto j = 0; j < n - 1; ++j)
+        if ( pComp(arr[++end], arr[start]) )
+            intercambiar(arr[start], arr[end]);
+    BurbujaRecursivo(arr, n - 1, pComp, start + 1);
 }
 
 void DemoBurbuja();

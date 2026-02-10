@@ -4,6 +4,9 @@
 #include "containers/array.h"
 #include "containers/lists.h"
 
+void DemoLinkedList();
+void DemoCircularLinkedList();
+
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
 int main() {
@@ -11,6 +14,10 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();
+    // DemoCircularLists();
+    DemoLinkedList();
+    DemoCircularLinkedList();
+    
     return 0;
 }

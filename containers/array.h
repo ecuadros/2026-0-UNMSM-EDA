@@ -14,9 +14,22 @@ struct Trait1
 };
 
 template <typename Container>
-class ArrayForwardIterator : public GeneralIterator<Container>
-{ 
+class ArrayIterator : public GeneralIterator<Container> {
   using Parent = GeneralIterator<Container>;
+
+public:
+
+  ArrayIterator(Container *pContainer, Size pos) : Parent(pContainer, pos, pContainer->m_data) {}
+  
+  typename Container::value_type &operator*() override {
+        return Parent::m_data[Parent::m_pos].GetValueRef();
+    }
+};
+
+
+template <typename Container>
+class ArrayForwardIterator : public ArrayIterator<Container> { 
+  using Parent = ArrayIterator<Container>;
   public:
     ArrayForwardIterator(Container *pContainer, Size pos=0)       : Parent(pContainer, pos){}
     ArrayForwardIterator(ArrayForwardIterator<Container> &another):  Parent(another){}
@@ -29,9 +42,9 @@ class ArrayForwardIterator : public GeneralIterator<Container>
 };
 
 template <typename Container>
-class ArrayBackwardIterator : public GeneralIterator<Container>
+class ArrayBackwardIterator : public ArrayIterator<Container>
 { 
-  using Parent = GeneralIterator<Container>;
+  using Parent = ArrayIterator<Container>;
   public:
     ArrayBackwardIterator(Container *pContainer, Size pos=0)          : Parent(pContainer, pos){}
     ArrayBackwardIterator(ArrayBackwardIterator<Container> &another)  :  Parent(another){}
@@ -50,6 +63,7 @@ class CArray {
     friend forward_iterator;
     using  backward_iterator = ArrayBackwardIterator< CArray<Traits> >;
     friend backward_iterator;
+    friend ArrayIterator< CArray<Traits> >;
     friend GeneralIterator< CArray<Traits> >;
 
     struct Node{
@@ -94,7 +108,7 @@ class CArray {
     forward_iterator begin()
     { return forward_iterator(this);  }
     forward_iterator end()
-    { return forward_iterator(this, getSize());  }
+    { return forward_iterator(this, getSize()-3);  }
 
     backward_iterator rbegin()
     { return backward_iterator(this, getSize()-1);  }
