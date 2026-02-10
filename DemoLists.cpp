@@ -64,7 +64,7 @@ void DemoLists(){
     cout<<endl;
 
     cout<<"Implementacion de manejo de archivos:"<<endl<<endl;
-    CDoubleLinkedList<AscendingTrait<int>> lista_guardada;
+    CDoubleLinkedList<AscendingTrait<T1>> lista_guardada;
     cout<<"Ingrese el contenido de la lista a guardar de este modo [(a:b), ... ]:"<<endl;
     cin>>lista_guardada;
     lista_guardada.push_back(100, 1);
@@ -84,7 +84,7 @@ void DemoLists(){
         cerr << "Error al crear el archivo." << endl;
     }
 
-    CDoubleLinkedList<AscendingTrait<int>> listaRecuperada;
+    CDoubleLinkedList<AscendingTrait<T1>> listaRecuperada;
 
     ifstream archivoEntrada("mi_lista_guardada.txt");
 
