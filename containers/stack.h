@@ -2,6 +2,7 @@
 #define __STACK_H__
 
 #include <iostream>
+#include <iomanip>
 #include <mutex>
 #include <vector>
 #include <stdexcept>
@@ -128,11 +129,16 @@ private:
 // operador right shift
 template <typename Traits>
 ostream &operator<<(ostream &os, CStack<Traits> &container) {
+    using value_type = typename CStack<Traits>::value_type;
     lock_guard<mutex> lock(container.mtx);
     os << "CStack: size = " << container.m_nElements << " [";
     // iterar los nodos con un traveler
     for (auto trav = container.m_pTop; trav; trav = trav->GetNext()) {
-        os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
+        if constexpr (std::is_same_v<value_type, std::string>) {
+            os << "(" << std::quoted(trav->GetValue()) << ":" << trav->GetRef() << "),";
+        } else {
+            os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
+        }
     }
     os << "]" << endl;
     return os;}
@@ -156,9 +162,15 @@ istream &operator>>(istream &is, CStack<Traits> &container) {
             if (ch != '(') continue;
             value_type val;
             ref_type ref;
-            is >> val;
-            // leer el valor
-            getline(is, bar, ':');
+
+            if constexpr (std::is_same_v<value_type, std::string>) {
+                // leer string con comillas y escapes
+                is >> std::quoted(val);
+                getline(is, bar, ':');
+            } else {
+                is >> val;  // leer el valor
+                getline(is, bar, ':');
+            }
             is >> ref;
             // leer la ref
             getline(is, bar, ')');
