@@ -17,15 +17,19 @@ void DemoLists(){
     cout << " LINKED LIST (LINEAL) " << endl;
 
     // 1. LISTA DESCENDENTE (Trait)
-    cout << "Lista Descendente (Insert y Push_back)" << endl;
+    cout << "Lista Descendente (Insert )" << endl;
     CLinkedList< DescendingTrait<T1> > l1;
     l1.Insert(20, 4);
     l1.Insert(20, 3);
-    l1.Insert(40, 3);
+    l1.Insert(40, 32);
     l1.Insert(70, 57);
+    cout << "Estado L1: " << l1; 
+    cout<<endl;
+    cout<< "Ingreso sin importar el orden (Push Back) "<<endl;
     l1.push_back(10, 6);
     l1.push_back(17, 8);
     cout << "Estado L1: " << l1; 
+    cout<<endl;
     // 2. CONSTRUCTOR COPIA 
     cout << "Constructor Copia (L2 copia de L1)" << endl;
     CLinkedList< DescendingTrait<T1> > l2 = l1;
@@ -41,24 +45,26 @@ void DemoLists(){
     // 4. FOREACH Y FIRSTTHAT (Externos)
     cout << "Algoritmos Externos (Foreach & FirstThat)" << endl;
     cout << "Foreach: ";
+    cout << "Forward Iterator : ";
+    cout<<endl;
     ::Foreach(l3.begin(), l3.end(), &Print<T1>);
     cout << endl;
     auto it = ::FirstThat(l3.begin(), l3.end(), &Mult9);
     if (it != l3.end()) { 
-        cout << "FirstThat (Multiplo 8): " << *it << endl;
+        cout << "FirstThat (Multiplo 9): " << *it << endl;
     } else {
         cout << "FirstThat: No encontrado." << endl;
     }
-    // 5. OPERATOR >> (Input Stream)
+    // 5. OPERATOR >> 
     cout << "Operator >> (Escribe un numero y su ref): ";
     cin >> l3;
     cout << "L3 Actualizada: " << l3;
     // 6. LISTA ASCENDENTE (Cambio de Trait)
     cout << "Lista Ascendente (Nuevo Trait)" << endl;
     CLinkedList< AscendingTrait<T1> > ASC;
-    ASC.Insert(100, 1);
-    ASC.Insert(50, 2);  
-    ASC.Insert(10, 3); 
+    ASC.Insert(100, 12);
+    ASC.Insert(50, 29);  
+    ASC.Insert(10, 31); 
     cout << "L_Ascendente: " << ASC;
     // Acceso por índice []
     cout << "Elemento indice [1]: " << ASC[1] << endl;

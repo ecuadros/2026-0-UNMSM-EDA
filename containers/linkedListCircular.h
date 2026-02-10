@@ -85,7 +85,6 @@ class CLinkedListCircular{
     size_t getSize() const { return m_nElements; }
 
     Forward_iterator begin() { 
-        // (Inicio, Marca_De_Tope)
         return Forward_iterator(m_pRoot, m_pRoot); 
     }
 
@@ -176,8 +175,6 @@ void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
         ++m_nElements;
         return;
     }
-
-    // Caso 2: Insertar al inicio 
     if (compare(m_pRoot->GetValue(), val)) {
         pNew->GetNextRef() = m_pRoot;
         m_pRoot = pNew;
@@ -186,13 +183,11 @@ void CLinkedListCircular<Traits>::Insert(const value_type &val, ref_type ref){
         return;
     }
 
-    // Caso 3: Insertar en medio o final
     Node *pTemp = m_pRoot;
     while (pTemp != m_pLast && !compare(pTemp->GetNext()->GetValue(), val)) {
         pTemp = pTemp->GetNext();
     }
 
-    // Insertamos
     pNew->GetNextRef() = pTemp->GetNext();
     pTemp->GetNextRef() = pNew;
     if (pTemp == m_pLast) {
