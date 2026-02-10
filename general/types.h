@@ -4,6 +4,7 @@
 using T1 = int;
 using T  = unsigned int;
 using TT = unsigned long long;
+using Tc = char;
 using Size = int;
 
 using ContainerElemType = int;

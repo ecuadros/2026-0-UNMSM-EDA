@@ -1,11 +1,10 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
-LDFLAGS = -pthread # Añadido -pthread
+CXXFLAGS = -std=c++17 -Wall -g -pthread -I. -Icontainers
+LDFLAGS = -pthread
 
 TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp DemoLists.cpp \
-	   sorting.cpp
+# Quita sorting.cpp de aquí
+SRCS = main.cpp util.cpp pointers.cpp DemoArray.cpp DemoLists.cpp DemoCircular.cpp DemoLDE.cpp DemoEnlazadaCircular.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
@@ -18,5 +17,3 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
-
-.PHONY: all clean

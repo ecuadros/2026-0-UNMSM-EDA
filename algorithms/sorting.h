@@ -7,6 +7,8 @@
                     // ContainerRange n, CompFunc pComp);
 
 
+typedef bool (*CompFunc)(const ContainerElemType &, const ContainerElemType &);
+
 // Bubble
 template <typename T>
 void BurbujaRecursivo(T arr[], ContainerRange n, 
