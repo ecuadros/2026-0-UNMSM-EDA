@@ -18,4 +18,14 @@ void Suma(Q &elem, Q p1){    elem += p1;     }
 template <typename Q>
 void Mult(Q &elem, Q p1){    elem *= p1;     }
 
+template <typename Q>
+bool EsMayorQue(Q &elem, Q valor) { 
+    return elem > valor; 
+}
+
+template <typename Q>
+bool EsMenorQue(Q &elem, Q valor) { 
+    return elem < valor; 
+}
+
 #endif // __VARIADIC_UTIL__

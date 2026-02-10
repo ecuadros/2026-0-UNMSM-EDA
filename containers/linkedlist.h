@@ -1,8 +1,12 @@
 #ifndef __LINKEDLIST_H__
 #define __LINKEDLIST_H__
 #include <iostream>
+#include <mutex>
+#include <fstream>
+#include <utility>
 #include "../general/types.h"
 #include "../util.h"
+#include "GeneralIterator.h"
 using namespace std;
 
 // TODO: Traits para listas enlazadas
@@ -60,58 +64,114 @@ public:
 
 template <typename Traits>
 class CLinkedList {
-    using  value_type  = typename Traits::value_type;
-    // using  forward_iterator  = LinkedListForwardIterator < CLinkedList<Traits> >;
-    // friend forward_iterator;
-    // friend GeneralIterator< CLinkedList<Traits> >;
-    using  Node = NodeLinkedList<Traits>;
+public:
+    using value_type = typename Traits::value_type;
+    using forward_iterator = LinkedListForwardIterator<CLinkedList<Traits>>;
+    using Node = NodeLinkedList<Traits>;
 
+    friend forward_iterator;
+    friend class GeneralIterator<CLinkedList<Traits>>;
+
+protected:
     Node *m_pRoot = nullptr;
     Node *m_pLast = nullptr;
     size_t m_nElements = 0;
-public:
-    CLinkedList(){}
-    // TODO: Constructor copia
-    // TODO: Move Constructor
-    // TODO: Destructor seguro y virtual
-    // TODO: Concurrencia (mutex)
-    // TODO: Iterators begin() end()
-    // TODO: Operadores de acceso []
+    mutable recursive_mutex m_mutex;
 
+public:
+    CLinkedList() : m_pRoot(nullptr), m_pLast(nullptr), m_nElements(0) {}
+
+    // Constructor copia
+    CLinkedList(const CLinkedList<Traits>& another) {
+        lock_guard<recursive_mutex> lock(another.m_mutex);
+        Node* pTemp = another.m_pRoot;
+        while (pTemp) {
+            this->Insert(pTemp->GetValue(), pTemp->GetRef());
+            pTemp = pTemp->GetNext();
+        }
+    }
+    
+    // TODO: Move Constructor
+    CLinkedList(CLinkedList<Traits>&& another) noexcept {
+        lock_guard<recursive_mutex> lock(another.m_mutex);
+        m_pRoot = exchange(another.m_pRoot, nullptr);
+        m_pLast = exchange(another.m_pLast, nullptr);
+        m_nElements = exchange(another.m_nElements, 0);
+    }
+    // TODO: Destructor seguro y virtual
+    virtual ~CLinkedList() {
+        Node* pTemp;
+        while (m_pRoot && (m_pRoot != m_pLast->GetNext())) { // Safe para LE y LEC
+            pTemp = m_pRoot;
+            m_pRoot = m_pRoot->GetNext();
+            delete pTemp;
+            if (m_pRoot == nullptr) break;
+        }
+    }
+    // TODO: Iterators begin() end()
+    forward_iterator begin() { return forward_iterator(this, m_pRoot); }
+    forward_iterator end()   { return forward_iterator(this, nullptr); }
+    // TODO: Operadores de acceso []
+    value_type& operator[](size_t index) {
+        lock_guard<recursive_mutex> lock(m_mutex);
+        Node* pTemp = m_pRoot;
+        for (size_t i = 0; i < index && pTemp; ++i) pTemp = pTemp->GetNext();
+        return pTemp->GetValueRef();
+    }
     void push_back(value_type &val, ref_type ref);
     void Insert(const value_type &val, ref_type ref);
-    size_t getSize(){ return m_nElements;  }
+    size_t getSize(){
+        lock_guard<recursive_mutex> lock(m_mutex); 
+        return m_nElements;  }
+
 private:
     void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
 
     // TODO: Persistencia (write)
-    friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
+    friend ostream& operator<<(ostream& os, CLinkedList<Traits>& container) {
+        lock_guard<recursive_mutex> lock(container.m_mutex);
         os << "CLinkedList: size = " << container.getSize() << endl;
         os << "[";
-        for (auto i = 0; i < container.getSize(); ++i){
-            // os << "(" << arr.m_data[i].GetValue() << ":" << arr.m_data[i].GetRef() << "),";
+        Node* pTemp = container.m_pRoot;
+        for (size_t i = 0; i < container.m_nElements; ++i) {
+            os << "(" << pTemp->GetValue() << ":" << pTemp->GetRef() << ")";
+            if (i < container.m_nElements - 1) os << ", ";
+            pTemp = pTemp->GetNext();
         }
         os << "]" << endl;
         return os;
     }
     // TODO: Persistencia (read)
+    friend istream& operator>>(istream& is, CLinkedList<Traits>& container) {
+        value_type val;
+        ref_type ref;
+        char ignore;
+
+        while (is >> ignore >> val >> ignore >> ref >> ignore) 
+            container.Insert(val, ref);
+        return is;
+    }
 };
 
 template <typename Traits>
-void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
-    Node *pNewNode = new Node(val, ref);
-    if( !m_pRoot )
+void CLinkedList<Traits>::push_back(value_type& val, ref_type ref) {
+    lock_guard<recursive_mutex> lock(m_mutex);
+    Node* pNewNode = new Node(val, ref);
+    if (!m_pRoot) {
         m_pRoot = pNewNode;
+    } else {
+        m_pLast->GetNextRef() = pNewNode;
+    }
     m_pLast = pNewNode;
     ++m_nElements;
 }
 
 template <typename Traits>
-void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-    // TODO: Agregar algo para el caso de circular
-    if( !rParent || rParent->m_data > val ){
-        Node *pNew = new Node(val, ref, rParent);
+void CLinkedList<Traits>::InternalInsert(Node*& rParent, const value_type& val, ref_type ref) {
+    if (!rParent || rParent->GetValue() > val) {
+        Node* pNew = new Node(val, ref, rParent);
         rParent = pNew;
+        if (pNew->GetNext() == nullptr) m_pLast = pNew;
         ++m_nElements;
         return;
     }
@@ -119,8 +179,20 @@ void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, 
 }
 
 template <typename Traits>
-void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
+void CLinkedList<Traits>::Insert(const value_type& val, ref_type ref) {
+    lock_guard<recursive_mutex> lock(m_mutex);
     InternalInsert(m_pRoot, val, ref);
 }
+
+template <typename Traits>
+class CCircularLinkedList : public CLinkedList<Traits> {
+public:
+    void MakeCircular() {
+        lock_guard<recursive_mutex> lock(this->m_mutex);
+        if (this->m_pLast && this->m_pRoot) {
+            this->m_pLast->GetNextRef() = this->m_pRoot;
+        }
+    }
+};
 
 #endif // __LINKEDLIST_H__

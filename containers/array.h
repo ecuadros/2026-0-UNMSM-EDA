@@ -18,7 +18,7 @@ class ArrayForwardIterator : public GeneralIterator<Container>
 { 
   using Parent = GeneralIterator<Container>;
   public:
-    ArrayForwardIterator(Container *pContainer, Size pos=0)       : Parent(pContainer, pos){}
+    ArrayForwardIterator(Container *pContainer, Size pos=0) : Parent(pContainer, nullptr, pos){}
     ArrayForwardIterator(ArrayForwardIterator<Container> &another):  Parent(another){}
 
     ArrayForwardIterator<Container> &operator++(){
@@ -33,7 +33,7 @@ class ArrayBackwardIterator : public GeneralIterator<Container>
 { 
   using Parent = GeneralIterator<Container>;
   public:
-    ArrayBackwardIterator(Container *pContainer, Size pos=0)          : Parent(pContainer, pos){}
+    ArrayBackwardIterator(Container *pContainer, Size pos=0) : Parent(pContainer, nullptr, pos){}
     ArrayBackwardIterator(ArrayBackwardIterator<Container> &another)  :  Parent(another){}
 
     ArrayBackwardIterator<Container> &operator++(){
