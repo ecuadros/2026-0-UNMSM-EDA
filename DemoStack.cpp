@@ -8,7 +8,7 @@
 
 using namespace std;
 
-using StackInt = CStack< StackTraits<int> >;
+using StackInt = CStack< StackTraits<T1> >;
 
 static void TestPushPop(ostream &log) {
     StackInt st;
@@ -16,9 +16,9 @@ static void TestPushPop(ostream &log) {
     st.push(20, 2);
     st.push(30, 3);
 
-    int v1 = st.pop();
-    int v2 = st.pop();
-    int v3 = st.pop();
+    T1 v1 = st.pop();
+    T1 v2 = st.pop();
+    T1 v3 = st.pop();
 
     assert(v1 == 30);
     assert(v2 == 20);
@@ -52,9 +52,9 @@ static void TestStreamRoundTrip(ostream &log) {
     StackInt st2;
     is >> st2;
 
-    int v1 = st2.pop();
-    int v2 = st2.pop();
-    int v3 = st2.pop();
+    T1 v1 = st2.pop();
+    T1 v2 = st2.pop();
+    T1 v3 = st2.pop();
 
     assert(v1 == 9);
     assert(v2 == 7);

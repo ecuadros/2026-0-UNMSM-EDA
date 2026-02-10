@@ -5,7 +5,7 @@
 
 using namespace std;
 
-using QueueInt = CQueue< QueueTraits<int> >;
+using QueueInt = CQueue< QueueTraits<T1> >;
 
 static void TestPushPop(ostream &log) {
     QueueInt q;
@@ -13,9 +13,9 @@ static void TestPushPop(ostream &log) {
     q.push(20, 2);
     q.push(30, 3);
 
-    int v1 = q.pop();
-    int v2 = q.pop();
-    int v3 = q.pop();
+    T1 v1 = q.pop();
+    T1 v2 = q.pop();
+    T1 v3 = q.pop();
 
     assert(v1 == 10);
     assert(v2 == 20);
@@ -49,9 +49,9 @@ static void TestStreamRoundTrip(ostream &log) {
     QueueInt q2;
     is >> q2;
 
-    int v1 = q2.pop();
-    int v2 = q2.pop();
-    int v3 = q2.pop();
+    T1 v1 = q2.pop();
+    T1 v2 = q2.pop();
+    T1 v3 = q2.pop();
 
     assert(v1 == 5);
     assert(v2 == 7);
