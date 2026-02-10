@@ -5,6 +5,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
+#include <iomanip>
 #include "../general/types.h"
 #include "../util.h"
 
@@ -129,11 +130,16 @@ private:
 // operador right shift
 template <typename Traits>
 ostream &operator<<(ostream &os, CQueue<Traits> &container) {
+    using value_type = typename CQueue<Traits>::value_type;
     lock_guard<mutex> lock(container.mtx);
     os << "CQueue: size = " << container.m_nElements << " [";
     // iterar los nodos con un traveler
     for (auto trav = container.m_pFirst; trav; trav = trav->GetNext()) {
-        os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
+        if constexpr (std::is_same_v<value_type, std::string>) {
+            os << "(" << std::quoted(trav->GetValue()) << ":" << trav->GetRef() << "),";
+        } else {
+            os << "(" << trav->GetValue() << ":" << trav->GetRef() << "),";
+        }
     }
     os << "]" << endl;
     return os;}
@@ -157,9 +163,14 @@ istream &operator>>(istream &is, CQueue<Traits> &container) {
             if (ch != '(') continue;
             value_type val;
             ref_type ref;
-            is >> val;
-            // leer el valor
-            getline(is, bar, ':');
+            if constexpr (std::is_same_v<value_type, std::string>) {
+                // leer string con comillas y escapes
+                is >> std::quoted(val);
+                getline(is, bar, ':');
+            } else {
+                is >> val;  // leer el valor
+                getline(is, bar, ':');
+            }
             is >> ref;
             // leer la ref
             getline(is, bar, ')');

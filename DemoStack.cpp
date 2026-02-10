@@ -9,6 +9,7 @@
 using namespace std;
 
 using StackInt = CStack< StackTraits<T1> >;
+using StackString = CStack< StackTraits<string> >;
 
 static void TestPushPop(ostream &log) {
     StackInt st;
@@ -63,10 +64,53 @@ static void TestStreamRoundTrip(ostream &log) {
     log << "TestStreamRoundTrip: OK" << endl;
 }
 
+static void TestStringStackPushPop(ostream &log) {
+    StackString st;
+    st.push("hello", 1);
+    st.push("world", 2);
+    st.push("gemini", 3);
+
+    string s1 = st.pop();
+    string s2 = st.pop();
+    string s3 = st.pop();
+
+    assert(s1 == "gemini");
+    assert(s2 == "world");
+    assert(s3 == "hello");
+
+    log << "TestStringStackPushPop: OK" << endl;
+}
+
+static void TestStringStackStreamRoundTrip(ostream &log) {
+    StackString st;
+    st.push("apple", 10);
+    st.push("banana", 20);
+    st.push("cherry", 30);
+
+    ostringstream os;
+    os << st;
+
+    istringstream is(os.str());
+    StackString st2;
+    is >> st2;
+
+    string s1 = st2.pop();
+    string s2 = st2.pop();
+    string s3 = st2.pop();
+
+    assert(s1 == "cherry");
+    assert(s2 == "banana");
+    assert(s3 == "apple");
+
+    log << "TestStringStackStreamRoundTrip: OK" << endl;
+}
+
 void DemoStack() {
     ofstream logFile("stack_test.log");
     TestPushPop(logFile);
     TestPopEmptyThrows(logFile);
     TestStreamRoundTrip(logFile);
+    TestStringStackPushPop(logFile);
+    TestStringStackStreamRoundTrip(logFile);
     logFile << "DemoStack: Done" << endl;
 }
