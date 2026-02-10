@@ -88,7 +88,60 @@ void DemoLinkedListCircular(){
     cout<<endl;
 
 }
+void DemoDobleLists(){
+//crear y llenar lista doble
+cout<<" "<<endl;
+cout<<"Lista doblemente enlazada"<<endl;
+cout<<" "<<endl;
+CDoubleLinkedList<AscendingTrait<T1> > l1;
+l1.Insert(20, 1);
+l1.Insert(30, 2);
+l1.Insert(10, 3);
+l1.Insert(40, 4);
+cout<<"Lista doblemente enlazada"<<endl;
+cout<<l1<<endl;
+
+cout<<"ORIGINALL"<<l1<<endl;
+cout<<"backward iterator"<<endl;
+for(auto it = l1.rbegin(); it != l1.rend(); ++it) {
+    cout << *it << " ";
+}
+cout<<endl;
+//Constructor copia
+cout<<"Constructor copia"<<endl;
+CDoubleLinkedList<AscendingTrait<T1> > l2 = l1;
+cout<<"COPIA"<<l2<<endl;
+l1.push_back(99);
+cout<<"Lista original modificado(+99): "<<l1<<endl;
+cout<<"Lista copia intacta"<<l2<<endl;
+cout<<" "<<endl;
+//move constructor
+cout<<"Move constructor"<<endl;
+CDoubleLinkedList<AscendingTrait<T1> > l3(std::move(l2));
+cout<<"Lista movida: "<<l3<<endl;
+cout<<"Lista original(vacia): "<<l2<<endl;
+cout<<" "<<endl;
+//LISTA CIRCULAR DOBLE
+
+cout<<"Lista circular doblemente enlazada"<<endl;
+CDoubleCircularList<AscendingTrait<T1> > l4;
+l4.Insert(20, 1);
+l4.Insert(30, 2);
+l4.Insert(10, 3);
+l4.Insert(40, 4);
+cout<<"Lista circular doble:  "<<l4<<endl;
+
+cout<<"verifiacion de circularidad"<<endl;
+    auto it = l4.begin();
+    for(size_t i = 0; i < 11; ++i){
+        cout<<*it<<" -> ";
+        ++it;
+    }
+    cout<<endl;
+}
 void DemoLists(){
     DemoLinkedList();
     DemoLinkedListCircular();
+    DemoDobleLists();
+    cout<<" "<<endl;
 }

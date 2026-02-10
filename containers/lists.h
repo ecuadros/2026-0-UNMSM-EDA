@@ -3,6 +3,9 @@
 #include "../general/types.h"
 #include "linkedlist.h"
 #include "linkedlistcircular.h"
+#include "DobleLinkedList.h"
+#include "DobleCircularList.h"
+#include "../foreach.h"
 
 void DemoLists();
 

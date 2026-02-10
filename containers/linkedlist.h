@@ -38,12 +38,13 @@ private:
     value_type m_data;
     ref_type   m_ref;
     Node       *m_pNext = nullptr;
+    Node       *m_pPrev = nullptr;
     //Constructor
 public:
     NodeLinkedList() : m_pNext(nullptr) {}
 
-    NodeLinkedList( value_type _value, ref_type _ref = -1, Node* _next = nullptr) // la referencia esta apuntando a null)
-        : m_data(_value), m_ref(_ref), m_pNext(_next){   }
+    NodeLinkedList( value_type _value, ref_type _ref = -1, Node* _next = nullptr,Node* _prev = nullptr) // la referencia esta apuntando a null)
+        : m_data(_value), m_ref(_ref), m_pNext(_next), m_pPrev(_prev){   }
 
     value_type  GetValue   () const { return m_data; }
     value_type &GetValueRef() { return m_data; }
@@ -54,6 +55,9 @@ public:
     Node      * GetNext     () const { return m_pNext;   }
     Node      *&GetNextRef  () { return m_pNext;   }
 
+    Node      * GetPrev     () const { return m_pPrev;   }
+    Node      *&GetPrevRef  () { return m_pPrev;    }
+
     Node &operator=(const Node &another){
         m_data = another.GetValue();
         m_ref   = another.GetRef();
@@ -63,8 +67,13 @@ public:
     //Operadores de ordenamiento
     bool operator==(const Node &another) const
     { return m_data == another.GetValue();   }
+
     bool operator<(const Node &another) const
     { return m_data < another.GetValue();   }
+
+    bool operator>(const Node &another) const
+    { return m_data > another.GetValue();   }
+
 };
 //Forward Iterator
 template<typename Node>
@@ -73,6 +82,8 @@ public:
     using value_type =  typename Node::value_type;
     using pointer    =  value_type*;
     using reference  =  value_type&;
+
+
 private:
     Node* m_pNode;
 public:
@@ -181,8 +192,18 @@ public:
     // TODO: Iterators begin() end()                    check
     // TODO: Operadores de acceso []
 
-    void push_back(const value_type &val, ref_type ref);
-    void Insert(const value_type &val, ref_type ref);
+    void push_back(const value_type &val, ref_type ref = 0){
+        std::lock_guard<std::mutex> lock(m_mutex);
+        Node *pNewNode = new Node(val, ref);
+        if(!m_pRoot) m_pRoot = pNewNode;
+        else m_pLast->GetNextRef() = pNewNode;
+        m_pLast = pNewNode;
+        ++m_nElements;
+    }
+    void Insert(const value_type &val, ref_type ref = 0){
+        std::lock_guard<std::mutex> lock(m_mutex);
+        InternalInsert(m_pRoot, val, ref);
+    }
 
     size_t getSize() const{
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -195,8 +216,16 @@ public:
         InternalPrintReverse(m_pRoot);
         cout<<"]"<<endl; }
 protected:
-    void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
-
+    void InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
+        if(!rParent || typename Traits::Func()(val, rParent->GetValue())){
+            Node *pNew = new Node(val, ref, rParent);
+            rParent = pNew;
+            if(pNew->GetNext() == nullptr) m_pLast = pNew;
+            ++m_nElements;
+            return;
+        }
+        InternalInsert(rParent->GetNextRef(), val, ref);
+    }
     // TODO: Persistencia (write)
     //operador ("<<")
     friend ostream &operator<<(ostream &os, CLinkedList<Traits> &container){
@@ -229,40 +258,4 @@ protected:
         cout<<pNode->GetValue()<<" "; //imprime de atras para delante
     }
 };
-//Implementacion de los traits
-template <typename Traits>
-void CLinkedList<Traits>::push_back(const value_type &val, ref_type ref){
-    Node *pNewNode = new Node(val, ref);
-    if( !m_pRoot )
-        m_pRoot = pNewNode;
-    else
-        m_pLast->GetNextRef() = pNewNode;
-    m_pLast = pNewNode;
-    ++m_nElements;
-}
-
-template <typename Traits>
-void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-    // TODO: Agregar algo para el caso de circular              check
-    if( !rParent || typename Traits::Func()(val, rParent->GetValue()) ){
-        Node *pNew = new Node(val, ref, rParent);
-        rParent = pNew;
-        //para actualizar el m_pLast si es que insertamos al final o si la lista esta vacia
-        if(pNew->GetNext() == nullptr)
-            m_pLast = pNew;
-        if(rParent)
-        ++m_nElements;
-        return;
-    }
-    InternalInsert(rParent->GetNextRef(), val, ref);
-
-}
-
-template <typename Traits>
-void CLinkedList<Traits>::Insert(const value_type &val, ref_type ref){
-    std::lock_guard<std::mutex> lock(m_mutex); //bloqueamos al incio de la operacion publica
-
-    InternalInsert(m_pRoot, val, ref);
-}
-
 #endif // __LINKEDLIST_H__
