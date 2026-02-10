@@ -13,5 +13,6 @@ int main() {
     // DemoArray();
     DemoLists();
     DemoStack();
+    DemoQueue();
     return 0;
 }
