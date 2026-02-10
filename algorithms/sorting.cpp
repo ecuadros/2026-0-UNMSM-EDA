@@ -1,6 +1,6 @@
 #include <iostream>
 #include "sorting.h"
-#include "containers/array.h"
+#include "../containers/array.h"
 using namespace std;
 
 // Bubble  
