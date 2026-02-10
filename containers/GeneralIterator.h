@@ -1,36 +1,26 @@
 #ifndef __GENERAL_ITERATOR_H__
 #define __GENERAL_ITERATOR_H__
+
 #include "util.h"
 
 template <typename Container>
-struct GeneralIterator
-{ public:
-    using value_type  = typename Container::value_type;
-    using Node        = typename Container::Node;
+struct GeneralIterator { 
+public:
+    using value_type = typename Container::value_type;
+    Container* m_pContainer = nullptr;
+    size_t m_pos = 0;
 
-    Container  *m_pContainer = nullptr;
-    Node       *m_data       = nullptr;
-    Size        m_pos        = -1;
-  public:
-    GeneralIterator(Container *pContainer, Size pos=0) 
-         : m_pContainer(pContainer) {
-           m_data = m_pContainer->m_data;
-           m_pos = pos;
-         }
-    GeneralIterator(GeneralIterator<Container> &another)
-         :  m_pContainer(another.m_pContainer),
-            m_data (another.m_data),
-            m_pos  (another.m_pos)
-    {}
-    virtual ~GeneralIterator(){};
+    GeneralIterator(Container* pContainer, size_t pos = 0) 
+        : m_pContainer(pContainer), m_pos(pos) {}
+
+    virtual ~GeneralIterator() {}
     
-    bool operator!=(const GeneralIterator<Container> &another){
-        return m_pContainer != another.m_pContainer ||
-               m_pos        != another.m_pos;         
+    bool operator!=(const GeneralIterator<Container>& other) const {
+        return m_pos != other.m_pos;         
     }
-    value_type &operator*(){
-      return m_data[m_pos].GetValueRef();
-    }
+
+    virtual value_type& operator*() = 0; 
+    virtual GeneralIterator& operator++() = 0;
 };
 
-#endif // __GENERAL_ITERATOR_H__
+#endif
