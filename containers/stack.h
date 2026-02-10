@@ -37,6 +37,8 @@ public:
     Node      *&GetNextRef  () { return m_pNext;   }
 
     Node &operator=(const Node &another){
+        if (this == &another) return *this;
+
         m_data = another.GetValue();
         m_ref   = another.GetRef();
         return *this;
