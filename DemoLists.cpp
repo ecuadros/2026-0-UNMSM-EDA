@@ -17,9 +17,4 @@ void DemoLists() {
     dl2.push_back(150, 2);
     dl2.push_back(250, 3);
     cout << dl2 << endl;
-
-    // Foreach
-    cout << "3. Usando Foreach (suma 5):" << endl;
-    dl1.Foreach(&Suma<int>, 5);
-    cout << dl1 << endl;
 }
