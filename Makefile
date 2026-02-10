@@ -1,15 +1,23 @@
-#ifndef __LISTS_H__
-#define __LISTS_H__
-#include "../general/types.h"
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -g -pthread
+LDFLAGS = -pthread
 
-#include "linkedlist.h"
-#include "circularlinkedlist.h"
-#include "doublelinkedlist.h"
-#include "circulardoublelinkedlist.h"
+TARGET = main
+SRCS = main.cpp util.cpp pointers.cpp \
+       DemoArray.cpp DemoLists.cpp DemoCircularLinkedList.cpp \
+	   DemoDoubleLinkedList.cpp DemoCircularDoubleLinkedList.cpp \
+	   algorithms/sorting.cpp
+OBJS = $(SRCS:.cpp=.o)
 
-void DemoLists();
-void DemoCircularLists();
-void DemoDoubleLists();
-void DemoCircularDoubleLists();
+all: $(TARGET)
 
-#endif // __LISTS_H__
+$(TARGET): $(OBJS)
+	$(CXX) $(LDFLAGS) $^ -o $@
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+.PHONY: all clean
