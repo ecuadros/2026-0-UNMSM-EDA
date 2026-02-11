@@ -7,6 +7,9 @@ SRCS = main.cpp util.cpp pointers.cpp \
        DemoArray.cpp DemoLists.cpp DemoCircularLinkedList.cpp \
 	   DemoDoubleLinkedList.cpp DemoCircularDoubleLinkedList.cpp \
 	   algorithms/sorting.cpp
+       DemoArray.cpp Demo.cpp \
+	   sorting.cpp
+>>>>>>> origin/28-Stack
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
