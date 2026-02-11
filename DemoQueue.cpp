@@ -1,6 +1,9 @@
 #include <assert.h>
 #include <fstream>
 #include <sstream>
+#include <string>
+#include <vector> // Required for std::vector in TestCopyMove
+
 #include "containers/queue.h"
 #include "containers/lists.h"
 
@@ -103,12 +106,134 @@ static void TestStringQueueStreamRoundTrip(ostream &log) {
     log << "TestStringQueueStreamRoundTrip: OK" << endl;
 }
 
+static void TestQueueCopyMove(ostream &log) {
+    // Test Copy Constructor
+    QueueInt original;
+    original.push(1, 10);
+    original.push(2, 20);
+    original.push(3, 30);
+
+    QueueInt copied(original);
+    assert(copied.pop() == 1);
+    assert(copied.pop() == 2);
+    assert(copied.pop() == 3);
+    bool threw = false;
+    try {
+        (void)copied.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+    
+    // Ensure original is untouched
+    assert(original.pop() == 1);
+    assert(original.pop() == 2);
+    assert(original.pop() == 3);
+    try {
+        (void)original.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+    
+    log << "TestQueueCopyMove: Copy Constructor OK" << endl;
+
+    // Test Copy Assignment Operator
+    QueueInt assign_src;
+    assign_src.push(10, 100);
+    assign_src.push(20, 200);
+
+    QueueInt assign_dest;
+    assign_dest.push(5, 50);
+    assign_dest = assign_src;
+
+    assert(assign_dest.pop() == 10);
+    assert(assign_dest.pop() == 20);
+    try {
+        (void)assign_dest.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+
+    // Ensure source is untouched
+    assert(assign_src.pop() == 10);
+    assert(assign_src.pop() == 20);
+    try {
+        (void)assign_src.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+
+    // Test Self Assignment
+    assign_src.push(1,1);
+    assign_src = assign_src;
+    assert(assign_src.pop() == 1);
+    log << "TestQueueCopyMove: Copy Assignment Operator OK" << endl;
+
+    // Test Move Constructor
+    QueueInt move_src;
+    move_src.push(100, 1);
+    move_src.push(200, 2);
+    move_src.push(300, 3);
+
+    QueueInt moved_dest(std::move(move_src));
+    assert(moved_dest.pop() == 100);
+    assert(moved_dest.pop() == 200);
+    assert(moved_dest.pop() == 300);
+    try {
+        (void)moved_dest.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+
+    // Ensure source is empty
+    try {
+        (void)move_src.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+    log << "TestQueueCopyMove: Move Constructor OK" << endl;
+
+    // Test Move Assignment Operator
+    QueueInt move_assign_src;
+    move_assign_src.push(1000, 1);
+    move_assign_src.push(2000, 2);
+
+    QueueInt move_assign_dest;
+    move_assign_dest.push(50, 5);
+    move_assign_dest = std::move(move_assign_src);
+
+    assert(move_assign_dest.pop() == 1000);
+    assert(move_assign_dest.pop() == 2000);
+    try {
+        (void)move_assign_dest.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+
+    // Ensure source is empty
+    try {
+        (void)move_assign_src.pop();
+    } catch (const exception &) {
+        threw = true;
+    }
+    assert(threw);
+    log << "TestQueueCopyMove: Move Assignment Operator OK" << endl;
+}
+
+
 void DemoQueue() {
-    ofstream logFile("queue_test.log");
+    ofstream logFile("queue_tests.log");
     TestPushPop(logFile);
     TestPopEmptyThrows(logFile);
     TestStreamRoundTrip(logFile);
     TestStringQueuePushPop(logFile);
     TestStringQueueStreamRoundTrip(logFile);
+    TestQueueCopyMove(logFile); // Added this line
     logFile << "DemoQueue: Done" << endl;
 }

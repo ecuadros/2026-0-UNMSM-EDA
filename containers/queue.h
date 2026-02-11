@@ -71,11 +71,76 @@ class CQueue {
     size_t m_nElements = 0;
 public:
     CQueue() {}
+    // Copy Constructor
+    CQueue(const CQueue& other) {
+        lock_guard<mutex> lock(other.mtx); // Lock the source queue
+        copy_nodes_from(other);
+    }
+
+    // Move Constructor
+    CQueue(CQueue&& other) noexcept
+        : m_pFirst(other.m_pFirst),
+          m_pLast(other.m_pLast),
+          m_nElements(other.m_nElements) {
+        other.m_pFirst = nullptr;
+        other.m_pLast = nullptr;
+        other.m_nElements = 0;
+    }
+
     CQueue(const value_type &val, ref_type ref) {
         push(val, ref);
     }
     virtual ~CQueue() {
         clear_unlocked();
+    }
+
+    // Copy Assignment Operator
+    CQueue& operator=(const CQueue& other) {
+        if (this == &other) {
+            return *this;
+        }
+        vector<pair<value_type, ref_type>> items;
+        {
+            lock_guard<mutex> lock(other.mtx);
+            Node *pTrav = other.m_pFirst;
+            for (size_t i = 0; i < other.m_nElements; ++i) {
+                items.emplace_back(pTrav->GetValue(), pTrav->GetRef());
+                pTrav = pTrav->GetNext();
+            }
+        }
+        // este reverse no es necesario en la queue: reverse(items.begin(), items.end());
+        // limpia los nodos de la instancia donde se copiara
+        {
+            lock_guard<mutex> lock(mtx);
+            clear_unlocked();
+        }
+        // se añaden los nodos
+        for (const auto &item : items) {
+            push(item.first, item.second);
+        }
+        return *this;
+    }
+
+    // Move Assignment Operator
+    CQueue& operator=(CQueue&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+
+        lock_guard<mutex> lock_this(mtx);
+        lock_guard<mutex> lock_other(other.mtx);
+
+        clear_unlocked();
+
+        m_pFirst = other.m_pFirst;
+        m_pLast = other.m_pLast;
+        m_nElements = other.m_nElements;
+
+        other.m_pFirst = nullptr;
+        other.m_pLast = nullptr;
+        other.m_nElements = 0;
+
+        return *this;
     }
 
     void push(const value_type &val, ref_type ref) {
@@ -95,6 +160,20 @@ public:
         delete pFirst;
         --m_nElements;
         return val;
+    }
+
+private:
+    // helper para copiar los nodos de la queue
+    void copy_nodes_from(const CQueue& other) {
+        if (!other.m_pFirst) {
+            return;
+        }
+
+        Node *pTrav = other.m_pFirst;
+        while (pTrav) {
+            this->push_unlocked(pTrav->GetValue(), pTrav->GetRef());
+            pTrav = pTrav->GetNext();
+        }
     }
 
 private:
