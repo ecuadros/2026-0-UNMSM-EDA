@@ -4,7 +4,7 @@
 #include "containers/array.h"
 #include "containers/lists.h"
 
-// g++ -std=c++17 -Wall -g -pthread main.cpp -o main
+
 
 int main() {
     std::cout << "Hello EDA-UNMSM!" << std::endl;
