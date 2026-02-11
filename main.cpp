@@ -6,11 +6,14 @@
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
+void DemoStack();
+
 int main() {
     std::cout << "Hello EDA-UNMSM!" << std::endl;
     // DemoUtil();
     // DemoPointers1();
-    // DemoArray();
-    DemoLists();
+    //DemoArray();
+    //DemoLists();
+    DemoStack();
     return 0;
 }
