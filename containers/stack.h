@@ -1,6 +1,7 @@
 #ifndef __STACK_H__
 #define __STACK_H__
 
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 #include <mutex>
@@ -74,12 +75,79 @@ class CStack{
 
 public:
     CStack(){}
+    // Copy Constructor
+    CStack(const CStack& other) {
+        lock_guard<mutex> lock(other.mtx); // Aqui se bloquea el mutex
+        copy_nodes_from(other);
+    }
+
+    // Move Constructor
+    CStack(CStack&& other) noexcept
+        : m_pTop(other.m_pTop),
+          m_pBottom(other.m_pBottom),
+          m_nElements(other.m_nElements) {
+        other.m_pTop = nullptr;
+        other.m_pBottom = nullptr;
+        other.m_nElements = 0;
+    }
+
     CStack(const value_type &val, ref_type ref) {
         push(val, ref);
     }
     virtual ~CStack() {
         // just delete everything
         clear_unlocked();
+    }
+
+    // Copy Assignment Operator
+    CStack& operator=(const CStack& other) {
+        if (this == &other) {
+            return *this;
+        }
+        vector<pair<value_type, ref_type>> items;
+        {
+            lock_guard<mutex> lock(other.mtx);
+            Node *pTrav = other.m_pTop;
+            for (size_t i = 0; i < other.m_nElements; ++i) {
+                items.emplace_back(pTrav->GetValue(), pTrav->GetRef());
+                pTrav = pTrav->GetNext();
+            }
+        }
+        // never forget this s to make the stack happy
+        reverse(items.begin(), items.end());
+        // limpia los nodos de la instancia donde se copiara
+        {
+            lock_guard<mutex> lock(mtx);
+            clear_unlocked();
+        }
+        // se añaden los nodos
+        for (const auto &item : items) {
+            push(item.first, item.second);
+        }
+
+        return *this;
+    }
+
+    // Move Assignment Operator
+    CStack& operator=(CStack&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+
+        lock_guard<mutex> lock_this(mtx);
+        lock_guard<mutex> lock_other(other.mtx);
+
+        clear_unlocked(); // Clear current resources
+
+        m_pTop = other.m_pTop;
+        m_pBottom = other.m_pBottom;
+        m_nElements = other.m_nElements;
+
+        other.m_pTop = nullptr;
+        other.m_pBottom = nullptr;
+        other.m_nElements = 0;
+
+        return *this;
     }
 
     void push(const value_type &val, ref_type ref) {
@@ -98,6 +166,28 @@ public:
         delete pTop;
         --m_nElements;
         return val;
+    }
+
+private:
+    // helper para copiar nodos de un stack a otro
+    void copy_nodes_from(const CStack& other) {
+        if (this == &other) return;
+        if (!other.m_pTop) return;
+        // en ese punto ya se ha bloqueado el mutex del otro stack
+        Node *pTrav = other.m_pTop;
+
+        // se le saca snapshot
+        vector<pair<value_type, ref_type>> temp;
+        // esta operacion invierte el orden del stack
+        while (pTrav) {
+            temp.emplace_back(pTrav->GetValue(), pTrav->GetRef());
+            pTrav=pTrav->GetNextRef();
+        }
+        reverse(temp.begin(), temp.end());
+        // esta operacion la vuelve a invertir -(-1) = 1
+        for (const auto [val, ref] : temp) {
+            this->push_unlocked(val, ref);
+        }
     }
 
 private:
