@@ -9,7 +9,6 @@ SRCS = main.cpp util.cpp pointers.cpp \
 	   algorithms/sorting.cpp
        DemoArray.cpp Demo.cpp \
 	   sorting.cpp
->>>>>>> origin/28-Stack
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
