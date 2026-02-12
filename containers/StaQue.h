@@ -9,7 +9,7 @@
     struct Alumno{
         int id;
         string nombre;
-        int nota;
+        float nota;
         string estado;
 
 
