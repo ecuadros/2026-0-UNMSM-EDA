@@ -6,6 +6,7 @@
 #include "../util.h"
 #include  <mutex>
 #include  <utility>
+template <typename T>
 struct QueueTrait
 {
     using Value_type = T;
@@ -35,7 +36,8 @@ class CQueue{
 using Value_type = typename Traits::Value_type;
 using Node       = NodeQueue<Traits>;
 private:
-Node*  m_pFirst;
+Node*  m_pFirst=nullptr;
+Node*  m_pLast=nullptr;
 size_t m_nElements = 0;
 mutable std::mutex m_Block;
 public:
@@ -51,13 +53,10 @@ CQueue (const CQueue &another) {
         
     }
 void Push(const Value_type &Val );
-void Pop();
+Value_type Pop();
 size_t getSize(){ return m_nElements;  }
 virtual ~CQueue();
-
-
-
- friend ostream &operator<<(ostream &os, CQueue<Traits> &container){
+friend ostream &operator<<(ostream &os, CQueue<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
         
         return os;
@@ -74,14 +73,32 @@ virtual ~CQueue();
 template <typename Traits>
 void  CQueue<Traits>::Push(const Value_type &val){
     std::lock_guard<std::mutex> lock(m_Block);
-    
+    Node* pNew =new Node(val);
+    if(!m_pFirst){
+        pNew->GetNextRef()=m_pLast;
+        m_pFirst=pNew;
+    }
+    else {
+    m_pLast->GetNextRef()=pNew;
+    }
+    m_pLast=pNew;
     ++m_nElements;
 }
 template <typename Traits>
-void  CQueue<Traits>::Pop(){
+typename Traits::Value_type CQueue<Traits>::Pop(){
  std::lock_guard<std::mutex> lock(m_Block);
-    
+    Value_type Valor=m_pFirst->GetValue();
+    if(!m_pLast){
+        return ;
+    }
+    Node* pTemp=m_pFirst;
+    m_pFirst=m_pFirst->GetNext();
+    if (!m_pFirst) {
+        m_pLast=nullptr;
+    }
+    delete pTemp;
     --m_nElements;
+    return Valor;
 }
 
 template <typename Traits>
