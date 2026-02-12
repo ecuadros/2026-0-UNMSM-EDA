@@ -124,9 +124,10 @@ public:
         return m_nElements == 0;
     }
 
-    Size getSize() const{
+    size_t getSize() const{
         return m_nElements;
     }
+
 
     void clear() noexcept{
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -144,7 +145,6 @@ public:
 
     // Operator<<
     
-
     friend std::ostream &operator<<(std::ostream &os, const CStack &stack){
         std::lock_guard<std::mutex> lock(stack.m_mutex);
 
