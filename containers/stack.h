@@ -58,7 +58,7 @@ public:
         std::lock_guard<std::mutex> lock(another.m_mutex);
 
         assert( another.m_pTop != nullptr );
-        Node *tem = another.m_pTop;
+        Node *temp = another.m_pTop;
         Node *prev = nullptr;
 
         while (temp){
@@ -169,14 +169,14 @@ public:
 
         stack.clear();
 
-        cout << "¿Cuántos elementos desea añadir al stack? ";
+        std::cout << "¿Cuántos elementos desea añadir al stack? ";
         size_t count;
         is >> count;
 
         for (size_t i = 0; i < count; ++i){
             value_type val;
 
-            cout << "Elemento " << (i + 1) << ": ";
+            std::cout << "Elemento " << (i + 1) << ": ";
             is >> val;
 
             stack.push(val);
