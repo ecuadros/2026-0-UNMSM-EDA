@@ -1,10 +1,13 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
-LDFLAGS = -pthread # Añadido -pthread
+CXXFLAGS = -std=c++17 -Wall -g -pthread
+LDFLAGS = -pthread
 
 TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp DemoLists.cpp \
+       DemoArray.cpp DemoLists.cpp DemoCircularLinkedList.cpp \
+	   DemoDoubleLinkedList.cpp DemoCircularDoubleLinkedList.cpp \
+	   algorithms/sorting.cpp
+       DemoArray.cpp Demo.cpp \
 	   sorting.cpp
 OBJS = $(SRCS:.cpp=.o)
 
