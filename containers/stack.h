@@ -4,6 +4,7 @@
 #include <iostream>
 #include "../general/types.h"
 #include "../util.h"
+#include <mutex>
 #include <utility>
 using namespace std;
 template <typename T>
@@ -21,8 +22,8 @@ Value_type m_data;
 Node *m_pNext = nullptr;
 public:
 NodeStack(){};
-NodeStack( Value_type _value, ref_type _ref = -1)
-        : m_data(_value), m_ref(_ref){   };
+NodeStack( Value_type _value)
+        : m_data(_value), m_pNext(nullptr) { };
 Value_type  GetValue   () const { return m_data; }
 Value_type &GetValueRef() { return m_data; }
 
@@ -41,7 +42,32 @@ Node* n_Top=nullptr;
 size_t m_nElements = 0;
 mutable std::mutex m_Block;
 public:
-CStack ();
+CStack (){};
+//COPY CONSTRUCTOR
+CStack (const CStack &another) {
+        std::lock_guard<std::mutex> lock(another.m_Block); 
+        if (!another.n_Top ) {
+        n_Top = nullptr;
+        m_nElements = 0;
+        return;
+        }
+    n_Top = new Node(another.n_Top->GetValue());
+    Node* p_Destiny = n_Top;                
+    Node* p_Lector  = another.n_Top->GetNext(); 
+    while (p_Lector) {
+        Node* pNew = new Node(p_Lector->GetValue());
+        p_Destiny->GetNextRef() = pNew; 
+        p_Destiny = pNew;
+        p_Lector = p_Lector->GetNext();
+    }
+    m_nElements = another.m_nElements;
+    }
+//MOVE CONSTRUCTOR
+ CStack(CStack &&another) noexcept {
+        std::lock_guard<std::mutex> lock(another.m_Block); 
+        n_Top    = std::exchange(another.n_Top, nullptr);
+        m_nElements = std::exchange(another.m_nElements, 0);
+    }
 void Push(const Value_type &Val );
 void Pop();
 size_t getSize(){ return m_nElements;  }
@@ -51,15 +77,54 @@ virtual ~CStack();
 
  friend ostream &operator<<(ostream &os, CStack<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
-        
+        Node *p_Temp = container.n_Top;
+        while (p_Temp ) {
+            os  << "   " << p_Temp->GetValue() << "   " << endl;
+            p_Temp = p_Temp->GetNext();
+        }
+            os  << "   NULL    "<<endl;
         return os;
     }
 
     friend istream &operator>>(istream &is, CStack<Traits> &container) {
-        
+        Value_type val;
+        is >> val ; 
+        container.Push(val);
         return is;
     }    
 };
+
+template <typename Traits>
+void  CStack<Traits>::Push(const Value_type &val){
+    std::lock_guard<std::mutex> lock(m_Block);
+    Node *pNew = new Node(val);
+    pNew->GetNextRef() = n_Top; 
+
+    n_Top = pNew;
+    ++m_nElements;
+}
+template <typename Traits>
+void  CStack<Traits>::Pop(){
+ std::lock_guard<std::mutex> lock(m_Block);
+    if(n_Top==nullptr){
+        return;
+    }
+    Node* pTemp = n_Top;
+    n_Top = n_Top->GetNext(); 
+    delete pTemp;
+    --m_nElements;
+}
+
+template <typename Traits>
+CStack<Traits>::~CStack() {
+    Node *p_Temp = n_Top;
+    while (p_Temp) {
+        Node *pNext = p_Temp->GetNext(); 
+        delete p_Temp;                   
+        p_Temp = pNext;                  
+    }
+    n_Top = nullptr; 
+}
 
 
 #endif // __STACK_H__
