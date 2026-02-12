@@ -4,12 +4,10 @@ LDFLAGS = -pthread
 
 TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp DemoLists.cpp DemoCircularLinkedList.cpp \
+       DemoArray.cpp DemoLinkedList.cpp DemoCircularLinkedList.cpp \
 	   DemoDoubleLinkedList.cpp DemoCircularDoubleLinkedList.cpp \
+	   DemoStack.cpp \
 	   algorithms/sorting.cpp
-       DemoArray.cpp Demo.cpp \
-	   sorting.cpp
->>>>>>> origin/28-Stack
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)

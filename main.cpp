@@ -13,7 +13,8 @@ int main() {
     // DemoArray();
     // DemoLists();
     // DemoCircularLists();
-    DemoDoubleLists();
-    DemoCircularDoubleLists();
+    //DemoDoubleLists();
+    //DemoCircularDoubleLists();
+    DemoStack();
     return 0;
 }
