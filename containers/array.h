@@ -6,13 +6,7 @@ using namespace std;
 #include <stddef.h>
 #include "../algorithms/sorting.h"
 #include "GeneralIterator.h"
-
-template <typename _T>
-struct Trait1
-{
-    using T = _T;
-};
-
+#include "../general/traits.h"
 template <typename Container>
 class ArrayForwardIterator : public GeneralIterator<Container>
 { 
