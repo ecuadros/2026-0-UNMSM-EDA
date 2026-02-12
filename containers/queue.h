@@ -24,7 +24,7 @@ private:
     size_t           m_capacity = 0;
     size_t           m_size     = 0;
     size_t           m_front    = 0;
-    size_t           m_tail_v     = 0;
+    size_t           m_tail_v   = 0;
     mutable std::mutex m_mutex;
 
 public:
