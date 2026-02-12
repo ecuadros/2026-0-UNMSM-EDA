@@ -15,6 +15,7 @@ int main() {
     // DemoCircularLists();
     //DemoDoubleLists();
     //DemoCircularDoubleLists();
-    DemoStack();
+    //DemoStack();
+    DemoQueue();
     return 0;
 }
