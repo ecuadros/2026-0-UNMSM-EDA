@@ -3,7 +3,7 @@
 #include "../general/types.h"
 
 #include "linkedlist.h"
-
+#include "queue.h"
 void DemoLists();
-
+void DemoQueue();
 #endif // __LISTS_H__
