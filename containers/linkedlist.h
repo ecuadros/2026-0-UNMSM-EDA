@@ -119,6 +119,12 @@ public:
 
     // TODO: Eliminar por valor, por referencia, por posición
     void pop_back();
+
+    // TODO: Métodos específicos para stack
+    void push_front(value_type &val);
+    void pop_front();
+    value_type get_front() const;
+
 private:
     //void InternalInsert(Node *&rParent, const value_type &val, ref_type ref);
 
@@ -260,6 +266,47 @@ void CLinkedList<Traits>::pop_back(){
     --m_nElements;
 
 }
+
+// Métodos específicos para stack
+template <typename Traits>
+void CLinkedList<Traits>::push_front(value_type &val){
+    std::lock_guard<std::mutex> lock(m_mutex); 
+
+    Node *pNew = new Node(val);
+    pNew->GetNextRef() = m_pHat->GetNext(); // El nuevo apunta al antiguo primero
+    m_pHat->GetNextRef() = pNew; // El hat apunta al nuevo
+
+    if(m_nElements == 0) // Si la lista estaba vacía, el nuevo es también el ultimo
+        m_pLast = pNew;
+
+    ++m_nElements;
+}
+
+template <typename Traits>
+void CLinkedList<Traits>::pop_front(){
+    std::lock_guard<std::mutex> lock(m_mutex); 
+    assert(m_nElements > 0);
+
+    Node *pDelete = m_pHat->GetNext();
+
+    if(m_nElements == 1){
+        m_pHat->GetNextRef() = m_pHat; // Lista vacía
+        m_pLast = m_pHat;
+    } else {
+        m_pHat->GetNextRef() = pDelete->GetNext(); // El hat apunta al nuevo primero
+    }
+
+    delete pDelete; // Elimina el antiguo primero
+    --m_nElements;
+}
+
+template <typename Traits>
+typename CLinkedList<Traits>::value_type CLinkedList<Traits>::get_front() const {
+    assert(m_nElements > 0);
+    return m_pHat->GetNext()->GetValue(); // Retorna el valor del primer nodo (tope del stack)
+}
+
+
 
 //Como es lista circular, se usa Insert iterativo enves de un InternalInsert recursivo
 /*template <typename Traits>
