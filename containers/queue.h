@@ -6,6 +6,7 @@
 #include "../util.h"
 #include  <mutex>
 #include  <utility>
+using namespace std;
 template <typename T>
 struct QueueTrait
 {
@@ -45,12 +46,21 @@ CQueue (){};
 //COPY CONSTRUCTOR
 CQueue (const CQueue &another) {
         std::lock_guard<std::mutex> lock(another.m_Block); 
-        
+        m_pFirst = nullptr;
+        m_pLast  = nullptr;
+        m_nElements = 0;
+        Node* pTemp=another.m_pFirst;
+        while(pTemp){
+            Push(pTemp->GetValue());
+            pTemp=pTemp->GetNextRef();
+        }
     }
 //MOVE CONSTRUCTOR
  CQueue(CQueue &&another) noexcept {
         std::lock_guard<std::mutex> lock(another.m_Block); 
-        
+        m_pLast     = std::exchange(another.m_pLast, nullptr);
+        m_pFirst    = std::exchange(another.m_pFirst, nullptr);
+        m_nElements = std::exchange(another.m_nElements, 0);
     }
 void Push(const Value_type &Val );
 Value_type Pop();
@@ -58,7 +68,12 @@ size_t getSize(){ return m_nElements;  }
 virtual ~CQueue();
 friend ostream &operator<<(ostream &os, CQueue<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
-        
+        Node* pTemp=container.m_pFirst;
+        while (pTemp){
+         os << " [ " << pTemp->GetValue()  << "  ]  " << " -> " ;
+         pTemp=pTemp->GetNext();
+         }
+        os<< " NULL "<<endl;
         return os;
     }
 
@@ -74,13 +89,8 @@ template <typename Traits>
 void  CQueue<Traits>::Push(const Value_type &val){
     std::lock_guard<std::mutex> lock(m_Block);
     Node* pNew =new Node(val);
-    if(!m_pFirst){
-        pNew->GetNextRef()=m_pLast;
-        m_pFirst=pNew;
-    }
-    else {
-    m_pLast->GetNextRef()=pNew;
-    }
+    if(!m_pFirst){    m_pFirst=pNew;    }
+    else         {  m_pLast->GetNextRef()=pNew; }
     m_pLast=pNew;
     ++m_nElements;
 }
@@ -88,14 +98,10 @@ template <typename Traits>
 typename Traits::Value_type CQueue<Traits>::Pop(){
  std::lock_guard<std::mutex> lock(m_Block);
     Value_type Valor=m_pFirst->GetValue();
-    if(!m_pLast){
-        return ;
-    }
+    if(!m_pLast){ return ; }
     Node* pTemp=m_pFirst;
     m_pFirst=m_pFirst->GetNext();
-    if (!m_pFirst) {
-        m_pLast=nullptr;
-    }
+    if (!m_pFirst) { m_pLast=nullptr;}
     delete pTemp;
     --m_nElements;
     return Valor;
@@ -103,7 +109,14 @@ typename Traits::Value_type CQueue<Traits>::Pop(){
 
 template <typename Traits>
 CQueue<Traits>::~CQueue() {
-    
+   Node* pTemp=m_pFirst;
+   while(pTemp){
+    Node *pNext=pTemp->GetNext();
+    delete pTemp;
+    pTemp=pNext;
+   }
+   m_pFirst=nullptr;
+   m_pLast=nullptr;
 }
 
 #endif // __QUEUE_H__
