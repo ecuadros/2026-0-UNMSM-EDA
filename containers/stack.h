@@ -53,12 +53,12 @@ CStack (const CStack &another) {
         return;
         }
     n_Top = new Node(another.n_Top->GetValue());
-    Node* p_Destiny = n_Top;                
+    Node* p_NodeCopia = n_Top;                
     Node* p_Lector  = another.n_Top->GetNext(); 
     while (p_Lector) {
         Node* pNew = new Node(p_Lector->GetValue());
-        p_Destiny->GetNextRef() = pNew; 
-        p_Destiny = pNew;
+        p_NodeCopia->GetNextRef() = pNew; 
+        p_NodeCopia = pNew;
         p_Lector = p_Lector->GetNext();
     }
     m_nElements = another.m_nElements;
