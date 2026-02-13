@@ -11,7 +11,7 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();
     DemoQueue();
     return 0;
 }

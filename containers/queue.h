@@ -6,6 +6,7 @@
 #include "../util.h"
 #include  <mutex>
 #include  <utility>
+#include <stdexcept>
 using namespace std;
 template <typename T>
 struct QueueTrait
@@ -98,7 +99,7 @@ template <typename Traits>
 typename Traits::Value_type CQueue<Traits>::Pop(){
  std::lock_guard<std::mutex> lock(m_Block);
     Value_type Valor=m_pFirst->GetValue();
-    if(!m_pLast){ return ; }
+    if(!m_pLast){ throw std::runtime_error("Cola vacia"); }
     Node* pTemp=m_pFirst;
     m_pFirst=m_pFirst->GetNext();
     if (!m_pFirst) { m_pLast=nullptr;}
