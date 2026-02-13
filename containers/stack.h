@@ -71,7 +71,8 @@ CStack (const CStack &another) {
     }
 void Push(const Value_type &Val );
 Value_type Pop();
-size_t getSize(){ return m_nElements;  }
+size_t Size(){ return m_nElements;  }
+Value_type Top();
 virtual ~CStack();
 
 
@@ -113,6 +114,13 @@ typename Traits::Value_type CStack<Traits>::Pop(){
     n_Top = n_Top->GetNext(); 
     delete pTemp;
     --m_nElements;
+    return Valor;
+}
+
+template <typename Traits>
+typename Traits::Value_type CStack<Traits>::Top(){
+ std::lock_guard<std::mutex> lock(m_Block);
+    Value_type Valor=n_Top->GetValue();
     return Valor;
 }
 
