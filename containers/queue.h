@@ -65,7 +65,8 @@ CQueue (const CQueue &another) {
     }
 void Push(const Value_type &Val );
 Value_type Pop();
-size_t getSize(){ return m_nElements;  }
+size_t Size(){ return m_nElements;  }
+Value_type Front() ;
 virtual ~CQueue();
 friend ostream &operator<<(ostream &os, CQueue<Traits> &container){
         std::lock_guard<std::mutex> lock(container.m_Block);
@@ -105,6 +106,12 @@ typename Traits::Value_type CQueue<Traits>::Pop(){
     if (!m_pFirst) { m_pLast=nullptr;}
     delete pTemp;
     --m_nElements;
+    return Valor;
+}
+template <typename Traits>
+typename Traits::Value_type CQueue<Traits>::Front(){
+ std::lock_guard<std::mutex> lock(m_Block);
+    Value_type Valor=m_pFirst->GetValue();
     return Valor;
 }
 
