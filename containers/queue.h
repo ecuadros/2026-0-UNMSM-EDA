@@ -164,14 +164,14 @@ public:
     }
 
     // Operator >>
-        friend istream& operator>>(istream &is, CQueue<Traits> &queue) {
-            value_type val;
-            while (is >> val) { 
-                queue.push(val); 
-            }
-            is.clear(); 
-            return is;
+    friend istream& operator>>(istream &is, CQueue<Traits> &queue) {
+        value_type val;
+        while (is >> val) { 
+            queue.push(val); 
         }
+        is.clear(); 
+        return is;
+    }
 
 };
 
