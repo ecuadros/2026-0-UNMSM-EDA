@@ -13,6 +13,13 @@ struct QueueTrait{
     using Func       = _Func;
 };
 
+/* Se implemetara una cola circular aprovechando :
+    -Rendimiento constante O(1)
+    -Uso eficiente de memoria
+    -Mejor uso de caché(memoria contigua)
+   Además es el modelo natural de “buffer rotatorio” */
+
+
 template <typename Traits>
 class CircularQueue{
 
@@ -43,7 +50,7 @@ public:
         m_capacity = another.m_capacity;
         m_size     = another.m_size;
         m_front    = another.m_front;
-        m_tail_v     = another.m_tail_v;
+        m_tail_v   = another.m_tail_v;
 
         m_pData = new value_type[m_capacity];
 
@@ -59,7 +66,7 @@ public:
         m_capacity = std::exchange(another.m_capacity, 0);
         m_size     = std::exchange(another.m_size, 0);
         m_front    = std::exchange(another.m_front, 0);
-        m_tail_v     = std::exchange(another.m_tail_v, 0);
+        m_tail_v   = std::exchange(another.m_tail_v, 0);
     }
 
     // Destructor
@@ -82,14 +89,16 @@ public:
 
     // Pop sin resize
  
-    void pop(){
+    value_type pop(){
         std::lock_guard<std::mutex> lock(m_mutex);
 
         assert(m_size > 0);
 
+        value_type temp = std::move(m_pData[m_front]);  // mover en vez de copiar
         m_front = (m_front + 1) % m_capacity;
         --m_size;
 
+        return temp;
     }
 
     // Front
@@ -129,8 +138,8 @@ public:
 
     void clear(){
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_size  = 0;
-        m_front = 0;
+        m_size    = 0;
+        m_front   = 0;
         m_tail_v  = 0;
     }
 
