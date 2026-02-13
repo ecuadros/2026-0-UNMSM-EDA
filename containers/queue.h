@@ -98,8 +98,8 @@ void  CQueue<Traits>::Push(const Value_type &val){
 template <typename Traits>
 typename Traits::Value_type CQueue<Traits>::Pop(){
  std::lock_guard<std::mutex> lock(m_Block);
+    if(!m_pFirst){ throw std::runtime_error("Cola vacia"); }
     Value_type Valor=m_pFirst->GetValue();
-    if(!m_pLast){ throw std::runtime_error("Cola vacia"); }
     Node* pTemp=m_pFirst;
     m_pFirst=m_pFirst->GetNext();
     if (!m_pFirst) { m_pLast=nullptr;}
