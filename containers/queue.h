@@ -151,6 +151,44 @@ public:
         m_nElements = 0;
     }
 
+    // Operator <<
+    friend ostream& operator<<(ostream& os, CQueue<T>& queue) {
+        std::lock_guard<std::mutex> lock(queue.m_mutex);
+        
+        os << "CQueue: size = " << queue.m_nElements << endl;
+        os << "[FRONT -> ";
+        
+        Node* curr = queue.m_pFront;
+        while (curr) {
+            os << curr->data;
+            if (curr->next) os << ", ";
+            curr = curr->next;
+        }
+        
+        os << " <- REAR]" << endl;
+        return os;
+    }
+
+    // Operator >>
+    friend istream& operator>>(istream& is, CQueue<T>& queue) {
+        std::lock_guard<std::mutex> lock(queue.m_mutex);
+        
+        queue.clear();
+        
+        size_t n;
+        is >> n;
+        
+        for (size_t i = 0; i < n; ++i) {
+            T val;
+            is >> val;
+            queue.push(val);
+        }
+        
+        return is;
+    }
+};
+
+
 
 
 #endif // __QUEUE_H__
