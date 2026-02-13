@@ -95,4 +95,62 @@ public:
         return *this;
     }
 
+    // Push
+    void push(const T& val) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        Node* pNew = new Node(val);
+        pNew->next = m_pTop;
+        m_pTop = pNew;
+        ++m_nElements;
+    }
+
+    // Pop (retorna valor)
+    T pop() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        if (!m_pTop) {
+            throw std::runtime_error("Stack vacío");
+        }
+        
+        Node* temp = m_pTop;
+        T val = temp->data;
+        m_pTop = m_pTop->next;
+        delete temp;
+        --m_nElements;
+        
+        return val;
+    }
+
+    T top() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        if (!m_pTop) {
+            throw std::runtime_error("Stack vacío");
+        }
+        
+        return m_pTop->data;
+    }
+
+    bool isEmpty() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_pTop == nullptr;
+    }
+
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_nElements;
+    }
+
+    void clear() {
+        Node* curr = m_pTop;
+        while (curr) {
+            Node* next = curr->next;
+            delete curr;
+            curr = next;
+        }
+        m_pTop = nullptr;
+        m_nElements = 0;
+    }
+
 #endif // __STACK_H__
