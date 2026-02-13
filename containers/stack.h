@@ -70,7 +70,7 @@ public:
     CStack(CStack<Traits> &&another) noexcept;
 
     //Destructor seguro
-    virtual ~CStack();
+    ~CStack();
 
     void       push(const value_type &val, ref_type ref = -1);
     value_type pop();

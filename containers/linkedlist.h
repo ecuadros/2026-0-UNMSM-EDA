@@ -36,7 +36,7 @@ private:
 
 public:
     NodeLinkedList(){}
-    NodeLinkedList( value_type _value, ref_type _ref = -1)
+    NodeLinkedList( value_type _value, ref_type _ref = -1, Node *_pNext = nullptr)
         : m_data(_value), m_ref(_ref){   }
     value_type  GetValue   () const { return m_data; }
     value_type &GetValueRef() { return m_data; }
@@ -109,7 +109,7 @@ void CLinkedList<Traits>::push_back(value_type &val, ref_type ref){
 template <typename Traits>
 void CLinkedList<Traits>::InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
     // TODO: Agregar algo para el caso de circular
-    if( !rParent || rParent->m_data > val ){
+    if( !rParent || rParent->GetValue() > val ){
         Node *pNew = new Node(val, ref, rParent);
         rParent = pNew;
         ++m_nElements;
