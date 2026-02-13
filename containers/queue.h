@@ -81,5 +81,76 @@ public:
         return *this;
     }
 
+    // Push
+    void push(const T& val) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        Node* pNew = new Node(val);
+        
+        if (!m_pRear) {
+            m_pFront = m_pRear = pNew;
+        } else {
+            m_pRear->next = pNew;
+            m_pRear = pNew;
+        }
+        
+        ++m_nElements;
+    }
+
+    // Pop (retorna valor)
+    T pop() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        if (!m_pFront) {
+            throw std::runtime_error("Queue vacío");
+        }
+        
+        Node* temp = m_pFront;
+        T val = temp->data;
+        m_pFront = m_pFront->next;
+        
+        if (!m_pFront) {
+            m_pRear = nullptr;
+        }
+        
+        delete temp;
+        --m_nElements;
+        
+        return val;
+    }
+
+    T front() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        if (!m_pFront) {
+            throw std::runtime_error("Queue vacío");
+        }
+        
+        return m_pFront->data;
+    }
+
+    bool isEmpty() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_pFront == nullptr;
+    }
+
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_nElements;
+    }
+
+    void clear() {
+        Node* curr = m_pFront;
+        while (curr) {
+            Node* next = curr->next;
+            delete curr;
+            curr = next;
+        }
+        m_pFront = nullptr;
+        m_pRear = nullptr;
+        m_nElements = 0;
+    }
+
+
 
 #endif // __QUEUE_H__
