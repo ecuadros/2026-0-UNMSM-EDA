@@ -98,16 +98,18 @@ public:
         ++m_nElements;
     }
 
-    void pop(){
+    value_type pop(){
         std::lock_guard<std::mutex> lock(m_mutex);
 
         assert(m_pTop != nullptr);
 
-        Node *pDelete = m_pTop;
+        value_type value = std::move(pDelete->GetValueRef());
         m_pTop = m_pTop->GetNext();
 
         delete pDelete;
         --m_nElements;
+
+        return value;
     }
 
     value_type &top(){
