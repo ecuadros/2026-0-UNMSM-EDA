@@ -11,6 +11,7 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();  // ← COMENTAR ESTA LÍNEA
+    DemoQueue();     // ← AGREGAR ESTA LÍNEA
     return 0;
 }
