@@ -108,19 +108,23 @@ public:
     }
 
     // Pop
-    void pop() {
+    value_type pop() {
         lock_guard<mutex> lock(m_mutex);
-        if (m_pFront) {
-            Node* pTemp = m_pFront;
-            m_pFront = m_pFront->GetNext();
-            
-            if (m_pFront == nullptr) {
-                m_pRear = nullptr;
-            }
-            
-            delete pTemp;
-            m_nElements--;
-        }
+
+        // (!= nullptr) explicito por el assert
+        assert(m_pFront != nullptr && "Queue is empty");
+
+        value_type valor = m_pFront->GetValue();
+
+        Node* pTemp = m_pFront;
+        m_pFront = m_pFront->GetNext();
+
+        if (m_pFront == nullptr)
+            m_pRear = nullptr;
+        delete pTemp;
+        m_nElements--;
+
+        return valor;
     }
 
     value_type& front() {

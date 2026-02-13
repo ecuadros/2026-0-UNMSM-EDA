@@ -17,8 +17,8 @@ void DemoQueue(){
     cout << " El frente es: " << cola1.front() << endl;
     cout <<  " El final es: " << cola1.back() << endl;
 
-    cola1.pop();
-    cout << " Hicimos pop(). Nuevo frente: " << cola1.front() << endl;
+    cout << " Hicimos pop(). El valor sacado fue: " << cola1.pop() << endl;
+    cout << " Nuevo frente: " << cola1.front() << endl;
     cout << " Size actual: " << cola1.size() << endl;
 
     cout << endl << " Prueba de Lectura desde Archivo " << endl;
