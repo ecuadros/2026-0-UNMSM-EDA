@@ -16,8 +16,8 @@ void DemoStack(){
 
     cout << "El tope es: " << pila1.top() << endl;
 
-    pila1.pop();
-    cout << " Hicimos pop(). Nuevo tope: " << pila1.top() << endl;
+    cout << "Hicimos pop(). El valor sacado fue: " << pila1.pop() << endl;
+    cout << "Ahora, el tope es: " << pila1.top() << endl;
     cout << " Size actual: " << pila1.size() << endl;
 
     cout << endl << "Prueba de Lectura desde Archivo " << endl;

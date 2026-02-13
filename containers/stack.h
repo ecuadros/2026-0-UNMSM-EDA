@@ -66,10 +66,9 @@ public:
     }
 
     // Move Constructor
-    CStack(CStack<Traits> &&another) noexcept 
-        : m_pTop(nullptr), m_nElements(0) 
-    {
+    CStack(CStack<Traits> &&another) noexcept {
         lock_guard<mutex> lock(another.m_mutex);
+        
         m_pTop = exchange(another.m_pTop, nullptr);
         m_nElements = exchange(another.m_nElements, 0);
     }
@@ -94,14 +93,19 @@ public:
     }
 
     // Pop
-    void pop() {
+    value_type pop() {
         lock_guard<mutex> lock(m_mutex);
-        if (m_pTop) {
-            Node* pTemp = m_pTop;
-            m_pTop = m_pTop->GetNext();
-            delete pTemp;
-            m_nElements--;
-        }
+
+        assert(m_pTop != nullptr && "Stack is empty");
+
+        value_type valor = m_pTop->GetValue();
+
+        Node* pTemp = m_pTop;
+        m_pTop = m_pTop->GetNext();
+        delete pTemp;
+        m_nElements--;
+
+        return valor;
     }
 
     value_type& top() {
