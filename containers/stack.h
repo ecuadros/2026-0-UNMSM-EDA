@@ -153,4 +153,41 @@ public:
         m_nElements = 0;
     }
 
+    // Operator <<
+    friend ostream& operator<<(ostream& os, CStack<T>& stack) {
+        std::lock_guard<std::mutex> lock(stack.m_mutex);
+        
+        os << "CStack: size = " << stack.m_nElements << endl;
+        os << "[TOP -> ";
+        
+        Node* curr = stack.m_pTop;
+        while (curr) {
+            os << curr->data;
+            if (curr->next) os << ", ";
+            curr = curr->next;
+        }
+        
+        os << "]" << endl;
+        return os;
+    }
+
+    // Operator >>
+    friend istream& operator>>(istream& is, CStack<T>& stack) {
+        std::lock_guard<std::mutex> lock(stack.m_mutex);
+        
+        stack.clear();
+        
+        size_t n;
+        is >> n;
+        
+        for (size_t i = 0; i < n; ++i) {
+            T val;
+            is >> val;
+            stack.push(val);
+        }
+        
+        return is;
+    }
+};
+
 #endif // __STACK_H__
