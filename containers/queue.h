@@ -72,14 +72,14 @@ public:
     }
 
     // Move Constructor
-    CQueue(CQueue<Traits> &&another) noexcept 
-        : m_pFront(nullptr), m_pRear(nullptr), m_nElements(0) 
-    {
+    CQueue(CQueue<Traits> &&another) noexcept {
         lock_guard<mutex> lock(another.m_mutex);
+
         m_pFront    = exchange(another.m_pFront, nullptr);
         m_pRear     = exchange(another.m_pRear, nullptr);
         m_nElements = exchange(another.m_nElements, 0);
     }
+
     // Safe Destructor
     virtual ~CQueue() {
         lock_guard<mutex> lock(m_mutex);
@@ -164,14 +164,14 @@ public:
     }
 
     // Operator >>
-    friend istream& operator>>(istream &is, CQueue<Traits> &queue) {
-        value_type val;
-        while (is >> val) { 
-            queue.push(val); 
+        friend istream& operator>>(istream &is, CQueue<Traits> &queue) {
+            value_type val;
+            while (is >> val) { 
+                queue.push(val); 
+            }
+            is.clear(); 
+            return is;
         }
-        is.clear(); 
-        return is;
-    }
 
 };
 
