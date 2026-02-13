@@ -17,8 +17,11 @@ void DemoStack(){
     cout<<l1;
     cout<< "Quitamos valores a la pila (Pop)"<< endl;
     cout<< "Hacemos dos Pop"                 << endl;
-    l1.Pop();
-    l1.Pop();
+    cout<<" Hacemos el primer pop :  "<<l1.Pop();
+    cout<<endl;
+    cout<<l1;
+    cout<<" Hacemos el segundo pop :  "<<l1.Pop();
+    cout<<endl;
     cout<<l1;
     cout<<"Creamos otra pila l2 y hacemos que copie la pila l1 (COPY CONSTRUCTOR) "<<endl;
     CStack< StackTrait<T1> >l2=l1;

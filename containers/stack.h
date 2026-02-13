@@ -6,6 +6,7 @@
 #include "../util.h"
 #include <mutex>
 #include <utility>
+#include <stdexcept>
 using namespace std;
 template <typename T>
 struct StackTrait
@@ -69,7 +70,7 @@ CStack (const CStack &another) {
         m_nElements = std::exchange(another.m_nElements, 0);
     }
 void Push(const Value_type &Val );
-void Pop();
+Value_type Pop();
 size_t getSize(){ return m_nElements;  }
 virtual ~CStack();
 
@@ -104,15 +105,15 @@ void  CStack<Traits>::Push(const Value_type &val){
     ++m_nElements;
 }
 template <typename Traits>
-void  CStack<Traits>::Pop(){
+typename Traits::Value_type CStack<Traits>::Pop(){
  std::lock_guard<std::mutex> lock(m_Block);
-    if(n_Top==nullptr){
-        return;
-    }
+    if(!n_Top){ throw std::runtime_error("Pila vacia"); }
+    Value_type Valor=n_Top->GetValue();
     Node* pTemp = n_Top;
     n_Top = n_Top->GetNext(); 
     delete pTemp;
     --m_nElements;
+    return Valor;
 }
 
 template <typename Traits>
