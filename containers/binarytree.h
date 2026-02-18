@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <mutex>
+#include <utility>
+#include <vector>
 #include "../general/types.h"
 #include "../util.h"
 
@@ -25,11 +27,19 @@ template <typename Traits>
 class CBinaryTree;
 
 template <typename Traits>
+class BinaryTreeForwardIterator;
+
+template <typename Traits>
+class BinaryTreeBackwardIterator;
+
+template <typename Traits>
 class NodeBinaryTree{
     using  value_type  = typename Traits::value_type;
     using  Node        = NodeBinaryTree<Traits>;
     using  CompareFunc = typename Traits::CompareFunc;
     friend class CBinaryTree<Traits>;
+    friend class BinaryTreeForwardIterator<Traits>;
+    friend class BinaryTreeBackwardIterator<Traits>;
 private:
     value_type m_data;
     ref_type   m_ref;
@@ -40,6 +50,8 @@ public:
         : m_data(_value), m_ref(_ref){   }
     value_type  GetValue   () const { return m_data; }
     value_type &GetValueRef() { return m_data; }
+    ref_type    GetRef() const { return m_ref; }
+    ref_type   &GetRefRef() { return m_ref; }
 };
 
 template <typename Traits>
@@ -48,6 +60,10 @@ public:
     using  value_type  = typename Traits::value_type;
     using  Node        = NodeBinaryTree<Traits>;
     using  CompareFunc = typename Traits::CompareFunc;
+    using  forward_iterator  = BinaryTreeForwardIterator<Traits>;
+    using  backward_iterator = BinaryTreeBackwardIterator<Traits>;
+    friend class BinaryTreeForwardIterator<Traits>;
+    friend class BinaryTreeBackwardIterator<Traits>;
 protected:
     mutable mutex mtx;
 private:
@@ -57,19 +73,27 @@ private:
 public:
     CBinaryTree(){}
     // TODO: Copy constructor
-    CBinaryTree(CBinaryTree &another){
-
+    CBinaryTree(const CBinaryTree &another) {
+        lock_guard lock(another.mtx);
+        m_pRoot = _clone(another.m_pRoot);
     }
     // TODO: Move constructor
-    CBinaryTree(CBinaryTree &&another){
-
+    CBinaryTree(CBinaryTree &&another) {
+        lock_guard lock(another.mtx);
+        m_pRoot = std::exchange(another.m_pRoot, nullptr);
     }
-    virtual ~CBinaryTree(){
-
+    virtual ~CBinaryTree() {
+        lock_guard lock(mtx);
+        _clear_unlocked();
     }
+
 private:
+    static Node *child(Node *node, size_t index) {
+        return node ? node->m_pChild[index] : nullptr;
+    }
+
     void InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-        if( !rParent ){
+        if ( !rParent ) {
             rParent = new Node(val, ref);
             return;
         }
@@ -153,8 +177,37 @@ private:
         _postorderTraversal(current->m_pChild[1], foo, args...);
         foo(current->GetValueRef(), args...);
     }
+
+    // versiones estaticas de los traversals para copiar los nodos
+    // y para el destructor
+    // el usuario no deberia tener acceso a los nodos, entonces estas
+    // helpers ayudan con eso
+
+    // usa preorden
+    static Node *_clone(Node *src) {
+        if (!src) return nullptr;
+        Node *node = new Node(src->m_data, src->m_ref);
+        node->m_pChild[0] = _clone(src->m_pChild[0]);
+        node->m_pChild[1] = _clone(src->m_pChild[1]);
+        return node;
+    }
+
+    // usa postorden
+    static void _clear_nodes(Node *node) {
+        if (!node) return;
+        _clear_nodes(node->m_pChild[0]);
+        _clear_nodes(node->m_pChild[1]);
+        delete node;
+    }
+
+    void _clear_unlocked() {
+        _clear_nodes(m_pRoot);
+        m_pRoot = nullptr;
+    }
+
 public:
-    void Insert(const value_type &val, ref_type ref){
+    void Insert(const value_type &val, ref_type ref) {
+        lock_guard lock(mtx);
         InternalInsert(m_pRoot, val, ref);
     }
 
@@ -175,6 +228,11 @@ public:
         lock_guard lock(mtx);
         _postorderTraversal(m_pRoot, foo, args...);
     }
+
+    forward_iterator begin() { return forward_iterator(this, false); }
+    forward_iterator end() { return forward_iterator(this, true); }
+    backward_iterator rbegin() { return backward_iterator(this, false); }
+    backward_iterator rend() { return backward_iterator(this, true); }
 
     value_type remove(value_type &val) {
         lock_guard lock(mtx);
@@ -199,5 +257,113 @@ public:
 
 };
 
+template <typename Traits>
+class BinaryTreeForwardIterator {
+    using Tree = CBinaryTree<Traits>;
+    using Node = typename Tree::Node;
+    using value_type = typename Tree::value_type;
+
+    // tendra un puntero al arbol original y al nodo actual
+    Tree *m_tree = nullptr;
+    std::vector<Node*> m_stack;
+    Node *m_current = nullptr;
+
+    // en un iterador se reciben los valores de manera ascendente, esta funcion
+    // se llama cada que se avanza a la derecha, para acumular los valores
+    // en orden y no saltarse ninguno
+    void push_left(Node *node) {
+        while (node) {
+            m_stack.push_back(node);
+            node = Tree::child(node, 0);
+        }
+    }
+
+    // helper para avanzar en el iterador
+    void advance() {
+        if (m_stack.empty()) {
+            m_current = nullptr;
+            return;
+        }
+        Node *node = m_stack.back();
+        m_stack.pop_back();
+        if (Tree::child(node, 1)) {
+            push_left(Tree::child(node, 1));
+        }
+        m_current = m_stack.empty() ? nullptr : m_stack.back();
+    }
+
+public:
+    BinaryTreeForwardIterator(Tree *tree, bool is_end=false) : m_tree(tree) {
+        if (!is_end && m_tree && m_tree->m_pRoot) {
+            push_left(m_tree->m_pRoot);
+            m_current = m_stack.empty() ? nullptr : m_stack.back();
+        }
+    }
+
+    value_type &operator*() { return m_current->GetValueRef(); }
+
+    BinaryTreeForwardIterator &operator++() {
+        advance();
+        return *this;
+    }
+
+    bool operator!=(const BinaryTreeForwardIterator &other) const {
+        return m_current != other.m_current || m_tree != other.m_tree;
+    }
+};
+
+template <typename Traits>
+class BinaryTreeBackwardIterator {
+    using Tree = CBinaryTree<Traits>;
+    using Node = typename Tree::Node;
+    using value_type = typename Tree::value_type;
+
+    Tree *m_tree = nullptr;
+    std::vector<Node*> m_stack;
+    Node *m_current = nullptr;
+
+    // al igual que en ForwardIterator, esta funcion sirve para acumular
+    // los nodos en orden y no pasarse ninguno
+    void push_right(Node *node) {
+        while (node) {
+            m_stack.push_back(node);
+            node = Tree::child(node, 1);
+        }
+    }
+
+    void advance() {
+        if (m_stack.empty()) {
+            m_current = nullptr;
+            return;
+        }
+        Node *node = m_stack.back();
+        m_stack.pop_back();
+        if (Tree::child(node, 0)) {
+            push_right(Tree::child(node, 0));
+        }
+        m_current = m_stack.empty() ? nullptr : m_stack.back();
+    }
+
+public:
+    BinaryTreeBackwardIterator(Tree *tree, bool is_end=false) : m_tree(tree) {
+        if (!is_end && m_tree && m_tree->m_pRoot) {
+            push_right(m_tree->m_pRoot);
+            m_current = m_stack.empty() ? nullptr : m_stack.back();
+        }
+    }
+
+    value_type &operator*() { return m_current->GetValueRef(); }
+
+    BinaryTreeBackwardIterator &operator++() {
+        advance();
+        return *this;
+    }
+
+    bool operator!=(const BinaryTreeBackwardIterator &other) const {
+        return m_current != other.m_current || m_tree != other.m_tree;
+    }
+};
+
+void DemoBinaryTree();
 
 #endif // __BINARYTREE_H__
