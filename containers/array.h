@@ -4,7 +4,6 @@
 #include <assert.h>
 using namespace std;
 #include <stddef.h>
-#include "../algorithms/sorting.h"
 #include "GeneralIterator.h"
 
 template <typename _T>
