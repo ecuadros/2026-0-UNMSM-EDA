@@ -22,11 +22,11 @@ struct HeapTrait {
 };
 
 template <typename T>
-struct AscendingTrait : HeapTrait<T, std::greater<T> >{
+struct AscendingHeapTrait : HeapTrait<T, std::greater<T> >{
 };
 
 template <typename T>
-struct DescendingTrait : HeapTrait<T, std::less<T> >{
+struct DescendingHeapTrait : HeapTrait<T, std::less<T> >{
 };
 
 template <typename Traits>
@@ -39,8 +39,7 @@ template <typename Traits>
 istream& operator>>(istream &is, CHeap<Traits> &container);
 
 template <typename Traits>
-class CHeap{
-    // ...
+class CHeap {
     mutable mutex mtx;
     using value_type = typename Traits::value_type;
     using compareFunc = typename Traits::Func;
@@ -159,11 +158,12 @@ void CHeap<Traits>::_bubble_down(size_t index) {
     }
 }
 
+
 template<typename Traits>
 typename CHeap<Traits>::value_type CHeap<Traits>::pop() {
     lock_guard lock(mtx);
     // si el heap esta vacio no hay nada que hacer
-    if (heap.empty()) return value_type();
+    if (heap.empty()) return value_type {};
 
     // si solo hay un nodo, se hace pop sin mas
     value_type top = heap.front().GetValue();
