@@ -73,7 +73,7 @@ public:
     CHeap() = default;
     CHeap(const CHeap &to_copy);
     CHeap(CHeap &&to_move) noexcept ;
-    virtual ~CHeap() = default;
+    virtual ~CHeap();
     CHeap &operator=(const CHeap &to_copy);
 
     void push(value_type value, ref_type ref);
@@ -188,6 +188,12 @@ template<typename Traits>
 CHeap<Traits>::CHeap(CHeap &&to_move) noexcept {
     lock_guard lock(to_move.mtx);
     heap = std::exchange(to_move.heap, {});
+}
+
+template <typename Traits>
+CHeap<Traits>::~CHeap() {
+    lock_guard lock(mtx);
+    _clear();
 }
 
 template<typename Traits>
