@@ -1,8 +1,11 @@
 #ifndef __BINARYTREE_H__
 #define __BINARYTREE_H__
 
+#include <cctype>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include "../general/types.h"
@@ -25,6 +28,12 @@ struct TreeTraitDescending {
 // declaracion previa para hacerla friend en NodeBinaryTree
 template <typename Traits>
 class CBinaryTree;
+
+template <typename Traits>
+ostream& operator<<(ostream &os, CBinaryTree<Traits> &tree);
+
+template <typename Traits>
+istream& operator>>(istream &is, CBinaryTree<Traits> &tree);
 
 template <typename Traits>
 class BinaryTreeForwardIterator;
@@ -90,6 +99,59 @@ public:
 private:
     static Node *child(Node *node, size_t index) {
         return node ? node->m_pChild[index] : nullptr;
+    }
+
+    static void _serialize_node(ostream &os, Node *node) {
+        if (!node) {
+            os << "# ";
+            return;
+        }
+        if constexpr (std::is_same_v<value_type, std::string>) {
+            os << "(" << std::quoted(node->GetValue()) << ":" << node->m_ref << ") ";
+        } else {
+            os << "(" << node->GetValue() << ":" << node->m_ref << ") ";
+        }
+        _serialize_node(os, node->m_pChild[0]);
+        _serialize_node(os, node->m_pChild[1]);
+    }
+
+    static Node *_deserialize_node(istream &is) {
+        char ch;
+        do {
+            if (!is.get(ch)) return nullptr;
+        } while (isspace(static_cast<unsigned char>(ch)));
+
+        if (ch == '#') return nullptr;
+        if (ch != '(') {
+            is.setstate(ios::failbit);
+            return nullptr;
+        }
+
+        value_type val;
+        if constexpr (std::is_same_v<value_type, std::string>) {
+            is >> std::quoted(val);
+        } else {
+            is >> val;
+        }
+
+        is >> ch;
+        if (!is || ch != ':') {
+            is.setstate(ios::failbit);
+            return nullptr;
+        }
+
+        ref_type ref;
+        is >> ref;
+        is >> ch;
+        if (!is || ch != ')') {
+            is.setstate(ios::failbit);
+            return nullptr;
+        }
+
+        Node *node = new Node(val, ref);
+        node->m_pChild[0] = _deserialize_node(is);
+        node->m_pChild[1] = _deserialize_node(is);
+        return node;
     }
 
     void InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
@@ -229,6 +291,16 @@ public:
         _postorderTraversal(m_pRoot, foo, args...);
     }
 
+    template <typename ObjFunc, typename ...Args>
+    void Foreach(ObjFunc of, Args... args) {
+        ::Foreach(*this, of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    value_type FirstThat(ObjFunc of, Args... args) {
+        return *::FirstThat(*this, of, args...);
+    }
+
     forward_iterator begin() { return forward_iterator(this, false); }
     forward_iterator end() { return forward_iterator(this, true); }
     backward_iterator rbegin() { return backward_iterator(this, false); }
@@ -255,7 +327,44 @@ public:
         return value_type {};
     }
 
+    friend ostream& operator<< <>(ostream &os, CBinaryTree<Traits> &tree);
+    friend istream& operator>> <>(istream &is, CBinaryTree<Traits> &tree);
 };
+
+template <typename Traits>
+ostream &operator<<(ostream &os, CBinaryTree<Traits> &tree) {
+    lock_guard<mutex> lock(tree.mtx);
+    os << "CBinaryTree [ ";
+    tree._serialize_node(os, tree.m_pRoot);
+    os << "]";
+    return os;
+}
+
+template <typename Traits>
+istream &operator>>(istream &is, CBinaryTree<Traits> &tree) {
+    if (!is) return is;
+
+    string bar;
+    getline(is, bar, '[');
+    lock_guard<mutex> lock(tree.mtx);
+    tree._clear_unlocked();
+
+    tree.m_pRoot = tree._deserialize_node(is);
+    if (!is) {
+        tree._clear_unlocked();
+    } else {
+        char ch;
+        while (is.get(ch)) {
+            if (ch == ']') break;
+            if (!isspace(static_cast<unsigned char>(ch))) {
+                is.setstate(ios::failbit);
+                tree._clear_unlocked();
+                break;
+            }
+        }
+    }
+    return is;
+}
 
 template <typename Traits>
 class BinaryTreeForwardIterator {
