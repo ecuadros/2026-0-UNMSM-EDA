@@ -24,7 +24,7 @@ public:
     ArrayForwardIterator(const ArrayForwardIterator<Container> &another) : Parent(another) {}
 
     ArrayForwardIterator<Container> &operator++() {
-        if (Parent::m_pos < Parent::m_pContainer->size())
+        if (Parent::m_pos < Parent::m_pContainer->getSize())
             ++Parent::m_pos;
         return *this;
     }
@@ -66,7 +66,7 @@ class CArray {
     value_type &back();
     value_type &operator[](Size index);
     Size getSize() const
-    {   return m_last + 1;  };
+    {   return m_last ;  };
     void resize(Size delta = 10);
     void sort( CompareFunc pComp );
 
@@ -94,7 +94,7 @@ class CArray {
         os << "CArray: size = " << container.getSize() << endl;
         os << "[ ";
         if (container.m_last != (size_t)-1) {
-            for (size_t i = 0; i <= container.m_last; ++i)
+            for (size_t i = 0; i < container.m_last; ++i)
               os << container.m_data[i] << " ";
         }
         os << "]" << endl;

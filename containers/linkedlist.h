@@ -5,7 +5,6 @@
 #include "../util.h"
 using namespace std;
 
-// TODO: Traits para listas enlazadas
 template <typename T, typename _Func>
 struct ListTrait{
     using value_type = T;
