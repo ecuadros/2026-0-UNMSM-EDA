@@ -190,4 +190,3 @@ void DemoTemplates(){
     Print(str1, str2);
     Print(c1, c2);
 }
-

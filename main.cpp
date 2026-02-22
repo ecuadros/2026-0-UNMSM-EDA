@@ -15,6 +15,11 @@ int main() {
     // DemoPointers1();
     // DemoArray();
     // DemoLists();
+    // DemoCircularLists();
+    //DemoDoubleLists();
+    //DemoCircularDoubleLists();
+    //DemoStack();
+    //DemoQueue();
     DemoHeap();
     return 0;
 }
