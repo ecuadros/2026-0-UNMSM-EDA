@@ -6,8 +6,8 @@ TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
        DemoArray.cpp DemoLinkedList.cpp DemoCircularLinkedList.cpp \
        DemoDoubleLinkedList.cpp DemoCircularDoubleLinkedList.cpp \
-       DemoStack.cpp DemoQueue.cpp DemoHeap.cpp \
-       algorithms/sorting.cpp
+       DemoStack.cpp DemoQueue.cpp DemoHeap.cpp DemoBinaryTree.cpp \
+       DemoAVL.cpp algorithms/sorting.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
