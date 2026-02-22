@@ -3,56 +3,70 @@
 #include <utility>
 #include "containers/binarytree.h"
 using namespace std;
-void PrintItem(int& val) {
-    cout << val << " ";
-}
-
-bool IsGreaterThan(int& val, int threshold) {
-    return val > threshold;
-}
-void DemoBinaryTree(){
-   cout << "\n========================================\n";
-    cout << "   DEMO: CBinaryTree (Ascendente)\n";
-    cout << "========================================\n";
-    
-    CBinaryTree<TreeTraitAscending<int>> bst;
-    
-    // Inserciones manuales
-    int arr[] = {50, 30, 70, 20, 40, 60, 80};
-    for(int i = 0; i < 7; ++i) {
-        bst.Insert(arr[i]);
+namespace TwoFunctions {
+    void PrintNode(int& val) {
+        cout << val << " ";
     }
 
-    // Prueba de operador >> (cin)
-    cout << "Ingrese un numero extra para el BST: ";
-    cin >> bst; 
+    bool IsGreaterThan(int& val, int threshold) {
+        return val > threshold;
+    }
+}
+void DemoBinaryTree(){
+   using namespace TwoFunctions;
 
-    // Prueba de operador << (cout)
-    cout << "Impresion (cout <<): " << bst << "\n\n";
-
-    // Modos de lectura
-    cout << "[Recorridos]\n";
-    cout << "Preorden:  "; bst.preorden(PrintItem);  cout << "\n";
-    cout << "Inorden:   "; bst.inorden(PrintItem);   cout << "\n";
-    cout << "Postorden: "; bst.postorden(PrintItem); cout << "\n\n";
-
-    // Iteradores
-    cout << "[Iteradores]\n";
-    cout << "Forward:   ";
-    for (auto it = bst.begin(); it != bst.end(); ++it) cout << *it << " ";
-    cout << "\nBackward:  ";
-    for (auto it = bst.rbegin(); it != bst.rend(); ++it) cout << *it << " ";
-
-    // Algoritmos variádicos
-    cout << "\n\n[Algoritmos]\n";
-    cout << "Foreach:   ";
-    bst.Foreach(PrintItem);
+    cout << "=== DEMO BINARY TREE (ASCENDING) ===" << endl;
     
-    auto itFound = bst.FirstThat(IsGreaterThan, 65);
-    cout << "\nFirstThat (> 65): ";
-    if (itFound != bst.end()) cout << *itFound;
-    cout << "\n";
+    // 1. Instancia con Trait Ascendente
+    CBinaryTree<TreeTraitAscending<int>> bTree;
 
+    // 2. Insert
+    bTree.Insert(50);
+    bTree.Insert(30);
+    bTree.Insert(70);
+    bTree.Insert(20);
+    bTree.Insert(40);
+
+    // 3. Operadores cin y cout
+    cout << "Ingresa un numero para insertar: ";
+    cin >> bTree; 
+    cout << "Arbol actual: " << bTree << "\n\n";
+
+    // 4. Los 3 Recorridos (Ahora mucho mas limpios)
+    cout << "InOrden:   "; bTree.inorden(PrintNode); cout << endl;
+    cout << "PreOrden:  "; bTree.preorden(PrintNode); cout << endl;
+    cout << "PostOrden: "; bTree.postorden(PrintNode); cout << "\n\n";
+
+    // 5. Foreach y FirstThat
+    cout << "Foreach: "; 
+    bTree.Foreach(PrintNode); 
+    cout << endl;
+
+    // Uso de 'auto' simple para evitar errores de deduccion
+    auto pNode = bTree.FirstThat(IsGreaterThan, 60);
+    if (pNode != nullptr) {
+        cout << "FirstThat (> 60): Encontrado con exito.\n\n";
+    }
+
+    // 6. Remove
+    bTree.Remove(30);
+    cout << "Despues de Remove(30): " << bTree << "\n\n";
+
+    // 7. Copy y Move Constructor
+    CBinaryTree<TreeTraitAscending<int>> copyTree = bTree;
+    CBinaryTree<TreeTraitAscending<int>> moveTree = std::move(copyTree);
+    
+    // 8. Iteradores (Forward y Backward) sobre el arbol movido
+    cout << "Forward Iterator (Arbol Movido): ";
+    for (auto it = moveTree.begin(); it != moveTree.end(); ++it) {
+        cout << *it << " ";
+    }
+    
+    cout << "\nBackward Iterator (Arbol Movido): ";
+    for (auto it = moveTree.rbegin(); it != moveTree.rend(); ++it) {
+        cout << *it << " ";
+    }
+    cout << "\n";
 
 
 }

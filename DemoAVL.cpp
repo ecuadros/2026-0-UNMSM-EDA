@@ -1,59 +1,70 @@
 #include <iostream>
 #include "containers/lists.h"
 #include <utility>
+#include "containers/binarytree.h"
 #include "containers/AVL-Tree.h"
 using namespace std;
-void PrintItem(int& val) {
-    cout << val << " ";
-}
-
-bool IsGreaterThan(int& val, int threshold) {
-    return val > threshold;
-}
-void DemoAVL(){
-   cout << "\n========================================\n";
-    cout << "   DEMO: CAVLTree (Descendente)\n";
-    cout << "========================================\n";
-    
-    CAVLTree<TreeTraitDescending<int>> avl;
-    
-    // Inserción secuencial (En un BST normal crearía una rama infinita, 
-    // pero el AVL usará sus rotaciones para balancearse automáticamente).
-    int arr[] = {10, 20, 30, 40, 50, 60, 70};
-    for(int i = 0; i < 7; ++i) {
-        avl.Insert(arr[i]);
+namespace TreeFunctions {
+    void PrintNode(int& val) {
+        cout << val << " ";
     }
 
-    // Prueba de operador >> (cin)
-    cout << "Ingrese un numero extra para el AVL: ";
-    cin >> avl; 
+    bool IsGreaterThan(int& val, int threshold) {
+        return val > threshold;
+    }
 
-    // Prueba de operador << (cout)
-    cout << "Impresion (cout <<): " << avl << "\n\n";
+    bool IsExactMatch(int& val, int target) {
+        return val == target;
+    }
+}
+void DemoAVL(){
+   using namespace TreeFunctions;
 
-    // Modos de lectura
-    cout << "[Recorridos]\n";
-    cout << "Preorden:  "; avl.preorden(PrintItem);  cout << "\n";
-    cout << "Inorden:   "; avl.inorden(PrintItem);   cout << "\n";
-    cout << "Postorden: "; avl.postorden(PrintItem); cout << "\n\n";
-
-    // Iteradores
-    cout << "[Iteradores]\n";
-    cout << "Forward:   ";
-    for (auto it = avl.begin(); it != avl.end(); ++it) cout << *it << " ";
-    cout << "\nBackward:  ";
-    for (auto it = avl.rbegin(); it != avl.rend(); ++it) cout << *it << " ";
-
-    // Algoritmos variádicos
-    cout << "\n\n[Algoritmos]\n";
-    cout << "Foreach:   ";
-    avl.Foreach(PrintItem);
+    cout << "=== DEMO AVL TREE (DESCENDING) ===" << endl;
     
-    auto itFound = avl.FirstThat(IsGreaterThan, 45);
-    cout << "\nFirstThat (> 45): ";
-    if (itFound != avl.end()) cout << *itFound;
-    cout << "\n\n";
+    // Instancia con Trait Descendente
+    CAVLTree<TreeTraitDescending<int>> avlTree;
 
+    // Insertamos secuencialmente. 
+    // Un arbol normal colapsaria en una linea recta, pero el AVL rotara.
+    avlTree.Insert(10);
+    avlTree.Insert(20);
+    avlTree.Insert(30); 
+    avlTree.Insert(40);
+    avlTree.Insert(50); 
 
+    cout << "Ingresa un numero para insertar en el AVL: ";
+    cin >> avlTree; 
+    cout << "Arbol AVL actual: " << avlTree << "\n\n";
+
+    cout << "InOrden:   "; avlTree.inorden(PrintNode); cout << endl;
+    cout << "PreOrden:  "; avlTree.preorden(PrintNode); cout << endl;
+    cout << "PostOrden: "; avlTree.postorden(PrintNode); cout << "\n\n";
+
+    cout << "Foreach: "; 
+    avlTree.Foreach(PrintNode); 
+    cout << endl;
+
+    auto pNode = avlTree.FirstThat(IsExactMatch, 30);
+    if (pNode != nullptr) {
+        cout << "FirstThat (== 30): Encontrado con exito.\n\n";
+    }
+
+    // Al eliminar, el AVL tambien verificara su balanceo
+    avlTree.Remove(20);
+    cout << "Despues de Remove(20): " << avlTree << "\n\n";
+
+    CAVLTree<TreeTraitDescending<int>> copyAvl = avlTree;
+    CAVLTree<TreeTraitDescending<int>> moveAvl = std::move(copyAvl);
     
+    cout << "Forward Iterator (AVL Movido): ";
+    for (auto it = moveAvl.begin(); it != moveAvl.end(); ++it) {
+        cout << *it << " ";
+    }
+    
+    cout << "\nBackward Iterator (AVL Movido): ";
+    for (auto it = moveAvl.rbegin(); it != moveAvl.rend(); ++it) {
+        cout << *it << " ";
+    }
+    cout << "\n";
 }

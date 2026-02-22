@@ -23,7 +23,7 @@ struct TreeTraitDescending {
 template <typename Traits>
 class NodeBinaryTree{
     using  value_type  = typename Traits::value_type;
-    using  Node        = typename NodeBinaryTree<Traits>;
+    using  Node        =  NodeBinaryTree<Traits>;
     using  CompareFunc = typename Traits::CompareFunc;
 private:
     value_type m_data;
@@ -138,13 +138,13 @@ template <typename Traits>
 class CBinaryTree{
 public:
     using  value_type  = typename Traits::value_type;
-    using  Node        = typename NodeBinaryTree<Traits>;
+    using  Node        =  NodeBinaryTree<Traits>;
     using  CompareFunc = typename Traits::CompareFunc;
     using  forward_iterator  = TreeForwardIterator< CBinaryTree<Traits> >;
     using  backward_iterator = TreeBackwardIterator< CBinaryTree<Traits> >;
     friend forward_iterator;
     friend backward_iterator;
-private:
+protected:
     Node *m_pRoot = nullptr;
     CompareFunc comp;
     mutable mutex m_Block; 

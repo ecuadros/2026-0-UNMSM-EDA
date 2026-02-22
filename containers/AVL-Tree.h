@@ -14,11 +14,12 @@ template <typename Traits>
 class CAVLTree {
 public:
     using value_type  = typename Traits::value_type;
-    using Node        = typename NodeBinaryTree<Traits>;
+    using Node        =  NodeBinaryTree<Traits>;
     using CompareFunc = typename Traits::CompareFunc;
-    
-    using forward_iterator  = typename CBinaryTree<Traits>::forward_iterator;
-    using backward_iterator = typename CBinaryTree<Traits>::backward_iterator;
+    using forward_iterator  = TreeForwardIterator< CAVLTree<Traits> >;
+    using backward_iterator = TreeBackwardIterator< CAVLTree<Traits> >;
+    friend forward_iterator;
+    friend backward_iterator;
 
 private:
     Node *m_pRoot = nullptr;
