@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include "containers/avl.h"
 #include "variadic-util.h"
 
@@ -113,4 +114,24 @@ void DemoAVL(){
     CAVL< AscendingBTreeTrait<int> > moved(std::move(copia));
     cout << "Moved: " << moved;
     cout << "Copia (vacio): size = " << copia.getSize() << endl;
+
+    // foreach
+    cout << endl << "--- Foreach(Suma, 100) ---" << endl;
+    avl.Foreach(Suma<int>, 100);
+    cout << "Inorder:   ";
+    avl.Inorder(ImprimirAVL);
+    cout << endl;
+
+    // firstthat
+    cout << endl << "--- FirstThat(>200) ---" << endl;
+    auto it2 = avl.FirstThat(EsMayorQueAVL, 200);
+    if( it2 != avl.end() )
+        cout << "Encontrado: " << *it2 << endl;
+
+    // operator>>
+    cout << endl << "--- operator>> ---" << endl;
+    CAVL< AscendingBTreeTrait<int> > avl2;
+    stringstream ss("3 5 1 15 2 25 3");
+    ss >> avl2;
+    cout << avl2;
 }

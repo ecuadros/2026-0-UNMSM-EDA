@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include "containers/binarytree.h"
 #include "variadic-util.h"
 
@@ -81,4 +82,11 @@ void DemoBinaryTree(){
     CBTree< AscendingBTreeTrait<int> > moved(std::move(copia));
     cout << "Moved: " << moved;
     cout << "Copia (vacio): size = " << copia.getSize() << endl;
+
+    // operator>>
+    cout << endl << "===== operator>> =====" << endl;
+    CBTree< AscendingBTreeTrait<int> > bst2;
+    stringstream ss("3 5 1 15 2 25 3");
+    ss >> bst2;
+    cout << bst2;
 }
