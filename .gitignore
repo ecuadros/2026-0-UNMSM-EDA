@@ -2,3 +2,5 @@ main
 Info.plist
 *.o
 *.txt
+.idea/
+*.log
