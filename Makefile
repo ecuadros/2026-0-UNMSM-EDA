@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -g -Wall -Wextra -std=c++17
 
-OBJ = main.o Vector.o
+OBJ = main.o DemoHeap.o
 EXEC = main
 
 all: $(EXEC)
@@ -9,11 +9,11 @@ all: $(EXEC)
 $(EXEC): $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $(EXEC) $(OBJ)
 
-main.o: main.cpp containers/Vector.h
+main.o: main.cpp containers/Heap.h
 	$(CXX) $(CXXFLAGS) -c main.cpp
 
-Vector.o: Vector.cpp containers/Vector.h
-	$(CXX) $(CXXFLAGS) -c Vector.cpp
+DemoHeap.o: DemoHeap.cpp containers/Heap.h
+	$(CXX) $(CXXFLAGS) -c DemoHeap.cpp
 clean:
 	rm -f $(OBJ) $(EXEC)
 .PHONY: all clean
