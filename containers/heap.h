@@ -11,20 +11,21 @@
 using namespace std;
 
 // Traits
-template <typename T, typename _Func>
+template <typename T, typename _Func, typename _Ref = long>
 struct HeapTrait{
     using value_type = T;
     using Func       = _Func;
+    using ref_type   = _Ref;
 };
 
-template <typename T>
+template <typename T, typename _Ref = long>
 struct MaxHeapTrait : 
-    public HeapTrait<T, std::less<T> >{
+    public HeapTrait<T, std::less<T>, _Ref >{
 };
 
-template <typename T>
+template <typename T, typename _Ref = long>
 struct MinHeapTrait : 
-    public HeapTrait<T, std::greater<T> >{
+    public HeapTrait<T, std::greater<T>, _Ref >{
 };
 
 // Forward declarations
@@ -38,6 +39,7 @@ class CHeap {
 public:
     using  value_type  = typename Traits::value_type;
     using  Func        = typename Traits::Func;
+    using  ref_type    = typename Traits::ref_type;
 
 private:
     value_type *m_pData  = nullptr;
@@ -63,7 +65,7 @@ public:
     virtual ~CHeap();
 
     // push
-    void push(value_type val, ref_type ref = -1);
+    void push(value_type val, ref_type ref = ref_type{});
 
     // pop
     value_type pop();
