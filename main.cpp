@@ -2,6 +2,7 @@
 #include "util.h"
 #include "pointers.h"
 #include "containers/array.h"
+#include "containers/avl.h"
 #include "containers/lists.h"
 #include "containers/binarytree.h"
 
@@ -14,6 +15,7 @@ int main() {
     // DemoArray();
     // DemoLists();
     DemoBinaryTree();
+    DemoAVLTree();
 
     return 0;
 }

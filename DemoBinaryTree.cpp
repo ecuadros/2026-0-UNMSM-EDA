@@ -11,7 +11,7 @@
 
 using std::vector;
 
-std::ofstream logFile("binarytree_tests.log");
+static std::ofstream logFile("binarytree_tests.log");
 
 void TestInsertAndIterators() {
     using Traits = TreeTraitAscending<T1>;

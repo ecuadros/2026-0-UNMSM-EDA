@@ -2,10 +2,10 @@
 #define __AVL_H__
 
 #include "binarytree.h"
+#include <cassert>
 #include <string>
 
 using namespace std;
-
 
 template <typename Traits>
 class CAVLTree : public CBinaryTree<Traits> {
@@ -13,6 +13,7 @@ class CAVLTree : public CBinaryTree<Traits> {
     using Node = typename Base::Node;
     using value_type = typename Base::value_type;
     using CompareFunc = typename Base::CompareFunc;
+    CompareFunc comp;
 
     // obtener la altura de un nodo
     static size_t height(Node *node) {
@@ -37,11 +38,11 @@ class CAVLTree : public CBinaryTree<Traits> {
 
     Node *rotate_right(Node *target) {
         Node *targetLeftChild = Base::child(target, 0);
+        if (!targetLeftChild) return target;
         Node *targetLCRightChild = Base::child(targetLeftChild, 1);
 
         Base::child_ref(targetLeftChild, 1) = target;
         Base::child_ref(target, 0) = targetLCRightChild;
-
         update_height(target);
         update_height(targetLeftChild);
         return targetLeftChild;
@@ -49,11 +50,11 @@ class CAVLTree : public CBinaryTree<Traits> {
 
     Node *rotate_left(Node *target) {
         Node *targetRightChild = Base::child(target, 1);
+        if (!targetRightChild) return target;
         Node *targetRCLeftChild = Base::child(targetRightChild, 0);
 
         Base::child_ref(targetRightChild, 0) = target;
         Base::child_ref(target, 1) = targetRCLeftChild;
-
         update_height(target);
         update_height(targetRightChild);
         return targetRightChild;
@@ -68,30 +69,8 @@ class CAVLTree : public CBinaryTree<Traits> {
         // se inserta de manera recursiva para chequear en cada nivel del arbol
         Base::child_ref(node, path) = insert_avl(Base::child(node, path), val, ref);
 
-        // se actualiza la altura
-        update_height(node);
-        const Size nodeBalance = balance(node);
-
-        // Caso 1, el arbol pesa a la izquierda y el hijo cayo en el subarbol izquierdo
-        if (nodeBalance > 1 && comp(val, Base::child(node, 0)->GetValue()))
-            return rotate_right(node);
-        // 2: el arbol pesa a la derecha y el hijo cayo en el subarbol derecho
-        if (nodeBalance < -1 && !comp(val, Base::child(node, 1)->GetValue()))
-            return rotate_left(node);
-        // 3: pesa a la izquierda y el hijo cayo en el subarbol derecho
-        if (nodeBalance > 1 && !comp(val, Base::child(node, 0)->GetValue())) {
-            // se estabiliza el arbol derecho
-            Base::child_ref(node, 0) = rotate_left(Base::child(node, 0));
-            // y se rota a la derecha
-            return rotate_right(node);
-        }
-        // 4: pesa a la derecha y el hijo cayo en el subarbol izquierdo
-        if (nodeBalance < -1 && comp(val, Base::child(node, 1)->GetValue())) {
-            Base::child_ref(node, 1) = rotate_right(Base::child(node, 1));
-            return rotate_left(node);
-        }
-
-        return node;
+        // usa la misma logica robusta de rebalanceo que remove
+        return rebalance(node);
     }
     // retorna el nodo mas a la derecha
     Node *max_node(Node *node) const {
@@ -134,29 +113,41 @@ class CAVLTree : public CBinaryTree<Traits> {
         value_type dummy_val {};
         // se hace remove_avl para que cuando actualice removed_val
         // se actualice el nodo objetivo por las referencia
-        Base::child_ref(node, 0) = remove_avl(Base::child(node, 0), pred->GetValue(), dummy_removed, dummy_val);
+        Base::child_ref(node, 0) = remove_avl(
+            Base::child(node, 0),
+            pred->GetValue(),
+            dummy_removed,
+            dummy_val
+            );
 
         return rebalance(node);
     }
 
-    // logica de balanceo para el remove
-    // la logice en el insert es ligeramente diferente (se chequea a donde va el hijo)
+    // logica del balanceo
     Node *rebalance(Node *node) {
         if (!node) return nullptr;
         // chequeo de balanceo
         update_height(node);
         Size nodeBalance = balance(node);
 
-        if (nodeBalance > 1 && balance(Base::child(node, 0)))
+        // Caso 1: pesa a la izquierda y el hijo izquierdo tambien pesa a la izquierda
+        if (nodeBalance > 1 && balance(Base::child(node, 0)) >= 0)
             return rotate_right(node);
+        // Caso 2: pesa a la izquierda y el hijo izquierdo pesa a la derecha
         if (nodeBalance > 1 && balance(Base::child(node, 0)) < 0) {
+            // se estabiliza el subarbol izquierdo
             Base::child_ref(node, 0) = rotate_left(Base::child(node, 0));
+            // y se rota a la derecha
             return rotate_right(node);
         }
+        // Caso 3: pesa a la derecha y el hijo derecho tambien pesa a la derecha
         if (nodeBalance < -1 && balance(Base::child(node, 1)) <= 0)
             return rotate_left(node);
+        // Caso 4: pesa a la derecha y el hijo derecho pesa a la izquierda
         if (nodeBalance < -1 && balance(Base::child(node, 1)) > 0) {
+            // se estabiliza el subarbol derecho
             Base::child_ref(node, 1) = rotate_right(Base::child(node, 1));
+            // y se rota a la izquierda
             return rotate_left(node);
         }
         return node;
@@ -167,11 +158,11 @@ public:
     CAVLTree(const CAVLTree &other) : Base(other) {}
     CAVLTree(CAVLTree &&other) noexcept : Base(std::move(other)) {}
     CAVLTree &operator=(const CAVLTree &other) {
-        Base::operator=(other);
+        Base::operator=(other);  // reciclando operador
         return *this;
     }
     CAVLTree &operator=(CAVLTree &&other) noexcept {
-        Base::operator=(std::move(other));
+        Base::operator=(std::move(other)); // reciclando operador
         return *this;
     }
 
@@ -222,7 +213,21 @@ public:
         this->m_pRoot = remove_avl(this->m_pRoot, val, removed, removed_val);
         return removed ? removed_val : value_type {};
     }
+
+    static size_t CheckHeightAndBalance(Node *node) {
+        if (!node) return 0;
+        size_t leftHeight = CheckHeightAndBalance(Base::child(node, 0));
+        size_t rightHeight = CheckHeightAndBalance(Base::child(node, 1));
+        Size diff = static_cast<Size>(leftHeight) - static_cast<Size>(rightHeight);
+        assert(diff >= -1 && diff <= 1);
+        return 1 + (leftHeight > rightHeight ? leftHeight : rightHeight);
+    }
+
+    static void AssertBalanced(CAVLTree &tree) {
+        CheckHeightAndBalance(tree.m_pRoot);
+    }
 };
 
+void DemoAVLTree();
 
 #endif // __AVL_H__

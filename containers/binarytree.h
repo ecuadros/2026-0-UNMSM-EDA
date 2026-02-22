@@ -49,12 +49,11 @@ class NodeBinaryTree {
     friend class CBinaryTree<Traits>;
     friend class BinaryTreeForwardIterator<Traits>;
     friend class BinaryTreeBackwardIterator<Traits>;
-private:
     value_type m_data;
     ref_type   m_ref;
     Node *m_pChild[2]  = {nullptr, nullptr};
-    size_t m_height = 1;  // usado por AVL
 public:
+    size_t m_height = 1;  // usado por AVL
     NodeBinaryTree(){}
     NodeBinaryTree( value_type _value, ref_type _ref = -1)
         : m_data(_value), m_ref(_ref){   }
@@ -79,17 +78,15 @@ protected:
     Node *m_pRoot = nullptr;
     CompareFunc comp;
 
+public:
     // auxiliares para el AVL asegurando que siempre sea un nodo existente
-
+    // y no repetir sintaxis fregada
     static Node *child(Node *node, size_t index) {
         return node ? node->m_pChild[index] : nullptr;
     }
-
     static Node *&child_ref(Node *node, size_t index) {
         return node->m_pChild[index];
     }
-
-public:
     CBinaryTree(){}
     // TODO: Copy constructor
     CBinaryTree(const CBinaryTree &another) {

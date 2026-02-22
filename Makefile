@@ -5,7 +5,7 @@ DEBUGFLAGS = -g -O0 -DDEBUG
 
 TARGET = main
 SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp DemoBinaryTree.cpp \
+       DemoArray.cpp DemoBinaryTree.cpp DemoAVLTree.cpp \
 	   algorithms/sorting.cpp
 OBJS = $(SRCS:.cpp=.o)
 
