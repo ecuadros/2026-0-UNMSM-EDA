@@ -5,8 +5,11 @@
 #include <vector>
 #include <mutex>
 #include <stdexcept>
+#include <sstream>
 #include "../containers/traits.h"
 #include "../general/types.h"
+
+using namespace std;
 
 template <typename Traits>
 class CHeap {
@@ -21,9 +24,9 @@ public:
     };
 
 private:
-    std::vector<Element> m_data;
-    mutable std::mutex m_mtx;
-    using LOCK = std::lock_guard<std::mutex>;
+    vector<Element> m_data;
+    mutable mutex m_mtx;
+    using LOCK = lock_guard<mutex>;
 
     //metodo para flotar lo que se inserta, calcula el nodo padre y compara
     void heapifyUp(size_t index) {
@@ -31,7 +34,7 @@ private:
         size_t parent = (index - 1) / 2;
 
         if (Compare()(m_data[index].data, m_data[parent].data)) {
-            std::swap(m_data[index], m_data[parent]);
+            swap(m_data[index], m_data[parent]);
             heapifyUp(parent);
         }
     }
@@ -48,13 +51,30 @@ private:
         //si el objetivo cambia, intercambiamos y seguimos hundiendo
         //se usa swap para no usar una variable temporal al intercambiar
         if (target != index) {
-            std::swap(m_data[index], m_data[target]);
+            swap(m_data[index], m_data[target]);
             heapifyDown(target);
         }
     }
 
 public:
     CHeap() {}
+
+    //contructor de copia
+    CHeap(const CHeap<Traits> &another){
+        LOCK lock(another.m_mtx);
+        m_data = another.m_data;
+    }
+
+    //move contructor
+    CHeap(CHeap<Traits> &&another) noexcept{
+        LOCK lock(another.m_mtx);
+        m_data = std::move(another.m_data);
+    }
+
+    //destructor
+    virtual ~CHeap(){
+        m_data.clear();
+    }
 
     void push(const value_type& val, ref_type ref = -1) {
         LOCK lock(m_mtx);
@@ -64,7 +84,7 @@ public:
 
     value_type pop() {
         LOCK lock(m_mtx);
-        if (m_data.empty()) throw std::out_of_range("el heap esta vacio");
+        if (m_data.empty()) throw out_of_range("el heap esta vacio");
         
         value_type rootVal = m_data[0].data; //el min o max siempre está en el índice 0
         
@@ -79,7 +99,7 @@ public:
 
     value_type top() const {
         LOCK lock(m_mtx);
-        if (m_data.empty()) throw std::out_of_range("el heap esta vacio");
+        if (m_data.empty()) throw out_of_range("el heap esta vacio");
         return m_data[0].data; //min o max siempre estara en index 0
     }
 
@@ -91,17 +111,6 @@ public:
     size_t size() const {
         LOCK lock(m_mtx);
         return m_data.size();
-    }
-
-    //imprimir el arreglo
-    friend std::ostream& operator<<(std::ostream& os, CHeap<Traits>& heap) {
-        LOCK lock(heap.m_mtx);
-        os << "[ ";
-        for (const auto& el : heap.m_data) {
-            os << "(" << el.data << ":" << el.ref << ") ";
-        }
-        os << "]";
-        return os;
     }
 
     //extraer un dato del heap
@@ -138,6 +147,43 @@ public:
             else { heapifyDown(actual); }
 
         return true;
+    }
+
+private:
+    //persistencia write
+    friend ostream &operator<<(ostream &os, CHeap<Traits> &container) {
+        LOCK lock(container.m_mtx);
+        os << "[ ";
+        for (const auto& el : container.m_data) {
+            os << "(" << el.data << ":" << el.ref << ") ";
+        }
+        os << "]";
+        return os;
+    }
+
+    //persistencia read
+    friend istream &operator>>(istream &is, CHeap<Traits> &container) {
+    T2 line;
+    for (; getline(is, line); ) {
+        if (!line.empty() && line[0] == '[') {
+            for (size_t pos = 1; pos < line.length() && line[pos] != ']'; ++pos) {
+                if (line[pos] == '(') {
+                    size_t _value = line.find(':', pos);
+                    size_t _refer = line.find(')', pos);
+            
+                    typename Traits::value_type val;
+                    ref_type ref;
+                    
+                    stringstream(line.substr(pos + 1, _value - pos - 1))       >> val;
+                    stringstream(line.substr(_value + 1, _refer - _value - 1)) >> ref;
+                    
+                    container.push(val, ref);
+                    pos = _refer;
+                    }
+                } break;
+            }
+        }
+        return is;
     }
 };
 
