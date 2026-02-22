@@ -171,9 +171,9 @@ private:
     }
 
     value_type _replaceRemovalTarget(Node *&rCurrent, size_t from) {
-        // "from" means
-        // 0: left
-        // 1: right
+        // "from" se significa
+        // 0: desde la izquierda
+        // 1: desde la derecha
 
         Node *parent = rCurrent;
         Node *trav = rCurrent->m_pChild[from];
@@ -317,19 +317,23 @@ public:
 
     value_type remove(value_type &val) {
         lock_guard lock(mtx);
-        Node **link = &m_pRoot;
+        Node *parent = nullptr;
+        Node *current = m_pRoot;
+        size_t dir = 0;
 
         // llegar hasta la referencia donde deberia estar el objetivo
-        while (*link != nullptr) {
+        while (current != nullptr) {
             // si hemos encontrado el valor, eliminar el nodo
-            if ((*link)->GetValue() == val) {
-                value_type removed = (*link)->GetValue();
-                _remove(*link);
+            if (current->GetValue() == val) {
+                value_type removed = current->GetValue();
+                if (!parent) _remove(m_pRoot);
+                else _remove(parent->m_pChild[dir]);
                 return removed;
             }
             // sino continuar iterando
-            if (comp(val, (*link)->GetValue())) link = &((*link)->m_pChild[0]);
-            else link = &((*link)->m_pChild[1]);
+            dir = comp(val, current->GetValue());
+            parent = current;
+            current = current->m_pChild[dir];
         }
 
         // si llegamos hasta aca es porque no hay nodo
