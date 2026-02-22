@@ -2,10 +2,8 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
 LDFLAGS = -pthread # Añadido -pthread
 
-TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp Demo.cpp \
-	   sorting.cpp
+TARGET = heap.exe
+SRCS = main.cpp Demos.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
