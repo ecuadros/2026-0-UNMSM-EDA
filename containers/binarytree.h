@@ -91,6 +91,13 @@ public:
         lock_guard lock(another.mtx);
         m_pRoot = std::exchange(another.m_pRoot, nullptr);
     }
+    CBinaryTree &operator=(CBinaryTree &&another) noexcept {
+        if (this == &another) return *this;
+        scoped_lock lock(mtx, another.mtx);
+        _clear_unlocked();
+        m_pRoot = std::exchange(another.m_pRoot, nullptr);
+        return *this;
+    }
     virtual ~CBinaryTree() {
         lock_guard lock(mtx);
         _clear_unlocked();
@@ -102,10 +109,12 @@ private:
     }
 
     static void _serialize_node(ostream &os, Node *node) {
+        // si es nullptr
         if (!node) {
             os << "# ";
             return;
         }
+        // caso para manejar nodos de strings
         if constexpr (std::is_same_v<value_type, std::string>) {
             os << "(" << std::quoted(node->GetValue()) << ":" << node->m_ref << ") ";
         } else {
@@ -117,29 +126,27 @@ private:
 
     static Node *_deserialize_node(istream &is) {
         char ch;
-        do {
-            if (!is.get(ch)) return nullptr;
-        } while (isspace(static_cast<unsigned char>(ch)));
+        if (!is.get(ch)) return nullptr;
 
         if (ch == '#') return nullptr;
         if (ch != '(') {
             is.setstate(ios::failbit);
             return nullptr;
         }
-
+        // lee el valor
         value_type val;
         if constexpr (std::is_same_v<value_type, std::string>) {
             is >> std::quoted(val);
         } else {
             is >> val;
         }
-
+        // lee el :
         is >> ch;
         if (!is || ch != ':') {
             is.setstate(ios::failbit);
             return nullptr;
         }
-
+        // lee la ref
         ref_type ref;
         is >> ref;
         is >> ch;
@@ -147,7 +154,7 @@ private:
             is.setstate(ios::failbit);
             return nullptr;
         }
-
+        // continua recursivamente
         Node *node = new Node(val, ref);
         node->m_pChild[0] = _deserialize_node(is);
         node->m_pChild[1] = _deserialize_node(is);
@@ -217,27 +224,27 @@ private:
         _replaceRemovalTarget(rTarget, 0);
     }
     template <typename Func, typename...Args>
-    void _preorderTraversal(Node *current, Func foo, Args ...args) {
+    void _preorderTraversal(Node *current, Func foo, Args&&... args) {
         if ( !current ) return;
-        foo(current->GetValueRef(), args...);
-        _preorderTraversal(current->m_pChild[0], foo, args...);
-        _preorderTraversal(current->m_pChild[1], foo, args...);
+        foo(current->GetValueRef(), std::forward<Args>(args)...);
+        _preorderTraversal(current->m_pChild[0], foo, std::forward<Args>(args)...);
+        _preorderTraversal(current->m_pChild[1], foo, std::forward<Args>(args)...);
     }
 
     template <typename Func, typename...Args>
-    void _inorderTraversal(Node *current, Func foo, Args ...args) {
+    void _inorderTraversal(Node *current, Func foo, Args&&... args) {
         if ( !current ) return;
-        _inorderTraversal(current->m_pChild[0], foo, args...);
-        foo(current->GetValueRef(), args...);
-        _inorderTraversal(current->m_pChild[1], foo, args...);
+        _inorderTraversal(current->m_pChild[0], foo, std::forward<Args>(args)...);
+        foo(current->GetValueRef(), std::forward<Args>(args)...);
+        _inorderTraversal(current->m_pChild[1], foo, std::forward<Args>(args)...);
     }
 
     template <typename Func, typename...Args>
-    void _postorderTraversal(Node *current, Func foo, Args ...args) {
+    void _postorderTraversal(Node *current, Func foo, Args&&... args) {
         if ( !current ) return;
-        _postorderTraversal(current->m_pChild[0], foo, args...);
-        _postorderTraversal(current->m_pChild[1], foo, args...);
-        foo(current->GetValueRef(), args...);
+        _postorderTraversal(current->m_pChild[0], foo, std::forward<Args>(args)...);
+        _postorderTraversal(current->m_pChild[1], foo, std::forward<Args>(args)...);
+        foo(current->GetValueRef(), std::forward<Args>(args)...);
     }
 
     // versiones estaticas de los traversals para copiar los nodos
@@ -274,31 +281,33 @@ public:
     }
 
     template <typename Func, typename... Args>
-    void preorderTraversal(Func foo, Args ...args) {
+    void preorderTraversal(Func foo, Args&&... args) {
         lock_guard lock(mtx);
-        _preorderTraversal(m_pRoot, foo, args...);
+        _preorderTraversal(m_pRoot, foo, std::forward<Args>(args)...);
     }
 
     template <typename Func, typename... Args>
-    void inorderTraversal(Func foo, Args ...args) {
+    void inorderTraversal(Func foo, Args&&... args) {
         lock_guard lock(mtx);
-        _inorderTraversal(m_pRoot, foo, args...);
+        _inorderTraversal(m_pRoot, foo, std::forward<Args>(args)...);
     }
 
     template <typename Func, typename... Args>
-    void postorderTraversal(Func foo, Args ...args) {
+    void postorderTraversal(Func foo, Args&&... args) {
         lock_guard lock(mtx);
-        _postorderTraversal(m_pRoot, foo, args...);
+        _postorderTraversal(m_pRoot, foo, std::forward<Args>(args)...);
     }
 
     template <typename ObjFunc, typename ...Args>
-    void Foreach(ObjFunc of, Args... args) {
-        ::Foreach(*this, of, args...);
+    void Foreach(ObjFunc of, Args&&... args) {
+        lock_guard lock(mtx);
+        ::Foreach(*this, of, std::forward<Args>(args)...);
     }
 
     template <typename ObjFunc, typename ...Args>
-    value_type FirstThat(ObjFunc of, Args... args) {
-        return *::FirstThat(*this, of, args...);
+    value_type FirstThat(ObjFunc of, Args&&... args) {
+        lock_guard lock(mtx);
+        return *::FirstThat(*this, of, std::forward<Args>(args)...);
     }
 
     forward_iterator begin() { return forward_iterator(this, false); }
@@ -344,23 +353,22 @@ template <typename Traits>
 istream &operator>>(istream &is, CBinaryTree<Traits> &tree) {
     if (!is) return is;
 
-    string bar;
+    string bar;  // dummy
     getline(is, bar, '[');
-    lock_guard<mutex> lock(tree.mtx);
+    lock_guard<mutex> lock(tree.mtx);  // seguro contra concurrencia
     tree._clear_unlocked();
 
+    // deserializa todo
     tree.m_pRoot = tree._deserialize_node(is);
-    if (!is) {
-        tree._clear_unlocked();
-    } else {
+    // si el parseo salio mal, se limpia el arbol
+    if (!is) tree._clear_unlocked();
+    else {
         char ch;
         while (is.get(ch)) {
             if (ch == ']') break;
-            if (!isspace(static_cast<unsigned char>(ch))) {
-                is.setstate(ios::failbit);
-                tree._clear_unlocked();
-                break;
-            }
+            is.setstate(ios::failbit);
+            tree._clear_unlocked();
+            break;
         }
     }
     return is;
@@ -428,7 +436,7 @@ class BinaryTreeBackwardIterator {
     using value_type = typename Tree::value_type;
 
     Tree *m_tree = nullptr;
-    std::vector<Node*> m_stack;
+    std::vector<Node*> m_stack;  // esto acumula los nodos en orden
     Node *m_current = nullptr;
 
     // al igual que en ForwardIterator, esta funcion sirve para acumular
