@@ -42,7 +42,7 @@ template <typename Traits>
 class BinaryTreeBackwardIterator;
 
 template <typename Traits>
-class NodeBinaryTree{
+class NodeBinaryTree {
     using  value_type  = typename Traits::value_type;
     using  Node        = NodeBinaryTree<Traits>;
     using  CompareFunc = typename Traits::CompareFunc;
@@ -53,6 +53,7 @@ private:
     value_type m_data;
     ref_type   m_ref;
     Node *m_pChild[2]  = {nullptr, nullptr};
+    size_t m_height = 1;  // usado por AVL
 public:
     NodeBinaryTree(){}
     NodeBinaryTree( value_type _value, ref_type _ref = -1)
@@ -75,9 +76,18 @@ public:
     friend class BinaryTreeBackwardIterator<Traits>;
 protected:
     mutable mutex mtx;
-private:
     Node *m_pRoot = nullptr;
     CompareFunc comp;
+
+    // auxiliares para el AVL asegurando que siempre sea un nodo existente
+
+    static Node *child(Node *node, size_t index) {
+        return node ? node->m_pChild[index] : nullptr;
+    }
+
+    static Node *&child_ref(Node *node, size_t index) {
+        return node->m_pChild[index];
+    }
 
 public:
     CBinaryTree(){}
@@ -104,11 +114,7 @@ public:
     }
 
 private:
-    static Node *child(Node *node, size_t index) {
-        return node ? node->m_pChild[index] : nullptr;
-    }
-
-    static void _serialize_node(ostream &os, Node *node) {
+    void _serialize_node(ostream &os, Node *node) {
         // si es nullptr
         if (!node) {
             os << "#,";
@@ -124,7 +130,7 @@ private:
         _serialize_node(os, node->m_pChild[1]);
     }
 
-    static Node *_deserialize_node(istream &is) {
+    Node *_deserialize_node(istream &is) {
         char ch;
         if (!is.get(ch)) return nullptr;
         while (ch == ',') {
@@ -278,7 +284,7 @@ private:
     }
 
 public:
-    void Insert(const value_type &val, ref_type ref) {
+    virtual void Insert(const value_type &val, ref_type ref) {
         lock_guard lock(mtx);
         InternalInsert(m_pRoot, val, ref);
     }
@@ -318,7 +324,7 @@ public:
     backward_iterator rbegin() { return backward_iterator(this, false); }
     backward_iterator rend() { return backward_iterator(this, true); }
 
-    value_type remove(value_type &val) {
+    virtual value_type remove(value_type &val) {
         lock_guard lock(mtx);
         Node *parent = nullptr;
         Node *current = m_pRoot;
