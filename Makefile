@@ -1,22 +1,19 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
-LDFLAGS = -pthread # Añadido -pthread
+CXXFLAGS = -g -Wall -Wextra -std=c++17
 
-TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp Demo.cpp \
-	   sorting.cpp
-OBJS = $(SRCS:.cpp=.o)
+OBJ = main.o Vector.o
+EXEC = main
 
-all: $(TARGET)
+all: $(EXEC)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) $^ -o $@
+$(EXEC): $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $(EXEC) $(OBJ)
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+main.o: main.cpp containers/Vector.h
+	$(CXX) $(CXXFLAGS) -c main.cpp
 
+Vector.o: Vector.cpp containers/Vector.h
+	$(CXX) $(CXXFLAGS) -c Vector.cpp
 clean:
-	rm -f $(OBJS) $(TARGET)
-
+	rm -f $(OBJ) $(EXEC)
 .PHONY: all clean

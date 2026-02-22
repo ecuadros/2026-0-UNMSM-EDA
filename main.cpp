@@ -1,8 +1,6 @@
 #include <iostream>
 #include "util.h"
-#include "pointers.h"
-#include "containers/array.h"
-#include "containers/lists.h"
+#include "containers/Vector.h"
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
@@ -11,6 +9,7 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();
+    DemoVector();
     return 0;
 }
