@@ -102,8 +102,6 @@ void TestCopyMoveAndIO() {
     CBinaryTree<Traits> restored;
     iss >> restored;
 
-    logFile << restored << endl;
-    logFile << moved << endl;
     vector<T1> in_restored;
     restored.inorderTraversal([&in_restored](T1 &v){ in_restored.push_back(v); });
     assert((in_restored == in_moved));

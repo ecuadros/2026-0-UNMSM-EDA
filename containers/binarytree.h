@@ -111,14 +111,14 @@ private:
     static void _serialize_node(ostream &os, Node *node) {
         // si es nullptr
         if (!node) {
-            os << "# ";
+            os << "#,";
             return;
         }
         // caso para manejar nodos de strings
         if constexpr (std::is_same_v<value_type, std::string>) {
-            os << "(" << std::quoted(node->GetValue()) << ":" << node->m_ref << ") ";
+            os << "(" << std::quoted(node->GetValue()) << ":" << node->m_ref << "),";
         } else {
-            os << "(" << node->GetValue() << ":" << node->m_ref << ") ";
+            os << "(" << node->GetValue() << ":" << node->m_ref << "),";
         }
         _serialize_node(os, node->m_pChild[0]);
         _serialize_node(os, node->m_pChild[1]);
@@ -127,6 +127,9 @@ private:
     static Node *_deserialize_node(istream &is) {
         char ch;
         if (!is.get(ch)) return nullptr;
+        while (ch == ',') {
+            if (!is.get(ch)) return nullptr;
+        }
 
         if (ch == '#') return nullptr;
         if (ch != '(') {
@@ -347,7 +350,7 @@ public:
 template <typename Traits>
 ostream &operator<<(ostream &os, CBinaryTree<Traits> &tree) {
     lock_guard<mutex> lock(tree.mtx);
-    os << "CBinaryTree [ ";
+    os << "CBinaryTree [";
     tree._serialize_node(os, tree.m_pRoot);
     os << "]";
     return os;
@@ -370,6 +373,7 @@ istream &operator>>(istream &is, CBinaryTree<Traits> &tree) {
         char ch;
         while (is.get(ch)) {
             if (ch == ']') break;
+            if (ch == ',') continue;
             is.setstate(ios::failbit);
             tree._clear_unlocked();
             break;
