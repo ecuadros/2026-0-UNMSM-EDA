@@ -1,6 +1,6 @@
 #ifndef __GENERAL_ITERATOR_H__
 #define __GENERAL_ITERATOR_H__
-#include "util.h"
+#include "../util.h"
 
 template <typename Container>
 struct GeneralIterator

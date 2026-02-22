@@ -3,6 +3,9 @@
 #include "pointers.h"
 #include "containers/array.h"
 #include "containers/lists.h"
+#include "containers/heap.h"
+
+void DemoHeap();
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
@@ -11,6 +14,7 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();
+    DemoHeap();
     return 0;
 }
