@@ -8,7 +8,6 @@
 #include <vector>
 #include "../general/types.h"
 #include "../util.h"
-using namespace std;
 template <typename T, typename _Func>
 struct HeapTrait{
     using value_type = T;
@@ -31,8 +30,8 @@ class CHeap{
     using value_type=typename Traits::value_type;
     using Func       = typename Traits::Func;
     private:
-    vector<value_type> m_data; 
-    mutable mutex Block;       
+    std::vector<value_type> m_data; 
+    mutable std::mutex Block;       
 
     size_t Father(size_t i)     { return (i - 1) / 2; }
     size_t Son_Left(size_t i)   { return (2 * i) + 1; }
@@ -43,31 +42,31 @@ class CHeap{
     CHeap(){};
     //COPY CONSTRUCTOR
     CHeap(const CHeap &another){
-     lock_guard<mutex> lock(another.Block);
+     std::lock_guard<std::mutex> lock(another.Block);
      m_data = another.m_data;
     }
     //MOVE CONSTRUCTOR
      CHeap(CHeap &&another) noexcept{
-     lock_guard<mutex> lock(another.Block);
-     m_data = exchange(another.m_data, vector<value_type>());
+     std::lock_guard<std::mutex> lock(another.Block);
+     m_data = std::exchange(another.m_data, std::vector<value_type>());
      }
     //DESTRUCTOR
-    virtual ~CHeap();
+    virtual ~CHeap()=default;
     value_type  Pop();
     value_type Top() const;
     void   Push(const value_type& Val);
     //OPERATOR <<
-    friend ostream& operator<<(ostream &os, CHeap<Traits> &container){
-    lock_guard<mutex> lock(container.Block);
+    friend std::ostream& operator<<(std::ostream &os, CHeap<Traits> &container){
+    std::lock_guard<std::mutex> lock(container.Block);
     os << "Heap [ ";
     for (size_t i = 0; i < container.m_data.size(); ++i) {
         os << container.m_data[i] << " ";
     }
-    os << "]" << endl;
+    os << "]" << std::endl;
     return os;
     }
     //OPERATOR >>
-    friend istream& operator>>(istream &is, CHeap<Traits> &container){
+    friend std::istream& operator>>(std::istream &is, CHeap<Traits> &container){
     value_type val;
         if (is >> val) {
             container.Push(val);   
@@ -82,7 +81,7 @@ void CHeap<Traits>::Swap_up(size_t index) {
         size_t p = Father(index);
         
         if (comp(m_data[p], m_data[index])) {
-            swap(m_data[index], m_data[p]);
+            std::swap(m_data[index], m_data[p]);
             index = p;
         } else {
             break;
@@ -104,7 +103,7 @@ void CHeap<Traits>::Swap_down(size_t index) {
             extreme = Der;
         
         if (extreme != index) {
-            swap(m_data[index], m_data[extreme]);
+            std::swap(m_data[index], m_data[extreme]);
             index = extreme;
         } else {
             break;
@@ -113,15 +112,15 @@ void CHeap<Traits>::Swap_down(size_t index) {
 }
 template <typename Traits>
 void  CHeap<Traits>::Push(const value_type& val){
-lock_guard<mutex> lock(Block);
-    m_data.push_back(move(val)); 
+std::lock_guard<std::mutex> lock(Block);
+    m_data.push_back(std::move(val)); 
     Swap_up(m_data.size() - 1);
 }
 template <typename Traits>
 typename  CHeap<Traits>::value_type CHeap<Traits>::Pop(){
-lock_guard<mutex> lock(Block);
+std::lock_guard<std::mutex> lock(Block);
 if (m_data.size() == 0) {
-        throw runtime_error("El heap esta vacio "); 
+        throw std::runtime_error("El heap esta vacio "); 
     }
     value_type root = m_data[0];
 
@@ -132,24 +131,15 @@ if (m_data.size() == 0) {
     } else {
         m_data.pop_back();
     }
-
     return root;
 }
 
 template <typename Traits>
 typename CHeap<Traits>::value_type CHeap<Traits>::Top() const {
-    lock_guard<mutex> lock(Block);
+    std::lock_guard<std::mutex> lock(Block);
     if (m_data.size() == 0) {
-        throw runtime_error("El Heap esta vacio ");
+        throw std::runtime_error("El Heap esta vacio ");
     }
-    
     return m_data[0]; 
 }
-template <typename Traits>
-CHeap<Traits>::~CHeap() {
-    lock_guard<mutex> lock(Block);
-}
-
-
-
 #endif // __HEAP_H__
