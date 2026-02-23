@@ -1,6 +1,6 @@
 #ifndef __GENERAL_ITERATOR_H__
 #define __GENERAL_ITERATOR_H__
-#include "util.h"
+#include "../util.h"
 
 template <typename Container>
 struct GeneralIterator
@@ -12,11 +12,9 @@ struct GeneralIterator
     Node       *m_data       = nullptr;
     Size        m_pos        = -1;
   public:
-    GeneralIterator(Container *pContainer, Size pos=0) 
-         : m_pContainer(pContainer) {
-           m_data = m_pContainer->m_data;
-           m_pos = pos;
-         }
+    GeneralIterator(Container *pContainer, Size pos=0, Node *m_pData = nullptr)
+    : m_pContainer(pContainer), m_data(m_pData ? m_pData : nullptr), m_pos(pos) {}
+
     GeneralIterator(GeneralIterator<Container> &another)
          :  m_pContainer(another.m_pContainer),
             m_data (another.m_data),
@@ -24,7 +22,7 @@ struct GeneralIterator
     {}
     virtual ~GeneralIterator(){};
     
-    bool operator!=(const GeneralIterator<Container> &another){
+    bool operator!=(const GeneralIterator<Container> &another) const {
         return m_pContainer != another.m_pContainer ||
                m_pos        != another.m_pos;         
     }

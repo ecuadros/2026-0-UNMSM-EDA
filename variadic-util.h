@@ -18,4 +18,4 @@ void Suma(Q &elem, Q p1){    elem += p1;     }
 template <typename Q>
 void Mult(Q &elem, Q p1){    elem *= p1;     }
 
-#endif // __VARIADIC_UTIL__
+#endif
