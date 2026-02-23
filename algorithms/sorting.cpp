@@ -4,17 +4,7 @@
 using namespace std;
 
 // Bubble  
-void BurbujaClasico(ContainerElemType* arr, ContainerRange n, CompFunc pComp) {
-    if (n <= 1)
-        return;
-    for (auto i = 0; i < n - 1; ++i) {
-        for (auto j = i+1; j < n; ++j) {
-            if ( (*pComp)(arr[i], arr[j]) ) {
-                intercambiar(arr[i], arr[j]);
-            }
-        }
-    }
-}
+
 template <typename T>
 void SortContainer(T *vect, ContainerRange n){
     // BurbujaRecursivo(vect, n, &::Mayor<T>); 
@@ -52,15 +42,6 @@ void DemoBurbuja(){
 // }
 
 
-void QuickSort( ContainerElemType* arr, 
-                ContainerRange first, 
-                ContainerRange last, CompFunc pComp) {
-    if (first < last) {
-        auto pivot = particionar(arr, first, last, pComp);
-        QuickSort(arr, first, pivot - 1, pComp);
-        QuickSort(arr, pivot + 1, last, pComp);
-    }
-}
 
 void DemoQuickSort() {
     // cout << "DemoQuickSort \n";
@@ -80,54 +61,6 @@ void DemoQuickSort() {
 }
 
 // Función para mezclar dos subarreglos ordenados de arr[].
-void Merge(ContainerElemType* arr, const ContainerRange left, 
-                                   const ContainerRange mid, 
-                                   const ContainerRange right, 
-                                   CompFunc pComp) {
-    auto const subArrayOne = mid - left + 1;
-    auto const subArrayTwo = right - mid;
-
-    // Crear arrays temporales
-    auto *leftArray = new ContainerElemType[subArrayOne],
-         *rightArray = new ContainerElemType[subArrayTwo];
-
-    // Copiar datos a los arrays temporales leftArray[] y rightArray[]
-    for (auto i = 0; i < subArrayOne; i++)
-        leftArray[i] = arr[left + i];
-    for (auto j = 0; j < subArrayTwo; j++)
-        rightArray[j] = arr[mid + 1 + j];
-
-    auto indexOfSubArrayOne = 0, // Índice inicial del primer sub-array
-        indexOfSubArrayTwo = 0; // Índice inicial del segundo sub-array
-    ContainerRange indexOfMergedArray = left; // Índice inicial del array mezclado
-
-    // Mezclar los arrays temporales de vuelta a arr[left..right]
-    while (indexOfSubArrayOne < subArrayOne && indexOfSubArrayTwo < subArrayTwo) {
-        if ( (*pComp)(rightArray[indexOfSubArrayTwo], leftArray[indexOfSubArrayOne])  ) {
-            arr[indexOfMergedArray] = leftArray[indexOfSubArrayOne];
-            indexOfSubArrayOne++;
-        } else {
-            arr[indexOfMergedArray] = rightArray[indexOfSubArrayTwo];
-            indexOfSubArrayTwo++;
-        }
-        indexOfMergedArray++;
-    }
-    // Copiar los elementos restantes de left[], si los hay
-    while (indexOfSubArrayOne < subArrayOne) {
-        arr[indexOfMergedArray] = leftArray[indexOfSubArrayOne];
-        indexOfSubArrayOne++;
-        indexOfMergedArray++;
-    }
-    // Copiar los elementos restantes de right[], si los hay
-    while (indexOfSubArrayTwo < subArrayTwo) {
-        arr[indexOfMergedArray] = rightArray[indexOfSubArrayTwo];
-        indexOfSubArrayTwo++;
-        indexOfMergedArray++;
-    }
-
-    delete[] leftArray;
-    delete[] rightArray;
-}
 
 // left es para el índice izquierdo y right es para el índice derecho del
 // sub-array de arr a ordenar

@@ -11,16 +11,108 @@ const char * keys2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv
 const char * keys3 = "DYZakHIUwxVJ203ejOP9Qc8AdtuEop1XvTRghSNbW567BfiCqrs4FGMyzKLlmn";
 
 const int BTreeSize = 3;
-void DemoBTree(){
-       int i;
-       BTree <char> bt (BTreeSize);
-       for (i = 0; keys1[i]; i++)
-       {
-               //cout<<"Inserting "<<keys1[i]<<endl;
-               bt.Insert(keys1[i], i*i);
-               //bt.Print(cout);
-       }
-       bt.Print(cout);
+
+void DemoBTree() {
+    using T1 = int;
+
+    cout << "\n===== BTree Ascendente =====" << endl;
+    BTree<TreeTraitAscending<T1>> ascTree;
+    ascTree.Insert(50, 0);
+    ascTree.Insert(30, 1);
+    ascTree.Insert(70, 2);
+    ascTree.Insert(20, 3);
+    ascTree.Insert(40, 4);
+    ascTree.Insert(60, 5);
+    ascTree.Insert(80, 6);
+    cout << "\nArbol tras Insert (50, 30, 70, 20, 40, 60, 80):" << endl;
+    cout << ascTree << endl;
+
+    cout << "Recorrido preorden:" << endl;
+    ascTree.preorden([](auto &val) { cout << val.key << " "; });
+    cout << endl;
+
+    cout << "Recorrido postorden:" << endl;
+    ascTree.postorden([](auto &val) { cout << val.key << " "; });
+    cout << endl;
+
+    cout << "\nEliminando 30:" << endl;
+    ascTree.Remove(30, 1);
+    cout << ascTree << endl;
+
+    cout << "Buscando 70: ObjID = " << ascTree.Search(70) << endl;
+
+    BTree<TreeTraitAscending<T1>> ascCopy(ascTree);
+    cout << "\nCopy constructor:" << endl;
+    cout << ascCopy << endl;
+
+    BTree<TreeTraitAscending<T1>> ascMoved(move(ascTree));
+    cout << "Move constructor (tamaño original: " << ascTree.size() << "):" << endl;
+    cout << "Nuevo arbol:" << endl;
+    cout << ascMoved << endl;
+
+    auto it = ascMoved.FirstThat([](auto &val) { return val.key > 50; });
+    if (it != ascMoved.end())
+        cout << "FirstThat (primer valor > 50): (" << it->key << " : " << it->ObjID << ")" << endl;
+
+    cout << "\nIterador forward:" << endl;
+    for (auto it = ascMoved.begin(); it != ascMoved.end(); ++it)
+        cout << "(" << it->key << " : " << it->ObjID << ") ";
+    cout << endl;
+
+    cout << "Iterador backward:" << endl;
+    for (auto it = ascMoved.rbegin(); it != ascMoved.rend(); ++it)
+        cout << "(" << it->key << " : " << it->ObjID << ") ";
+    cout << endl;
+
+    cout << "\nAltura: " << ascMoved.height() << endl;
+    cout << "Orden:  " << ascMoved.GetOrder() << endl;
+    cout << "Tamaño: " << ascMoved.size()     << endl;
+
+    cout << "\n===== BTree Descendente =====" << endl;
+    BTree<TreeTraitDescending<T1>> descTree;
+    descTree.Insert(50, 0);
+    descTree.Insert(30, 1);
+    descTree.Insert(70, 2);
+    descTree.Insert(20, 3);
+    descTree.Insert(40, 4);
+    cout << "\nArbol tras Insert (50, 30, 70, 20, 40):" << endl;
+    cout << descTree << endl;
+
+    cout << "Eliminando 50:" << endl;
+    descTree.Remove(50, 0);
+    cout << descTree << endl;
+
+    BTree<TreeTraitDescending<T1>> descCopy(descTree);
+    cout << "Copy constructor:" << endl;
+    cout << descCopy << endl;
+
+    BTree<TreeTraitDescending<T1>> descMoved(move(descTree));
+    cout << "Move constructor (tamaño original: " << descTree.size() << "):" << endl;
+    cout << "Nuevo arbol:" << endl;
+    cout << descMoved << endl;
+
+    cout << "\nIterador forward:" << endl;
+    for (auto it = descMoved.begin(); it != descMoved.end(); ++it)
+        cout << "(" << it->key << " : " << it->ObjID << ") ";
+    cout << endl;
+
+    cout << "Iterador backward:" << endl;
+    for (auto it = descMoved.rbegin(); it != descMoved.rend(); ++it)
+        cout << "(" << it->key << " : " << it->ObjID << ") ";
+    cout << endl;
+}
+
+
+// void DemoBTree(){
+//        int i;
+//        BTree <char> bt (BTreeSize);
+//        for (i = 0; keys1[i]; i++)
+//        {
+//                //cout<<"Inserting "<<keys1[i]<<endl;
+//                bt.Insert(keys1[i], i*i);
+//                //bt.Print(cout);
+//        }
+//        bt.Print(cout);
 //        for (i = 0; keys2[i]; i++)
 //        {
 //                cout << "Searching " << keys2[i] << " ";
@@ -43,7 +135,7 @@ void DemoBTree(){
 //        }
 //        bt.Print(cout);
 //        cout.flush();
-}
+
 
 
 
