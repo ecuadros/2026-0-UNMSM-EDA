@@ -71,9 +71,9 @@ protected:
        int  m_MinKeys; // minimum number of keys in a node
        int  m_MaxKeys, // maximum number of keys in a node
                 m_MaxKeysForChilds; // just to distinguish the root
-       bool m_Unique;
+       bool m_Unique;//
        bool m_isRoot;
-       vector<ObjectInfo> m_Keys;
+       vector<ObjectInfo> m_Keys;//Es un vector de punteros a los hijos del nodo actual. Si el nodo es una "hoja", estos punteros son NULL
        vector<BTPage *>m_SubPages;
        int  m_KeyCount;
        void  Create();
