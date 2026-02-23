@@ -1,18 +1,26 @@
 #include <iostream>
-#include "util.h"
-#include "pointers.h"
-#include "containers/array.h"
-#include "containers/lists.h"
+#include <ctime>
 #include "containers/BTree.h"
 
-// g++ -std=c++17 -Wall -g -pthread main.cpp -o main
-
 int main() {
-    std::cout << "Hello EDA-UNMSM!" << std::endl;
-    // DemoUtil();
-    // DemoPointers1();
-    // DemoArray();
-    // DemoLists();
-    DemoBTree();
+    srand(time(NULL));
+
+    BTree<int, long> tree(4);
+
+    std::cout << "Iniciando Stress Test: 100,000 inserciones..." << std::endl;
+
+    for(int i = 0; i < 100000; i++) {
+        tree.Insert(rand() % 1000000, i); 
+    }
+
+    std::cout << "Inserción completada con éxito." << std::endl;
+
+    long id;
+    int llaveABuscar = 500;if (tree.Search(llaveABuscar, id)) {
+        std::cout << "Encontrado: llave " << llaveABuscar << " con ID " << id << std::endl;
+    } else {
+        std::cout << "La llave " << llaveABuscar << " no existe en esta ejecución." << std::endl;
+    }
+
     return 0;
 }

@@ -1,0 +1,135 @@
+* [33m95e9c11[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m29-Queue[m[33m, [m[1;31morigin/29-Queue[m[33m)[m Implementacion completa 29-Queue con 8 puntos
+[31m|[m * [33m35abdb8[m[33m ([m[1;32m28-Stack[m[33m)[m Implementacion completa 28-Stack con los 8 puntos
+[31m|[m * [33m5dd6bbe[m[33m ([m[1;31mupstream/28-Stack[m[33m, [m[1;31morigin/28-Stack[m[33m)[m CStack added
+[31m|[m [32m|[m * [33m6b596fb[m[33m ([m[1;31morigin/27-DoubleLinkedList[m[33m, [m[1;32m27-DoubleLinkedList[m[33m)[m 27-DoubleLinkedList: double + circular with iterators, foreach, IO, mutex
+[31m|[m [32m|[m [33m|[m * [33mb0e6a72[m[33m ([m[1;31morigin/26-LinkedListCircular[m[33m, [m[1;32m26-LinkedListCircular[m[33m)[m Circular LinkedList: insert, iterators, streams, mutex
+[31m|[m [32m|[m [33m|[m * [33m092dd53[m[33m ([m[1;31morigin/25-LinkedList[m[33m, [m[1;32m25-LinkedList[m[33m)[m Fix LinkedList: copy/move, iterators, stream ops, operator[], mutex
+[31m|[m [32m|[m [33m|[m [34m|[m * [33m8ab7601[m[33m ([m[1;31morigin/31-BinaryTree[m[33m)[m Insert addedd
+[31m|[m [32m|[m [33m|[m [34m|[m * [33mafd9e9c[m Heap added
+[31m|[m [32m|[m[31m_[m[33m|[m[31m_[m[34m|[m[31m/[m  
+[31m|[m[31m/[m[32m|[m [33m|[m [34m|[m   
+* [32m|[m [33m|[m [34m|[m [33m0200511[m[33m ([m[1;31mupstream/29-Queue[m[33m)[m Heap added
+* [32m|[m [33m|[m [34m|[m [33m978b2de[m CQueue added
+[32m|[m[32m/[m [33m/[m [34m/[m  
+* [33m/[m [34m/[m [33m3e98b08[m Stack added
+[33m|[m[33m/[m [34m/[m  
+* [34m|[m [33m323011f[m[33m ([m[1;31mupstream/27-DoubleLinkedList[m[33m)[m Double Linked List basico
+* [34m|[m [33md41aaa1[m TODOs added
+[34m|[m[34m/[m  
+* [33m4ca1c7d[m[33m ([m[1;31mupstream/25-LinkedList[m[33m)[m LinkedList V0.2
+* [33mb8d255d[m Nodes working
+* [33md6bb1e0[m Node added (not working yet)
+* [33m3d372db[m Casi
+* [33m2589c13[m Casi funciona !
+* [33mc857464[m Backward todavia no funciona
+* [33m8879d7d[m corregir
+* [33m6175ae2[m Multiplo de 7 todavia no funciona
+* [33mda56a39[m foreach generalizado
+* [33m076f6aa[m Foreach externo con error
+* [33m9cf68df[m Iterator V0.6
+* [33ma7ff0a9[m Iterator V0.5
+* [33m983a932[m Multiples parametros
+* [33mc68b85d[m Traits working ok !
+* [33m4895c38[m Variadic Method working ok
+* [33m1424d47[m Version anterior
+* [33mf20cacf[m Variadic Method with error yet
+* [33m1dcacd9[m Variadic templates
+* [33m00a1587[m Suma y Mult temnplates
+* [33m0d8c096[m Foreach con 1 param
+* [33mef87562[m Sumar y Mult separador
+* [33m37a5a63[m Sorting ok !
+* [33md6e8606[m operator<< overloaded
+* [33m829b2e7[m Array template ok
+*   [33m6fe716e[m Merge pull request #32 from aroondelgado-inst/10-Array(Dynamic)
+[36m|[m[1;31m\[m  
+[36m|[m * [33mec1bc25[m Fix: Corregir error de getSize
+[36m|[m[36m/[m  
+* [33m7261a5b[m Minor #2
+* [33m4a9ea95[m Minor error
+*   [33m687b232[m Merge pull request #31 from aroondelgado-inst/10-Array(Dynamic)
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33m233ad04[m Feat(CArray): Add resize overload and patch [] operator
+[1;32m|[m[1;32m/[m  
+* [33m11dfbb2[m Dynamic parcial
+* [33m87b3b5b[m Almost ready
+*   [33ma5b79d9[m Merge branch '09-ArrayTypes' into 10-Array(Dynamic)
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33m9b93672[m Types genaralizados
+* [1;35m|[m [33md383451[m Version atrasada
+[1;35m|[m[1;35m/[m  
+* [33mcfb734d[m Estatico
+* [33m169747b[m VectorDummy ok
+* [33m418fe6e[m pointers adjusted
+* [33m62a21dc[m f1, f2, f3, f4 updated
+* [33mf587f03[m f1-f4 added
+* [33mbc367f8[m #ifndef addedd
+* [33m742c8a9[m Types added
+* [33m666294d[m Makefile added
+*   [33m3e0cc04[m[33m ([m[1;31morigin/03-MakeFile[m[33m, [m[1;31morigin/01-Git[m[33m)[m Merge pull request #25 from phooltiqui-afk/02-IgnoringFiles
+[1;36m|[m[31m\[m  
+[1;36m|[m *   [33mf2f229b[m Merge branch '02-IgnoringFiles' into 02-IgnoringFiles
+[1;36m|[m [32m|[m[1;36m\[m  
+[1;36m|[m [32m|[m[1;36m/[m  
+[1;36m|[m[1;36m/[m[32m|[m   
+* [32m|[m   [33md38a5a7[m Merge pull request #22 from WilsonOCF/02-IgnoringFiles
+[34m|[m[35m\[m [32m\[m  
+[34m|[m * [32m\[m   [33mc8da720[m Merge branch '02-IgnoringFiles' into 02-IgnoringFiles
+[34m|[m [36m|[m[34m\[m [32m\[m  
+[34m|[m [36m|[m[34m/[m [32m/[m  
+[34m|[m[34m/[m[36m|[m [32m|[m   
+* [36m|[m [32m|[m   [33mc005492[m Merge pull request #18 from nathan-rojas/02-IgnoringFiles
+[1;32m|[m[1;33m\[m [36m\[m [32m\[m  
+[1;32m|[m * [36m\[m [32m\[m   [33m04dd056[m Merge branch '02-IgnoringFiles' into 02-IgnoringFiles
+[1;32m|[m [1;34m|[m[1;32m\[m [36m\[m [32m\[m  
+[1;32m|[m [1;34m|[m[1;32m/[m [36m/[m [32m/[m  
+[1;32m|[m[1;32m/[m[1;34m|[m [36m|[m [32m|[m   
+[1;32m|[m * [36m|[m [32m|[m [33m6f110b2[m nathan
+[1;32m|[m [1;35m|[m * [32m|[m [33m564ffd0[m nuevo alumno Wilson
+[1;32m|[m [1;35m|[m * [32m|[m   [33m7e51ed0[m Merge branch '02-IgnoringFiles' of https://github.com/ecuadros/2026-0-UNMSM-EDA into 02-IgnoringFiles
+[1;32m|[m [1;35m|[m [1;36m|[m[1;32m\[m [32m\[m  
+[1;32m|[m [1;35m|[m[1;32m_[m[1;36m|[m[1;32m/[m [32m/[m  
+[1;32m|[m[1;32m/[m[1;35m|[m [1;36m|[m [32m|[m   
+[1;32m|[m [1;35m|[m * [32m|[m [33m2d2544f[m se añadió nombre de nuevo estudiante
+[1;32m|[m [1;35m|[m [31m|[m * [33ma8e8d10[m Mi primer commit(Nombre)
+[1;32m|[m [1;35m|[m[1;32m_[m[31m|[m[1;32m/[m  
+[1;32m|[m[1;32m/[m[1;35m|[m [31m|[m   
+* [1;35m|[m [31m|[m [33md5528b3[m[33m ([m[1;31morigin/02-IgnoringFiles[m[33m)[m Lista extendida
+[1;35m|[m[1;35m/[m [31m/[m  
+* [31m|[m [33m54889ce[m gitignore added
+* [31m|[m [33m5c4fa5d[m Main created
+* [31m|[m [33m18a0188[m Lista ordenada
+[31m|[m[31m/[m  
+*   [33mea51be9[m Merge pull request #6 from jorge978we/main
+[32m|[m[33m\[m  
+[32m|[m *   [33mc8fdd46[m Merge branch 'main' into main
+[32m|[m [34m|[m[32m\[m  
+[32m|[m [34m|[m[32m/[m  
+[32m|[m[32m/[m[34m|[m   
+* [34m|[m   [33m1b05a80[m Merge pull request #9 from anieeacevedo/main
+[36m|[m[1;31m\[m [34m\[m  
+[36m|[m * [34m\[m   [33m07496b3[m Merge branch 'main' into main
+[36m|[m [1;32m|[m[36m\[m [34m\[m  
+[36m|[m [1;32m|[m[36m/[m [34m/[m  
+[36m|[m[36m/[m[1;32m|[m [34m|[m   
+* [1;32m|[m [34m|[m   [33m8ea65bf[m Merge pull request #4 from alanventura24/main
+[1;34m|[m[1;35m\[m [1;32m\[m [34m\[m  
+[1;34m|[m * [1;32m\[m [34m\[m   [33m77b924f[m Merge branch 'main' into main
+[1;34m|[m [1;36m|[m[1;34m\[m [1;32m\[m [34m\[m  
+[1;34m|[m [1;36m|[m[1;34m/[m [1;32m/[m [34m/[m  
+[1;34m|[m[1;34m/[m[1;36m|[m [1;32m|[m [34m|[m   
+* [1;36m|[m [1;32m|[m [34m|[m   [33m188b58a[m Merge pull request #5 from Alcachofinha/main
+[32m|[m[33m\[m [1;36m\[m [1;32m\[m [34m\[m  
+[32m|[m * [1;36m\[m [1;32m\[m [34m\[m   [33m7068778[m Merge branch 'main' into main
+[32m|[m [34m|[m[32m\[m [1;36m\[m [1;32m\[m [34m\[m  
+[32m|[m [34m|[m[32m/[m [1;36m/[m [1;32m/[m [34m/[m  
+[32m|[m[32m/[m[34m|[m [1;36m|[m [1;32m|[m [34m|[m   
+* [34m|[m [1;36m|[m [1;32m|[m [34m|[m   [33m349801a[m Merge pull request #11 from Rubeendar/main
+[36m|[m[1;31m\[m [34m\[m [1;36m\[m [1;32m\[m [34m\[m  
+[36m|[m * [34m\[m [1;36m\[m [1;32m\[m [34m\[m   [33m6cca800[m Merge branch 'main' into main
+[36m|[m [1;32m|[m[36m\[m [34m\[m [1;36m\[m [1;32m\[m [34m\[m  
+[36m|[m [1;32m|[m[36m/[m [34m/[m [1;36m/[m [1;32m/[m [34m/[m  
+[36m|[m[36m/[m[1;32m|[m [34m|[m [1;36m|[m [1;32m|[m [34m|[m   
+* [1;32m|[m [34m|[m [1;36m|[m [1;32m|[m [34m|[m   [33meb9fceb[m Merge pull request #10 from martincaballero007/martincaballero007-patch-1
+[1;34m|[m[1;35m\[m [1;32m\[m [34m\[m [1;36m\[m [1;32m\[m [34m\[m  
+[1;34m|[m * [1;32m\[m [34m\[m [1;36m\[m [1;32m\[m [34m\[m   [33m78e48a7[m Merge branch 'main' into martincaballero007-patch-1
+[1;34m|[m [1;36m
