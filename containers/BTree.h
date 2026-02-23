@@ -262,6 +262,9 @@ protected:
        Size       m_Height;
 
        mutable mutex m_mutex;
+private:
+       BTree(const BTree& another, const lock_guard<mutex>& lock);
+       BTree(BTree&& another, const lock_guard<mutex>& lock) noexcept;
 };
 
 const Size MaxHeight = 5;
@@ -277,8 +280,16 @@ BTree<Traits>::BTree(Size order, bool unique)
        m_Height = 1;
 }
 
+// Constructor Copia Publico
 template <typename Traits>
 BTree<Traits>::BTree(const BTree<Traits>& another) 
+    : BTree(another, lock_guard<mutex>(another.m_mutex)) 
+{
+}
+
+// Constructor Copia Privado
+template <typename Traits>
+BTree<Traits>::BTree(const BTree<Traits>& another, const lock_guard<mutex>& lock) 
     : m_Root(another.m_Root),
       m_NumKeys(another.m_NumKeys),
       m_Unique(another.m_Unique),
@@ -287,8 +298,16 @@ BTree<Traits>::BTree(const BTree<Traits>& another)
 {
 }
 
+// Move Constructor Publico
 template <typename Traits>
 BTree<Traits>::BTree(BTree<Traits>&& another) noexcept 
+    : BTree(move(another), lock_guard<mutex>(another.m_mutex)) 
+{
+}
+
+// Move Constructor Privado
+template <typename Traits>
+BTree<Traits>::BTree(BTree<Traits>&& another, const lock_guard<mutex>& lock) noexcept 
     : m_Root(move(another.m_Root)),
       m_NumKeys(exchange(another.m_NumKeys, 0)),
       m_Unique(another.m_Unique),
