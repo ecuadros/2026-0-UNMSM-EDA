@@ -4,6 +4,7 @@
 #include <iostream>
 #include <utility>
 #include <mutex>
+#include <stdexcept>
 #include <vector>
 #include "../general/types.h"
 #include "../util.h"
@@ -48,13 +49,13 @@ class CHeap{
     //MOVE CONSTRUCTOR
      CHeap(CHeap &&another) noexcept{
      lock_guard<mutex> lock(another.Block);
-     m_data = move(another.m_data);
+     m_data = exchange(another.m_data, vector<value_type>());
      }
     //DESTRUCTOR
     virtual ~CHeap();
     value_type  Pop();
     value_type Top() const;
-    void   Push(value_type Val);
+    void   Push(const value_type& Val);
     //OPERATOR <<
     friend ostream& operator<<(ostream &os, CHeap<Traits> &container){
     lock_guard<mutex> lock(container.Block);
@@ -68,10 +69,10 @@ class CHeap{
     //OPERATOR >>
     friend istream& operator>>(istream &is, CHeap<Traits> &container){
     value_type val;
-    is >> val;
-    container.Push(move(val)); 
-    is.clear(); 
-    return is;    
+        if (is >> val) {
+            container.Push(val);   
+         }
+    return is;
     }
 };
 template <typename Traits>
@@ -111,7 +112,7 @@ void CHeap<Traits>::Swap_down(size_t index) {
     }
 }
 template <typename Traits>
-void  CHeap<Traits>::Push(value_type val){
+void  CHeap<Traits>::Push(const value_type& val){
 lock_guard<mutex> lock(Block);
     m_data.push_back(move(val)); 
     Swap_up(m_data.size() - 1);
@@ -120,8 +121,7 @@ template <typename Traits>
 typename  CHeap<Traits>::value_type CHeap<Traits>::Pop(){
 lock_guard<mutex> lock(Block);
 if (m_data.size() == 0) {
-        cout << " El Heap esta vacio" << endl;
-        return value_type(); 
+        throw runtime_error("El heap esta vacio "); 
     }
     value_type root = m_data[0];
 
@@ -140,8 +140,7 @@ template <typename Traits>
 typename CHeap<Traits>::value_type CHeap<Traits>::Top() const {
     lock_guard<mutex> lock(Block);
     if (m_data.size() == 0) {
-        cout << "El Heap esta vacio" << endl;
-        return value_type(); 
+        throw runtime_error("El Heap esta vacio ");
     }
     
     return m_data[0]; 
