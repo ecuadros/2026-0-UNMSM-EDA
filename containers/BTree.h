@@ -5,14 +5,15 @@
 
 #include <iostream>
 #include "BTreePage.h"
+#include "../general/types.h"
 
 #define DEFAULT_BTREE_ORDER 3
 
-template <typename keyType, typename ObjIDType = long>
+template <typename keyType, typename ObjIDType = LSize>
 class BTree 
 // this is the full version of the BTree
 {
-       typedef CBTreePage <keyType, ObjIDType> BTNode;// useful shorthand
+       using BTNode = CBTreePage<keyType, ObjIDType>; // useful shorthand
        /*struct ObjectInfo
        {
                keyType first;
@@ -21,6 +22,11 @@ class BTree
        };*/
 
 public:
+       using key_type = keyType;
+       using obj_id_type = ObjIDType;
+       using size_type = Size;
+       using long_size_type = LSize;
+
        //typedef ObjectInfo iterator;
        typedef typename BTNode::lpfnForEach2    lpfnForEach2;
        typedef typename BTNode::lpfnForEach3    lpfnForEach3;
@@ -29,17 +35,17 @@ public:
        typedef typename BTNode::ObjectInfo      ObjectInfo;
 
 public:
-       BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
+       BTree(Size order = DEFAULT_BTREE_ORDER, bool unique = true);
        ~BTree();
        //int           Open (char * name, int mode);
        //int           Create (char * name, int mode);
        //int           Close ();
-       bool            Insert (const keyType key, const int ObjID);
-       bool            Remove (const keyType key, const int ObjID);
+       bool            Insert (const keyType key, const ObjIDType ObjID);
+       bool            Remove (const keyType key, const ObjIDType ObjID);
        ObjIDType       Search (const keyType key);
-       long            size()  { return m_NumKeys; }
-       long            height() { return m_Height;      }
-       long            GetOrder() { return m_Order;     }
+       LSize           size()  { return m_NumKeys; }
+       LSize           height() { return m_Height;      }
+       LSize           GetOrder() { return m_Order;     }
 
        void            Print (ostream &os);
        void            ForEach( lpfnForEach2 lpfn, void *pExtra1 );
@@ -50,15 +56,15 @@ public:
 
 protected:
        BTNode          m_Root;
-       long            m_NumKeys; // number of keys
+       LSize           m_NumKeys; // number of keys
        bool            m_Unique;  // Accept the elements only once ?
-       int             m_Order;   // order of tree
-       int             m_Height;  // height of tree
+       LSize           m_Order;   // order of tree
+       LSize           m_Height;  // height of tree
 };
 
-const int MaxHeight = 5;
+const Size MaxHeight = 5;
 template <typename keyType, typename ObjIDType>
-BTree<keyType, ObjIDType>::BTree(int order, bool unique)
+BTree<keyType, ObjIDType>::BTree(Size order, bool unique)
                                : m_Root(2 * order  + 1, unique),
                                  m_NumKeys(0),
                                  m_Unique(unique),
@@ -74,7 +80,7 @@ BTree<keyType, ObjIDType>::~BTree()
 }
 
 template <typename keyType, typename ObjIDType>
-bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
+bool BTree<keyType, ObjIDType>::Insert(const keyType key, const ObjIDType ObjID)
 {
        bt_ErrorCode error = m_Root.Insert(key, ObjID);
        if( error == bt_duplicate )
@@ -89,7 +95,7 @@ bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
 }
 
 template <typename keyType, typename ObjIDType>
-bool BTree<keyType, ObjIDType>::Remove (const keyType key, const int ObjID)
+bool BTree<keyType, ObjIDType>::Remove (const keyType key, const ObjIDType ObjID)
 {
        bt_ErrorCode error = m_Root.Remove(key, ObjID);
        if( error == bt_duplicate || error == bt_nofound )
@@ -104,7 +110,7 @@ bool BTree<keyType, ObjIDType>::Remove (const keyType key, const int ObjID)
 template <typename keyType, typename ObjIDType>
 ObjIDType BTree<keyType, ObjIDType>::Search (const keyType key)
 {
-       ObjIDType ObjID = -1;
+       ObjIDType ObjID{};  // esto antes usaba -1
        m_Root.Search(key, ObjID);
        return ObjID;
 }
