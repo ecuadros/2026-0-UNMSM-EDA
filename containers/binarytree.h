@@ -57,7 +57,6 @@ public:
     TreeForwardIterator(Node* pRoot) {
         m_pCurrent = pRoot;
         if (m_pCurrent) {
-            // Ir lo más a la izquierda posible para empezar el recorrido In-Order
             while (m_pCurrent->GetChild(0)) {
                 m_pCurrent = m_pCurrent->GetChild(0);
             }
@@ -78,13 +77,11 @@ public:
         }
 
         if (m_pCurrent->GetChild(1)) {
-            // Si hay hijo derecho, el siguiente es el nodo más a la izquierda de ese subárbol
             m_pCurrent = m_pCurrent->GetChild(1);
             while (m_pCurrent->GetChild(0)) {
                 m_pCurrent = m_pCurrent->GetChild(0);
             }
         } else {
-            // Si no hay hijo derecho, subir por el árbol hasta ser el hijo izquierdo
             Node* pParent = m_pCurrent->GetFather();
             while (pParent && m_pCurrent == pParent->GetChild(1)) {
                 m_pCurrent = pParent;
@@ -108,7 +105,6 @@ public:
     TreeBackwardIterator(Node* pRoot) {
         m_pCurrent = pRoot;
         if (m_pCurrent) {
-            // Ir lo más a la derecha posible para empezar el recorrido In-Order inverso
             while (m_pCurrent->GetChild(1)) {
                 m_pCurrent = m_pCurrent->GetChild(1);
             }
@@ -127,13 +123,11 @@ public:
         }
 
         if (m_pCurrent->GetChild(0)) {
-            // Si hay hijo izquierdo, el siguiente es el nodo más a la derecha de ese subárbol
             m_pCurrent = m_pCurrent->GetChild(0);
             while (m_pCurrent->GetChild(1)) {
                 m_pCurrent = m_pCurrent->GetChild(1);
             }
         } else {
-            // Si no hay hijo izquierdo, subir por el árbol hasta ser el hijo derecho
             Node* pParent = m_pCurrent->GetFather();
             while (pParent && m_pCurrent == pParent->GetChild(0)) {
                 m_pCurrent = pParent;
@@ -187,13 +181,13 @@ public:
     virtual void Insert(const value_type &val) {
         lock_guard<mutex> lock(m_Block);
         InternalInsert(m_pRoot, val);
-        if (m_pRoot) m_pRoot->SetFather(nullptr); // Asegurarse de que root no tenga padre
+        if (m_pRoot) m_pRoot->SetFather(nullptr); 
     }
 
     virtual void Remove(const value_type &val) {
         lock_guard<mutex> lock(m_Block);
         InternalRemove(m_pRoot, val);
-        if (m_pRoot) m_pRoot->SetFather(nullptr); // Asegurarse de que root no tenga padre
+        if (m_pRoot) m_pRoot->SetFather(nullptr); 
     }
     forward_iterator begin() { 
         return forward_iterator(m_pRoot); 
@@ -273,10 +267,10 @@ typename CBinaryTree<Traits>::Node* CBinaryTree<Traits>::_copyTree(Node* pNode) 
     newNode->SetHeight(pNode->GetHeight());
     
     newNode->GetChildRef(0) = _copyTree(pNode->GetChild(0));
-    if (newNode->GetChild(0)) newNode->GetChild(0)->SetFather(newNode); // Enlazar al padre
+    if (newNode->GetChild(0)) newNode->GetChild(0)->SetFather(newNode); 
 
     newNode->GetChildRef(1) = _copyTree(pNode->GetChild(1));
-    if (newNode->GetChild(1)) newNode->GetChild(1)->SetFather(newNode); // Enlazar al padre
+    if (newNode->GetChild(1)) newNode->GetChild(1)->SetFather(newNode); 
 
     return newNode;
 }
@@ -299,7 +293,6 @@ void CBinaryTree<Traits>::InternalInsert(Node *&rParent, const value_type &val){
     auto path = comp(val, rParent->GetValue()); 
     InternalInsert(rParent->GetChildRef(path), val);
     
-    // Actualizamos el puntero m_pFather del hijo que acaba de ser modificado/insertado
     if (rParent->GetChild(path)) {
         rParent->GetChild(path)->SetFather(rParent);
     }
@@ -327,7 +320,6 @@ void CBinaryTree<Traits>::InternalRemove(Node *&rParent, const value_type &val) 
             Node* temp = _getMin(rParent->GetChild(1));
             rParent->GetValueRef() = temp->GetValue();
             InternalRemove(rParent->GetChildRef(1), temp->GetValue());
-            // Actualizar padre del hijo derecho si cambió
             if (rParent->GetChild(1)) {
                 rParent->GetChild(1)->SetFather(rParent);
             }
@@ -335,7 +327,6 @@ void CBinaryTree<Traits>::InternalRemove(Node *&rParent, const value_type &val) 
     } else {
         auto path = comp(val, rParent->GetValue());
         InternalRemove(rParent->GetChildRef(path), val);
-        // Actualizar padre del hijo en el que descendimos si cambió
         if (rParent->GetChild(path)) {
             rParent->GetChild(path)->SetFather(rParent);
         }
