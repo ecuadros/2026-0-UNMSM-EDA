@@ -15,6 +15,12 @@
 template <typename keyType, typename ObjIDType>
 class BTree;
 
+template <typename keyType, typename ObjIDType>
+class ForwardBTreeIterator;
+
+template <typename keyType, typename ObjIDType>
+class BackwardBTreeIterator;
+
 
 using namespace std;
 enum bt_ErrorCode {bt_ok, bt_overflow, bt_underflow, bt_duplicate, bt_nofound, bt_rootmerged};
@@ -46,6 +52,8 @@ class CBTreePage
 // this is the in-memory version of the CBTreePage
 {
        friend class BTree<keyType, ObjIDType>;
+       friend class ForwardBTreeIterator<keyType, ObjIDType>;
+       friend class BackwardBTreeIterator<keyType, ObjIDType>;
 
        typedef CBTreePage<keyType, ObjIDType>    BTPage;         // useful shorthand
        typedef tagObjectInfo<keyType, ObjIDType> ObjectInfo;
