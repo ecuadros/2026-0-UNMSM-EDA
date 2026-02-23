@@ -5,7 +5,7 @@
 using namespace std;
 #include <stddef.h>
 #include "../algorithms/sorting.h"
-#include "GeneralIterator.h"
+#include "containers/GeneralIterator.h"
 
 template <typename _T>
 struct Trait1
