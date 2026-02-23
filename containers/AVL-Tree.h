@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <mutex>
-#include <stack>
 #include <algorithm>
 #include <utility>
 #include "binarytree.h" 
@@ -54,9 +53,10 @@ public:
     CAVLTree(const CAVLTree &another) {
         lock_guard<mutex> lock(another.m_Block);
         m_pRoot = _copyTree(another.m_pRoot);
+        if (m_pRoot) m_pRoot->SetFather(nullptr);
     }
 
-    CAVLTree(CAVLTree &&another) noexcept {
+     CAVLTree(CAVLTree &&another) noexcept {
         lock_guard<mutex> lock(another.m_Block);
         m_pRoot = exchange(another.m_pRoot, nullptr);
     }
@@ -66,11 +66,13 @@ public:
     void Insert(const value_type &val) {
         lock_guard<mutex> lock(m_Block);
         InternalInsert(m_pRoot, val);
+        if (m_pRoot) m_pRoot->SetFather(nullptr); 
     }
 
     void Remove(const value_type &val) {
         lock_guard<mutex> lock(m_Block);
         InternalRemove(m_pRoot, val);
+        if (m_pRoot) m_pRoot->SetFather(nullptr); 
     }
 
     forward_iterator begin() { 
@@ -142,22 +144,26 @@ public:
 template <typename Traits>
 CAVLTree<Traits>::~CAVLTree() {
     lock_guard<mutex> lock(m_Block);
-    if (m_pRoot) {
-        stack<Node*> s;
-        s.push(m_pRoot);
-        while (!s.empty()) {
-            Node* pTemp = s.top();
-            s.pop();
-            if (pTemp->GetChild(0)) {
-                s.push(pTemp->GetChild(0));
+    Node* curr = m_pRoot;
+    while (curr) {
+        if (curr->GetChild(0)) {
+            curr = curr->GetChild(0);
+        } else if (curr->GetChild(1)) {
+            curr = curr->GetChild(1);
+        } else {
+            Node* parent = curr->GetFather();
+            if (parent) {
+                if (parent->GetChild(0) == curr) {
+                    parent->GetChildRef(0) = nullptr;
+                } else {
+                    parent->GetChildRef(1) = nullptr;
+                }
             }
-            if (pTemp->GetChild(1)) {
-                s.push(pTemp->GetChild(1));
-            }
-            delete pTemp;
+            delete curr;
+            curr = parent; 
         }
-        m_pRoot = nullptr;
     }
+    m_pRoot = nullptr;
 }
 
 template <typename Traits>
@@ -192,8 +198,17 @@ long CAVLTree<Traits>::_balanceFactor(Node* pNode) const {
 template <typename Traits>
 void CAVLTree<Traits>::_rotateLeft(Node *&rParent) {
     Node* pRight = rParent->GetChild(1);
+    
     rParent->GetChildRef(1) = pRight->GetChild(0);
+    if (pRight->GetChild(0)) {
+        pRight->GetChild(0)->SetFather(rParent); 
+    }
+
     pRight->GetChildRef(0) = rParent;
+    
+    pRight->SetFather(rParent->GetFather()); 
+    rParent->SetFather(pRight);              
+    
     _updateHeight(rParent);
     _updateHeight(pRight);
     rParent = pRight;
@@ -202,8 +217,17 @@ void CAVLTree<Traits>::_rotateLeft(Node *&rParent) {
 template <typename Traits>
 void CAVLTree<Traits>::_rotateRight(Node *&rParent) {
     Node* pLeft = rParent->GetChild(0);
+    
     rParent->GetChildRef(0) = pLeft->GetChild(1);
+    if (pLeft->GetChild(1)) {
+        pLeft->GetChild(1)->SetFather(rParent); 
+    }
+
     pLeft->GetChildRef(1) = rParent;
+    
+    pLeft->SetFather(rParent->GetFather()); 
+    rParent->SetFather(pLeft);              
+    
     _updateHeight(rParent);
     _updateHeight(pLeft);
     rParent = pLeft;
@@ -234,8 +258,13 @@ typename CAVLTree<Traits>::Node* CAVLTree<Traits>::_copyTree(Node* pNode) {
     }
     Node* newNode = new Node(pNode->GetValue());
     newNode->SetHeight(pNode->GetHeight());
+    
     newNode->GetChildRef(0) = _copyTree(pNode->GetChild(0));
+    if (newNode->GetChild(0)) newNode->GetChild(0)->SetFather(newNode);
+
     newNode->GetChildRef(1) = _copyTree(pNode->GetChild(1));
+    if (newNode->GetChild(1)) newNode->GetChild(1)->SetFather(newNode);
+
     return newNode;
 }
 
@@ -261,6 +290,11 @@ void CAVLTree<Traits>::InternalInsert(Node *&rParent, const value_type &val) {
     auto path = comp(val, rParent->GetValue()); 
     InternalInsert(rParent->GetChildRef(path), val);
     
+    // Actualizar padre del hijo evaluado
+    if (rParent->GetChild(path)) {
+        rParent->GetChild(path)->SetFather(rParent);
+    }
+
     _updateHeight(rParent);
     _balance(rParent);
 }
@@ -286,10 +320,16 @@ void CAVLTree<Traits>::InternalRemove(Node *&rParent, const value_type &val) {
             Node* temp = _getMin(rParent->GetChild(1));
             rParent->GetValueRef() = temp->GetValue();
             InternalRemove(rParent->GetChildRef(1), temp->GetValue());
+            if (rParent->GetChild(1)) {
+                rParent->GetChild(1)->SetFather(rParent);
+            }
         }
     } else {
         auto path = comp(val, rParent->GetValue());
         InternalRemove(rParent->GetChildRef(path), val);
+        if (rParent->GetChild(path)) {
+            rParent->GetChild(path)->SetFather(rParent);
+        }
     }
 
     if (rParent) {

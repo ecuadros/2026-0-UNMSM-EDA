@@ -2,7 +2,6 @@
 #define __BINARYTREE_H__
 #include <iostream>
 #include <mutex>
-#include <stack>
 #include <algorithm>
 #include <utility>
 #include "../general/types.h"
@@ -28,6 +27,7 @@ class NodeBinaryTree{
 private:
     value_type m_data;
     Node *m_pChild[2] = {nullptr, nullptr};
+    Node *m_pFather = nullptr;
     size_t m_height = 1;
 public:
     NodeBinaryTree(){}
@@ -39,6 +39,9 @@ public:
     Node* GetChild(size_t index) const { return m_pChild[index]; }
     Node*& GetChildRef(size_t index) { return m_pChild[index]; }
 
+    Node* GetFather() const { return m_pFather; }
+    void SetFather(Node* pFather) { m_pFather = pFather; }
+
     size_t  GetHeight() const { return m_height; }
     void SetHeight(size_t h) { m_height = h; }
 };
@@ -49,42 +52,46 @@ class TreeForwardIterator {
 
 private:
     Node* m_pCurrent = nullptr;
-    std::stack<Node*> m_Stack;
-
-    void pushLeft(Node* pNode) {
-        while (pNode) {
-            m_Stack.push(pNode);
-            pNode = pNode->GetChild(0); 
-        }
-    }
 
 public:
     TreeForwardIterator(Node* pRoot) {
-        if (pRoot) {
-            pushLeft(pRoot); 
-            if (m_Stack.empty()) {m_pCurrent = nullptr; } 
-            else  {m_pCurrent = m_Stack.top(); }
-        } 
-        else {m_pCurrent = nullptr;}
+        m_pCurrent = pRoot;
+        if (m_pCurrent) {
+            // Ir lo más a la izquierda posible para empezar el recorrido In-Order
+            while (m_pCurrent->GetChild(0)) {
+                m_pCurrent = m_pCurrent->GetChild(0);
+            }
+        }
     }
+
     bool operator!=(const TreeForwardIterator& another) const { 
         return m_pCurrent != another.m_pCurrent; 
     }   
+
     value_type& operator*() { 
         return m_pCurrent->GetValueRef(); 
     }
+
     TreeForwardIterator& operator++() {
-        if (m_Stack.empty()) { 
-            m_pCurrent = nullptr; 
+        if (!m_pCurrent) {
             return *this; 
         }
-        Node* pNode = m_Stack.top();
-        m_Stack.pop();
-        
-        if (pNode->GetChild(1)) { pushLeft(pNode->GetChild(1));  }
 
-        if (m_Stack.empty())    {   m_pCurrent = nullptr;  } 
-        else                    { m_pCurrent = m_Stack.top(); }
+        if (m_pCurrent->GetChild(1)) {
+            // Si hay hijo derecho, el siguiente es el nodo más a la izquierda de ese subárbol
+            m_pCurrent = m_pCurrent->GetChild(1);
+            while (m_pCurrent->GetChild(0)) {
+                m_pCurrent = m_pCurrent->GetChild(0);
+            }
+        } else {
+            // Si no hay hijo derecho, subir por el árbol hasta ser el hijo izquierdo
+            Node* pParent = m_pCurrent->GetFather();
+            while (pParent && m_pCurrent == pParent->GetChild(1)) {
+                m_pCurrent = pParent;
+                pParent = pParent->GetFather();
+            }
+            m_pCurrent = pParent;
+        }
         return *this;
     }
 };
@@ -96,41 +103,44 @@ class TreeBackwardIterator {
 
 private:
     Node* m_pCurrent = nullptr;
-    std::stack<Node*> m_Stack;
-
-    void pushRight(Node* pNode) {
-        while (pNode) {
-            m_Stack.push(pNode);
-            pNode = pNode->GetChild(1); 
-        }
-    }
 
 public:
     TreeBackwardIterator(Node* pRoot) {
-        if (pRoot) {
-            pushRight(pRoot); 
-            if (m_Stack.empty()) {m_pCurrent = nullptr; } 
-            else  { m_pCurrent = m_Stack.top(); }
-        } 
-        else {m_pCurrent = nullptr; }
+        m_pCurrent = pRoot;
+        if (m_pCurrent) {
+            // Ir lo más a la derecha posible para empezar el recorrido In-Order inverso
+            while (m_pCurrent->GetChild(1)) {
+                m_pCurrent = m_pCurrent->GetChild(1);
+            }
+        }
     }
 
     bool operator!=(const TreeBackwardIterator& another) const { 
         return m_pCurrent != another.m_pCurrent; 
     }
-    value_type& operator*() {return m_pCurrent->GetValueRef(); }
+
+    value_type& operator*() { return m_pCurrent->GetValueRef(); }
     
     TreeBackwardIterator& operator++() {
-        if (m_Stack.empty()) { 
-            m_pCurrent = nullptr; 
+        if (!m_pCurrent) { 
             return *this; 
         }
-        Node* pNode = m_Stack.top();
-        m_Stack.pop();
-        if (pNode->GetChild(0)) {pushRight(pNode->GetChild(0));  }
 
-        if (m_Stack.empty()) {m_pCurrent = nullptr; } 
-        else { m_pCurrent = m_Stack.top();  }
+        if (m_pCurrent->GetChild(0)) {
+            // Si hay hijo izquierdo, el siguiente es el nodo más a la derecha de ese subárbol
+            m_pCurrent = m_pCurrent->GetChild(0);
+            while (m_pCurrent->GetChild(1)) {
+                m_pCurrent = m_pCurrent->GetChild(1);
+            }
+        } else {
+            // Si no hay hijo izquierdo, subir por el árbol hasta ser el hijo derecho
+            Node* pParent = m_pCurrent->GetFather();
+            while (pParent && m_pCurrent == pParent->GetChild(0)) {
+                m_pCurrent = pParent;
+                pParent = pParent->GetFather();
+            }
+            m_pCurrent = pParent;
+        }
         return *this;
     }
 };
@@ -166,6 +176,7 @@ public:
     CBinaryTree(const CBinaryTree &another) {
         lock_guard<mutex> lock(another.m_Block);
         m_pRoot = _copyTree(another.m_pRoot);
+        if (m_pRoot) m_pRoot->SetFather(nullptr);
     }
     //  Move constructor
     CBinaryTree(CBinaryTree &&another) noexcept {
@@ -176,11 +187,13 @@ public:
     virtual void Insert(const value_type &val) {
         lock_guard<mutex> lock(m_Block);
         InternalInsert(m_pRoot, val);
+        if (m_pRoot) m_pRoot->SetFather(nullptr); // Asegurarse de que root no tenga padre
     }
 
     virtual void Remove(const value_type &val) {
         lock_guard<mutex> lock(m_Block);
         InternalRemove(m_pRoot, val);
+        if (m_pRoot) m_pRoot->SetFather(nullptr); // Asegurarse de que root no tenga padre
     }
     forward_iterator begin() { 
         return forward_iterator(m_pRoot); 
@@ -258,8 +271,13 @@ typename CBinaryTree<Traits>::Node* CBinaryTree<Traits>::_copyTree(Node* pNode) 
     if (!pNode) { return nullptr; }
     Node* newNode = new Node(pNode->GetValue());
     newNode->SetHeight(pNode->GetHeight());
+    
     newNode->GetChildRef(0) = _copyTree(pNode->GetChild(0));
+    if (newNode->GetChild(0)) newNode->GetChild(0)->SetFather(newNode); // Enlazar al padre
+
     newNode->GetChildRef(1) = _copyTree(pNode->GetChild(1));
+    if (newNode->GetChild(1)) newNode->GetChild(1)->SetFather(newNode); // Enlazar al padre
+
     return newNode;
 }
 template <typename Traits>
@@ -280,6 +298,12 @@ void CBinaryTree<Traits>::InternalInsert(Node *&rParent, const value_type &val){
 
     auto path = comp(val, rParent->GetValue()); 
     InternalInsert(rParent->GetChildRef(path), val);
+    
+    // Actualizamos el puntero m_pFather del hijo que acaba de ser modificado/insertado
+    if (rParent->GetChild(path)) {
+        rParent->GetChild(path)->SetFather(rParent);
+    }
+
     _updateHeight(rParent);
 }
 template <typename Traits>
@@ -303,12 +327,23 @@ void CBinaryTree<Traits>::InternalRemove(Node *&rParent, const value_type &val) 
             Node* temp = _getMin(rParent->GetChild(1));
             rParent->GetValueRef() = temp->GetValue();
             InternalRemove(rParent->GetChildRef(1), temp->GetValue());
+            // Actualizar padre del hijo derecho si cambió
+            if (rParent->GetChild(1)) {
+                rParent->GetChild(1)->SetFather(rParent);
+            }
         }
     } else {
         auto path = comp(val, rParent->GetValue());
         InternalRemove(rParent->GetChildRef(path), val);
+        // Actualizar padre del hijo en el que descendimos si cambió
+        if (rParent->GetChild(path)) {
+            rParent->GetChild(path)->SetFather(rParent);
+        }
     }
-    _updateHeight(rParent);
+    
+    if (rParent) {
+        _updateHeight(rParent);
+    }
 }
 template <typename Traits>
 template <typename Func, typename ...Args>
@@ -341,17 +376,28 @@ void CBinaryTree<Traits>::_internalpostorden(Node *pNode, Func fn, Args... args)
 template <typename Traits>
 CBinaryTree<Traits>::~CBinaryTree() {
     lock_guard<mutex> lock(m_Block);
-    if (m_pRoot) {
-        stack<Node*> s;
-        s.push(m_pRoot);
-        while (!s.empty()) {
-            Node* pTemp = s.top();
-            s.pop();
-            if (pTemp->GetChild(0)) {s.push(pTemp->GetChild(0));  }
-            if (pTemp->GetChild(1)) { s.push(pTemp->GetChild(1)); }
-            delete pTemp;
+    
+    Node* curr = m_pRoot;
+    while (curr) {
+        if (curr->GetChild(0)) {
+            curr = curr->GetChild(0);
+        } else if (curr->GetChild(1)) {
+            curr = curr->GetChild(1);
+        } else {
+            
+            Node* parent = curr->GetFather();
+            if (parent) {
+              
+                if (parent->GetChild(0) == curr) {
+                    parent->GetChildRef(0) = nullptr;
+                } else {
+                    parent->GetChildRef(1) = nullptr;
+                }
+            }
+            delete curr;
+            curr = parent; 
         }
-        m_pRoot = nullptr;
     }
+    m_pRoot = nullptr;
 }
 #endif // __BINARYTREE_H__
