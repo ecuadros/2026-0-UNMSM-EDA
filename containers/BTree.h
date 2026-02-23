@@ -4,6 +4,7 @@
 #define BTREE_H
 
 #include <iostream>
+#include <utility>
 #include <vector>
 #include "BTreePage.h"
 #include "../foreach.h"
@@ -61,6 +62,12 @@ public:
        void            ForEach( forward_iterator start, forward_iterator end, Func func, Args&& ...args );
        template <typename Func, typename ...Args>
        ObjectInfo*     FirstThat( forward_iterator start, forward_iterator end, Func func, Args&& ...args);
+       template <typename Func, typename ...Args>
+       void            inorderTraversal(Func func, Args&& ...args);
+       template <typename Func, typename ...Args>
+       void            preorderTraversal(Func func, Args&& ...args);
+       template <typename Func, typename ...Args>
+       void            postorderTraversal(Func func, Args&& ...args);
 
        forward_iterator begin();
        forward_iterator end();
@@ -76,6 +83,14 @@ protected:
 
        friend class ForwardBTreeIterator<keyType, ObjIDType>;
        friend class BackwardBTreeIterator<keyType, ObjIDType>;
+
+private:
+       template <typename Func, typename ...Args>
+       static void _inorderTraversal(BTNode *page, Func &func, Args&&...args);
+       template <typename Func, typename ...Args>
+       static void _preorderTraversal(BTNode *page, Func &func, Args&&...args);
+       template <typename Func, typename ...Args>
+       static void _postorderTraversal(BTNode *page, Func &func, Args&&...args);
 };
 
 const Size MaxHeight = 5;
@@ -107,6 +122,70 @@ typename BTree<keyType, ObjIDType>::ObjectInfo *
 BTree<keyType, ObjIDType>::FirstThat(forward_iterator start, forward_iterator end, Func func, Args &&... args) {
        auto it = ::FirstThat(start, end, func, std::forward<Args>(args)...);
        return (it == end) ? nullptr : it.operator->();
+}
+
+// funciones publicas para los traversals
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename ...Args>
+void BTree<keyType, ObjIDType>::inorderTraversal(Func func, Args &&...args) {
+       _inorderTraversal(&m_Root, func, std::forward<Args>(args)...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename ...Args>
+void BTree<keyType, ObjIDType>::preorderTraversal(Func func, Args &&...args) {
+       _preorderTraversal(&m_Root, func, std::forward<Args>(args)...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename ...Args>
+void BTree<keyType, ObjIDType>::postorderTraversal(Func func, Args &&...args) {
+       _postorderTraversal(&m_Root, func, std::forward<Args>(args)...);
+}
+
+// funciones privadas para su implementacion
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename ...Args>
+void BTree<keyType, ObjIDType>::_inorderTraversal(BTNode *page, Func &func, Args&&...args) {
+       if (!page || page->m_KeyCount == 0) return;
+       // avanza a la subpagina de la clave
+       for (Size i = 0; i < page->m_KeyCount; ++i) {
+               _inorderTraversal(page->m_SubPages[i], func, std::forward<Args>(args)...);
+               // luego aplica la funcion
+               func(page->m_Keys[i], std::forward<Args>(args)...);
+       }
+       // y luego continua con la ultima subpagina
+       _inorderTraversal(page->m_SubPages[page->m_KeyCount], func, std::forward<Args>(args)...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename ...Args>
+void BTree<keyType, ObjIDType>::_preorderTraversal(BTNode *page, Func &func, Args&&...args) {
+       if (!page || page->m_KeyCount == 0) return;
+       // primero aplica la funcion para todas las claves de la pagina
+       for (Size i = 0; i < page->m_KeyCount; ++i) {
+               func(page->m_Keys[i], std::forward<Args>(args)...);
+       }
+       // luego avanza a la siguiente pagina
+       for (Size i = 0; i <= page->m_KeyCount; ++i) {
+               _preorderTraversal(page->m_SubPages[i], func, std::forward<Args>(args)...);
+       }
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename ...Args>
+void BTree<keyType, ObjIDType>::_postorderTraversal(BTNode *page, Func &func, Args&&...args) {
+       if (!page || page->m_KeyCount == 0) return;
+       // primero avanza hasta la ultima pagina
+       for (Size i = 0; i <= page->m_KeyCount; ++i) {
+               _postorderTraversal(page->m_SubPages[i], func, std::forward<Args>(args)...);
+       }
+       // y aplica la funcion desde atras hacia adelante
+       for (Size i = 0; i < page->m_KeyCount; ++i) {
+               func(page->m_Keys[i], std::forward<Args>(args)...);
+       }
 }
 
 template <typename keyType, typename ObjIDType>
