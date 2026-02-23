@@ -1,112 +1,135 @@
-//#include <iostream.h>
-#include <time.h>
-#include <stdlib.h>
-#include <string>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
 #include "containers/BTree.h"
+#include "containers/BTreeTraits.h"
+#include "general/types.h"
+#include "variadic-util.h"
+
+using namespace std;
+
+using KeyType = char;
 
 //const char * keys="CDAMPIWNBKEHOLJYQZFXVRTSGU";
-const char * keys1 = "D1XJ2xTg8zKL9AhijOPQcEowRSp0NbW567BUfCqrs4FdtYZakHIuvGV3eMylmn";
-const char * keys2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-const char * keys3 = "DYZakHIUwxVJ203ejOP9Qc8AdtuEop1XvTRghSNbW567BfiCqrs4FGMyzKLlmn";
+const KeyType* keys1 = "D1XJ2xTg8zKL9AhijOPQcEowRSp0NbW567BUfCqrs4FdtYZakHIuvGV3eMylmn";
+const KeyType* keys2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const KeyType* keys3 = "DYZakHIUwxVJ203ejOP9Qc8AdtuEop1XvTRghSNbW567BfiCqrs4FGMyzKLlmn";
 
-const int BTreeSize = 3;
 void DemoBTree(){
-       int i;
-       BTree <char> bt (BTreeSize);
-       for (i = 0; keys1[i]; i++)
-       {
-               //cout<<"Inserting "<<keys1[i]<<endl;
-               bt.Insert(keys1[i], i*i);
-               //bt.Print(cout);
-       }
-       bt.Print(cout);
-//        for (i = 0; keys2[i]; i++)
-//        {
-//                cout << "Searching " << keys2[i] << " ";
-//                long ObjID = bt.Search(keys2[i]);
-//                if( ObjID != -1 )
-//                        cout << "Found " << keys2[i] << " ID = " << ObjID << endl;
-//                else
-//                        cout <<"Not found!" << keys2[i] << endl;
-//        }
+    cout << "[1] TEST DE CONSTRUCTORES Y GESTION DE MEMORIA\n";
+    BTree<BTreeTraitAscending<KeyType>> arbol(3); 
+    cout << "-> Arbol base inicializado (Orden 3).\n";
 
-//        cout.flush();
-//        for (i = 0; keys3[i]; i++)
-//        {
-//                cout << "Removing " << keys3[i] << " ";
-//                if( bt.Remove(keys3[i], -1) )
-//                        cout << keys3[i] << " removed !" << endl;
-//                else
-//                        cout <<"Not found!" << keys3[i] << endl;
-//                bt.Print(cout);
-//        }
-//        bt.Print(cout);
-//        cout.flush();
+    arbol.Insert('A', 10);
+    arbol.Insert('B', 20);
+    arbol.Insert('C', 30);
+    cout << "-> Se insertaron 3 elementos iniciales. Tamano de arbol base: " << arbol.size() << "\n";
+    arbol.Print(cout);
+    cout << "\n"; 
+
+    BTree<BTreeTraitAscending<KeyType>> arbolCopia(arbol);
+    cout << "-> Constructor de Copia ejecutado. Tamano de arbolCopia: " << arbolCopia.size() << "\n";
+
+    BTree<BTreeTraitAscending<KeyType>> arbolMovido(std::move(arbolCopia));
+    cout << "-> Move Constructor ejecutado. Tamano de arbolMovido: " << arbolMovido.size() << "\n";
+    cout << "-> Tamano de arbolCopia tras ser movido: " << arbolCopia.size() << "\n\n";
+
+    BTree<BTreeTraitAscending<KeyType>> arbolVisual(3); 
+    const KeyType* visualKeys = "MFTKXPRZL";
+    for (Size i = 0; visualKeys[i]; i++) {
+        arbolVisual.Insert(visualKeys[i], i);
+    }
+    cout << "Estructura horizontal (Raiz a la izquierda, hijos a la derecha):\n";
+    arbolVisual.Print(cout);
+    cout << "\n";
+
+    cout << "[2] TEST DE INSERCION MASIVA \n";
+    for (Size i = 0; keys1[i]; i++) {
+        arbol.Insert(keys1[i], i * i);
+    }
+    
+    cout << "Estructura del arbol resultante (Altura: " << arbol.height() 
+         << " | Tamano: " << arbol.size() << "):\n";
+    cout << "(Arbol impreso en memoria correctamente)\n\n";
+
+    cout << "[3] TEST DE BUSQUEDA (Usando keys2 y SearchInPage)\n";
+    Size encontrados = 0, no_encontrados = 0;
+    
+    for (Size i = 0; keys2[i]; i++) {
+        ref_type refResult = arbol.Search(keys2[i]);
+        if (refResult != -1) encontrados++;
+        else no_encontrados++;
+    }
+    cout << "-> De keys2: Se encontraron " << encontrados << " claves.\n";
+    cout << "-> De keys2: No se encontraron " << no_encontrados << " claves.\n\n";
+
+    cout << "[4] TEST DE FOREACH Y FIRST THAT\n";
+    auto buscarVocal = [](auto& info, Size level) {
+        KeyType c = info.key;
+        return (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
+    };
+
+    auto pEncontrado = arbol.FirstThat(buscarVocal);
+
+    if (pEncontrado) {
+        cout << "-> (FirstThat): La primera vocal minuscula hallada en el arbol es: '" << pEncontrado->key << "'\n";
+    }
+
+    KeyType target = 'Z';
+    cout << "\nEjecutando ForEach variadico (Buscando la letra '" << target << "'):\n";
+    
+    auto imprimirNivel = [](auto& info, Size level, KeyType objetivo) {
+        if (info.key == objetivo) {
+            cout << "-> [ForEach] El caracter '" << info.key << "' se ubica en el nivel de profundidad: " << level << endl;
+        }
+    };
+
+    arbol.Foreach(imprimirNivel, target);
+
+    cout << "[5] TEST DE ITERADORES (Forward & Backward)\n";
+    cout << "Los primeros 10 elementos (Forward): [ ";
+    Size cont = 0;
+    for (auto it = arbol.begin(); it != arbol.end() && cont < 10; ++it, ++cont) {
+        cout << *it << " ";
+    }
+    cout << "... ]\n";
+
+    cout << "Los ultimos 10 elementos (Backward): [ ";
+    cont = 0;
+    for (auto it = arbol.rbegin(); it != arbol.rend() && cont < 10; ++it, ++cont) {
+        cout << *it << " ";
+    }
+    cout << "... ]\n\n";
+
+    cout << "[6] TEST DE ELIMINACION Y FILE I/O\n";
+    string filename = "btree_test_data.txt";
+    
+    ofstream fileOut(filename);
+    if (fileOut.is_open()) {
+        fileOut << arbol; 
+        fileOut.close();
+        cout << "-> Arbol exportado correctamente a '" << filename << "'\n";
+    }
+
+    cout << "\nEliminando algunas claves usando keys3...\n";
+    for (Size i = 0; i < 5; i++) { 
+        if(arbol.Remove(keys3[i], -1)) {
+            cout << "Clave '" << keys3[i] << "' eliminada con exito.\n";
+        }
+    }
+
+    cout << "\nVaciando por completo el arbol original (Clear)...\n";
+    arbol.Clear();
+    cout << "Tamano actual: " << arbol.size() << "\n";
+
+    cout << "\nRecuperando arbol intacto desde el archivo de texto...\n";
+    ifstream fileIn(filename);
+    if (fileIn.is_open()) {
+        fileIn >> arbol; 
+        fileIn.close();
+        cout << "-> Arbol recuperado. Nuevo tamano: " << arbol.size() << "\n";
+        cout << "\nImprimiendo arbol recuperado (primeros niveles visibles):\n";
+        arbol.Print(cout);
+    }
 }
-
-
-
-
-
-
-
-
-
-/*const char * keys="CDAMPIWNBKEHOLJYQZFXVRTSGU";
-const char * keys2="CDAMPIWNBKEHOLJYQZFXVRTSGU";
-const int BTreeSize = 3;
-main (int argc, char * argv)
-{
-       //__int64 li;
-       BTree <__int64> bt (BTreeSize);
-       for (register int i = 0; i < 1000000; i++)
-       {
-               //cout<<"Inserting "<<keys[i]<<endl;
-               bt.Insert(i, i-1);
-               //bt.Print(cout);
-       }
-
-       for (i = 0; i < 1000; i++)
-       {
-               __int64 key = 975000+(::rand()%50000);
-               //cout << "Searching " << (long)key << " ";
-               long ObjID = bt.Search(key);
-               if( ObjID != -1 )
-                       cout << "Achei " << (long)key << " ID = " << ObjID << endl;
-               else
-                       cout <<"  Nao achei!" << (long)key << endl;
-       }
-       cout.flush();
-
-       return 1;
-}*/
-
-
-
-/*const int BTreeSize = 3;
-main (int argc, char * argv)
-{
-       int result, i;
-       BTree <LONGLONG> bt(BTreeSize);
-       result = bt.Create ("ernesto3-string-btree-start.dat",ios::in|ios::out);
-       if (!result) { cout<<"Please delete testbt.dat"<<endl;return 0; }
-       srand( (unsigned)time( NULL ) );
-       LARGE_INTEGER key;
-       for (i = 0; i < 1000000; i++)
-       {
-               //cout<<"Inserting "<<keys[i]<<endl;
-               char strTmp[50];
-               key.LowPart = rand();
-               key.HighPart = rand();
-               std::string str(strTmp);
-               result = bt.Insert(key.QuadPart, i);
-               //bt.Print(cout);
-               if( i % 100000 == 0 )
-               {       cout << i << endl; cout.flush();        }
-       }
-       //cout << "Searching D " << bt.Search();
-       //bt.Search(1,1);
-       cout.flush();
-       return 1;
-}*/
