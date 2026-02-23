@@ -2,8 +2,8 @@
 #define __LISTS_H__
 #include "../general/types.h"
 
-#include "linkedlist.h"
+#include "heap.h"
 
-void DemoLists();
+void DemoHeap();
 
 #endif // __LISTS_H__

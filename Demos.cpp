@@ -3,11 +3,12 @@
 
 using namespace std;
 
-void DemoLists(){
-    CLinkedList< AscendingTrait<T1> > l1;
-
-    l1.Insert(20, 5);
-    l1.Insert(30, 3);
-    cout << l1 << endl;
+void DemoHeap(){
+    CHeap<MinHeapTrait<int>> heap(10);
+    heap.Push(5);
+    heap.Push(3);
+    heap.Push(8);
+    cout << heap << endl;
 }
+
 
