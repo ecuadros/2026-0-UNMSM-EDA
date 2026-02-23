@@ -3,9 +3,7 @@ CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
 LDFLAGS = -pthread # Añadido -pthread
 
 TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp Demo.cpp \
-	   sorting.cpp
+SRCS = main.cpp DemoArbol.cpp demo_avl.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
