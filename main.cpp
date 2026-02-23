@@ -1,13 +1,5 @@
 #include <iostream>
 #include "util.h"
-#include "pointers.h"
-#include "containers/array.h"
-#include "containers/lists.h"
-#include "containers/clists.h" 
-#include "containers/dlists.h"
-#include "containers/cdlists.h"
-#include "containers/stacks.h"   
-#include "containers/queues.h"
 #include "containers/BStarTrees.h"  
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main

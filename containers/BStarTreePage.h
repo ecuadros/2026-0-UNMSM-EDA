@@ -1,4 +1,3 @@
-
 #ifndef CBSTARTREEPAGE_H
 #define CBSTARTREEPAGE_H
 
@@ -14,6 +13,7 @@
 using namespace std;
 
 
+
 enum bt_ErrorCode {
     bt_ok,
     bt_overflow,
@@ -24,7 +24,7 @@ enum bt_ErrorCode {
 };
 
 
-// traits para el b estrella 
+// TRAITS 
 
 
 template <typename _T, typename _Func>
@@ -39,6 +39,8 @@ struct BStarAscendingTrait : public BStarTreeTrait<_T, std::greater<_T>> {};
 template <typename _T>
 struct BStarDescendingTrait : public BStarTreeTrait<_T, std::less<_T>> {};
 
+
+// OBJECT INFO (clave, referencia)
 
 
 template <typename keyType, typename ObjIDType>
@@ -55,6 +57,8 @@ struct BStarObjectInfo {
     long GetUseCounter() const { return UseCounter; }
 };
 
+
+// BÚSQUEDA BINARIA 
 
 
 template <typename Container, typename ObjType>
@@ -73,7 +77,7 @@ int bstar_binary_search(Container &container, int first, int last, const ObjType
 template <typename Container, typename ObjType>
 void bstar_insert_at(Container &container, const ObjType &object, int pos) {
     int size = (int)container.size();
-    for (int i = size - 2; i >= pos; i--)
+    for (int i = size - 2; i >= pos; --i)
         container[i + 1] = container[i];
     container[pos] = object;
 }
@@ -81,16 +85,20 @@ void bstar_insert_at(Container &container, const ObjType &object, int pos) {
 template <typename Container>
 void bstar_remove(Container &container, int pos) {
     int size = (int)container.size();
-    for (int i = pos + 1; i < size; i++)
+    for (int i = pos + 1; i < size; ++i)
         container[i - 1] = container[i];
 }
 
+
+// FORWARD DECLARATION
 
 
 template <typename Traits> class CBStarTree;
 template <typename Traits> class CBStarTreePage;
 
-// ahora forward 
+
+// ITERADOR FORWARD 
+
 
 template <typename Traits>
 class BStarForwardIterator {
@@ -133,7 +141,7 @@ public:
             if (cur.index < cur.page->m_KeyCount) {
                 m_pCurrent = &cur.page->m_Keys[cur.index];
                 int nextIdx = cur.index + 1;
-                cur.index++;
+                ++cur.index;
                 if (cur.page->m_SubPages.size() > (size_t)nextIdx &&
                     cur.page->m_SubPages[nextIdx]) {
                     pushLeftmost(cur.page->m_SubPages[nextIdx]);
@@ -162,7 +170,7 @@ public:
 };
 
 
-// ahora backward 
+// ITERADOR BACKWARD 
 
 
 template <typename Traits>
@@ -206,7 +214,7 @@ public:
             if (cur.index >= 0 && cur.index < cur.page->m_KeyCount) {
                 m_pCurrent = &cur.page->m_Keys[cur.index];
                 int prevIdx = cur.index;
-                cur.index--;
+                --cur.index;
                 if (cur.page->m_SubPages.size() > (size_t)prevIdx &&
                     cur.page->m_SubPages[prevIdx]) {
                     pushRightmost(cur.page->m_SubPages[prevIdx]);
@@ -235,8 +243,7 @@ public:
 };
 
 
-// clase página del b estrella
-
+// CLASE PÁGINA DEL ÁRBOL B*
 
 template <typename Traits>
 class CBStarTreePage {
@@ -267,9 +274,9 @@ protected:
     vector<BTPage *>   m_SubPages;
     int              m_KeyCount         = 0;
 
-
-    // Abstracción de índices, para que se vea mejor
-
+    
+    // Abstracción de índices 
+    
     bool IsLeaf()    const { return m_SubPages.empty() || m_SubPages[0] == nullptr; }
     bool IsRoot()    const { return m_MaxKeysForChilds != m_MaxKeys; }
     bool Overflow()  const { return m_KeyCount > m_MaxKeys; }
@@ -307,7 +314,7 @@ protected:
     }
 
     void Reset() {
-        for (int i = 0; i < m_KeyCount; i++) {
+        for (int i = 0; i < m_KeyCount; ++i) {
             delete m_SubPages[i];
         }
         clear();
@@ -317,19 +324,21 @@ protected:
 
     void Destroy() { Reset(); delete this; }
 
+    
     // Redistribución de claves
-
+    
     void RedistributeR2L(int pos) {
         BTPage *pSource = m_SubPages[pos];
         BTPage *pTarget = m_SubPages[pos - 1];
         while (pSource->GetNumberOfKeys() > pSource->MinNumberOfKeys() &&
                pTarget->GetNumberOfKeys() < pSource->GetNumberOfKeys()) {
-            bstar_insert_at(pTarget->m_Keys,     m_Keys[pos - 1], pTarget->NumberOfKeys()++);
+            bstar_insert_at(pTarget->m_Keys,     m_Keys[pos - 1], pTarget->NumberOfKeys());
+            ++pTarget->m_KeyCount;
             bstar_insert_at(pTarget->m_SubPages, pSource->m_SubPages[0], pTarget->NumberOfKeys());
             m_Keys[pos - 1] = pSource->m_Keys[0];
             bstar_remove(pSource->m_Keys,     0);
             bstar_remove(pSource->m_SubPages, 0);
-            pSource->NumberOfKeys()--;
+            --pSource->m_KeyCount;
         }
     }
 
@@ -340,9 +349,9 @@ protected:
                pTarget->GetNumberOfKeys() < pSource->GetNumberOfKeys()) {
             bstar_insert_at(pTarget->m_Keys,     m_Keys[pos], 0);
             bstar_insert_at(pTarget->m_SubPages, pSource->m_SubPages[pSource->NumberOfKeys()], 0);
-            pTarget->NumberOfKeys()++;
+            ++pTarget->m_KeyCount;
             m_Keys[pos] = pSource->m_Keys[pSource->NumberOfKeys() - 1];
-            pSource->NumberOfKeys()--;
+            --pSource->m_KeyCount;
         }
     }
 
@@ -427,7 +436,7 @@ protected:
                   vector<ObjectInfo> &tmpKeys,
                   vector<BTPage *>   &tmpSubPages) {
         int n = pChildPage->GetNumberOfKeys();
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; ++i) {
             tmpKeys.push_back(pChildPage->m_Keys[i]);
             tmpSubPages.push_back(pChildPage->m_SubPages[i]);
         }
@@ -451,13 +460,14 @@ protected:
         pChild1->clear();
         int nKeys = ((int)tmpKeys.size() - 2) / 3;
         int i = 0;
-        for (; i < nKeys; i++) {
+        for (; i < nKeys; ++i) {
             pChild1->m_Keys[i]     = tmpKeys[i];
             pChild1->m_SubPages[i] = tmpSubPages[i];
-            pChild1->NumberOfKeys()++;
+            ++pChild1->m_KeyCount;
         }
         pChild1->m_SubPages[i] = tmpSubPages[i];
-        oi1 = tmpKeys[i++];
+        oi1 = tmpKeys[i];
+        ++i;
 
         if (!pChild2) {
             pChild2 = new BTPage(m_MaxKeysForChilds, m_Unique);
@@ -465,23 +475,24 @@ protected:
         pChild2->clear();
         nKeys += ((int)tmpKeys.size() - 2) / 3 + 1;
         int j = 0;
-        for (; i < nKeys; i++, j++) {
+        for (; i < nKeys; ++i, ++j) {
             pChild2->m_Keys[j]     = tmpKeys[i];
             pChild2->m_SubPages[j] = tmpSubPages[i];
-            pChild2->NumberOfKeys()++;
+            ++pChild2->m_KeyCount;
         }
         pChild2->m_SubPages[j] = tmpSubPages[i];
-        oi2 = tmpKeys[i++];
+        oi2 = tmpKeys[i];
+        ++i;
 
         if (!pChild3) {
             pChild3 = new BTPage(m_MaxKeysForChilds, m_Unique);
         }
         pChild3->clear();
         int nTotal = (int)tmpKeys.size();
-        for (j = 0; i < nTotal; i++, j++) {
+        for (j = 0; i < nTotal; ++i, ++j) {
             pChild3->m_Keys[j]     = tmpKeys[i];
             pChild3->m_SubPages[j] = tmpSubPages[i];
-            pChild3->NumberOfKeys()++;
+            ++pChild3->m_KeyCount;
         }
         pChild3->m_SubPages[j] = tmpSubPages[i];
     }
@@ -495,10 +506,10 @@ protected:
         clear();
         m_Keys[0]     = oi1;
         m_SubPages[0] = pChild1;
-        NumberOfKeys()++;
+        ++m_KeyCount;
         m_Keys[1]     = oi2;
         m_SubPages[1] = pChild2;
-        NumberOfKeys()++;
+        ++m_KeyCount;
         m_SubPages[2] = pChild3;
         return true;
     }
@@ -508,7 +519,8 @@ protected:
         BTPage *pChild2 = nullptr;
         if (pos > 0 && m_SubPages[pos - 1]->IsFull()) {
             pChild1 = m_SubPages[pos - 1];
-            pChild2 = m_SubPages[pos--];
+            pChild2 = m_SubPages[pos];
+            --pos;
         }
         if (pos < GetNumberOfKeys() && m_SubPages[pos + 1]->IsFull()) {
             pChild1 = m_SubPages[pos];
@@ -528,7 +540,7 @@ protected:
         m_SubPages[pos] = pChild1;
         bstar_insert_at(m_Keys,     oi2,     pos + 1);
         bstar_insert_at(m_SubPages, pChild2, pos + 1);
-        NumberOfKeys()++;
+        ++m_KeyCount;
         m_SubPages[pos + 2] = pChild3;
     }
 
@@ -547,24 +559,24 @@ protected:
 
         int nKeys = pChild1->GetFreeCells();
         int i = 0;
-        for (; i < nKeys; i++) {
+        for (; i < nKeys; ++i) {
             pChild1->m_Keys[i]     = tmpKeys[i];
             pChild1->m_SubPages[i] = tmpSubPages[i];
-            pChild1->NumberOfKeys()++;
+            ++pChild1->m_KeyCount;
         }
         pChild1->m_SubPages[i] = tmpSubPages[i];
         m_Keys[pos - 1]        = tmpKeys[i];
         m_SubPages[pos - 1]    = pChild1;
         bstar_remove(m_Keys,     pos);
         bstar_remove(m_SubPages, pos);
-        NumberOfKeys()--;
+        --m_KeyCount;
 
         nKeys = pChild2->GetFreeCells();
         int j = ++i;
-        for (i = 0; i < nKeys; i++, j++) {
+        for (i = 0; i < nKeys; ++i, ++j) {
             pChild2->m_Keys[i]     = tmpKeys[j];
             pChild2->m_SubPages[i] = tmpSubPages[j];
-            pChild2->NumberOfKeys()++;
+            ++pChild2->m_KeyCount;
         }
         pChild2->m_SubPages[i] = tmpSubPages[j];
         m_SubPages[pos]        = pChild2;
@@ -590,10 +602,10 @@ protected:
         tmpKeys.push_back(m_Keys[pos]);
         MovePage(pChild3, tmpKeys, tmpSubPages);
         clear();
-        for (int i = 0; i < nKeys; i++) {
+        for (int i = 0; i < nKeys; ++i) {
             m_Keys[i]     = tmpKeys[i];
             m_SubPages[i] = tmpSubPages[i];
-            NumberOfKeys()++;
+            ++m_KeyCount;
         }
         m_SubPages[nKeys] = tmpSubPages[nKeys];
         pChild1->Destroy();
@@ -609,13 +621,13 @@ protected:
         return m_Keys[0];
     }
 
- 
-    // Recorridos internos con variadic
-  
+    
+    // Recorridos internos variadic
+    
     template <typename Func, typename... Args>
     void internoInorden(BTPage *p, Func fn, Args&&... args) {
         if (!p) { return; }
-        for (int i = 0; i < p->m_KeyCount; i++) {
+        for (int i = 0; i < p->m_KeyCount; ++i) {
             internoInorden(p->m_SubPages[i], fn, std::forward<Args>(args)...);
             fn(p->m_Keys[i], std::forward<Args>(args)...);
         }
@@ -625,7 +637,7 @@ protected:
     template <typename Func, typename... Args>
     void internoPreorden(BTPage *p, Func fn, Args&&... args) {
         if (!p) { return; }
-        for (int i = 0; i < p->m_KeyCount; i++) {
+        for (int i = 0; i < p->m_KeyCount; ++i) {
             fn(p->m_Keys[i], std::forward<Args>(args)...);
             internoPreorden(p->m_SubPages[i], fn, std::forward<Args>(args)...);
         }
@@ -635,11 +647,11 @@ protected:
     template <typename Func, typename... Args>
     void internoPostorden(BTPage *p, Func fn, Args&&... args) {
         if (!p) { return; }
-        for (int i = 0; i < p->m_KeyCount; i++) {
+        for (int i = 0; i < p->m_KeyCount; ++i) {
             internoPostorden(p->m_SubPages[i], fn, std::forward<Args>(args)...);
         }
         internoPostorden(p->m_SubPages[p->m_KeyCount], fn, std::forward<Args>(args)...);
-        for (int i = 0; i < p->m_KeyCount; i++) {
+        for (int i = 0; i < p->m_KeyCount; ++i) {
             fn(p->m_Keys[i], std::forward<Args>(args)...);
         }
     }
@@ -647,7 +659,7 @@ protected:
     template <typename Func, typename... Args>
     bool internoPrimerQue(BTPage *p, ObjectInfo &resultado, Func fn, Args&&... args) {
         if (!p) { return false; }
-        for (int i = 0; i < p->m_KeyCount; i++) {
+        for (int i = 0; i < p->m_KeyCount; ++i) {
             if (internoPrimerQue(p->m_SubPages[i], resultado, fn, std::forward<Args>(args)...)) {
                 return true;
             }
@@ -660,9 +672,9 @@ protected:
     }
 
 public:
-
-    // constructor y destrcutor
-
+    
+    // CONSTRUCTOR / DESTRUCTOR
+    
     CBStarTreePage(int maxKeys, bool unique = true)
         : m_MaxKeys(maxKeys), m_Unique(unique), m_KeyCount(0) {
         Create();
@@ -671,9 +683,9 @@ public:
 
     virtual ~CBStarTreePage() { Reset(); }
 
-
-    // operacion del arbol estrella
-
+    
+    // OPERACIONES DEL ÁRBOL B*
+    
     bt_ErrorCode Insert(const value_type &key, const ref_type ObjID) {
         int pos = bstar_binary_search(m_Keys, 0, m_KeyCount, key);
         if (pos < m_KeyCount && (value_type)m_Keys[pos] == key && m_Unique) {
@@ -681,7 +693,7 @@ public:
         }
         if (IsLeaf()) {
             bstar_insert_at(m_Keys, ObjectInfo(key, ObjID), pos);
-            m_KeyCount++;
+            ++m_KeyCount;
             if (Overflow()) {
                 return bt_overflow;
             }
@@ -709,7 +721,7 @@ public:
         if (pos < NumberOfKeys() && key == m_Keys[pos].key) {
             if (!m_SubPages[pos + 1]) {
                 bstar_remove(m_Keys, pos);
-                NumberOfKeys()--;
+                --m_KeyCount;
                 if (Underflow()) {
                     return bt_underflow;
                 }
@@ -755,7 +767,7 @@ public:
         }
         if (key == m_Keys[pos].key) {
             ObjID = m_Keys[pos].ObjID;
-            m_Keys[pos].UseCounter++;
+            ++m_Keys[pos].UseCounter;
             return true;
         }
         if (key < m_Keys[pos].key && m_SubPages[pos]) {
@@ -764,15 +776,15 @@ public:
         return false;
     }
 
-
-    // imprimir tabulado
-
+    
+    // IMPRESIÓN CON TABULACIÓN
+    
     void Print(ostream &os, int level = 0) const {
         if (m_SubPages.size() > (size_t)m_KeyCount && m_SubPages[m_KeyCount]) {
             m_SubPages[m_KeyCount]->Print(os, level + 1);
         }
-        for (int i = m_KeyCount - 1; i >= 0; i--) {
-            for (int t = 0; t < level; t++) {
+        for (int i = m_KeyCount - 1; i >= 0; --i) {
+            for (int t = 0; t < level; ++t) {
                 os << "\t";
             }
             os << m_Keys[i].key << "->" << m_Keys[i].ObjID << "\n";
@@ -782,11 +794,11 @@ public:
         }
     }
 
-
+    
     // ForEach 
-
+    
     void ForEach(lpfnForEach2 lpfn, int level, void *pExtra1) {
-        for (int i = 0; i < m_KeyCount; i++) {
+        for (int i = 0; i < m_KeyCount; ++i) {
             if (m_SubPages[i]) {
                 m_SubPages[i]->ForEach(lpfn, level + 1, pExtra1);
             }
@@ -798,7 +810,7 @@ public:
     }
 
     void ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2) {
-        for (int i = 0; i < m_KeyCount; i++) {
+        for (int i = 0; i < m_KeyCount; ++i) {
             if (m_SubPages[i]) {
                 m_SubPages[i]->ForEach(lpfn, level + 1, pExtra1, pExtra2);
             }
@@ -811,7 +823,7 @@ public:
 
     ObjectInfo *FirstThat(lpfnFirstThat2 lpfn, int level, void *pExtra1) {
         ObjectInfo *pTmp;
-        for (int i = 0; i < m_KeyCount; i++) {
+        for (int i = 0; i < m_KeyCount; ++i) {
             if (m_SubPages[i]) {
                 pTmp = m_SubPages[i]->FirstThat(lpfn, level + 1, pExtra1);
                 if (pTmp) {
@@ -831,9 +843,9 @@ public:
         return nullptr;
     }
 
-
+   
     // ITERADORES begin/end
-
+    
     forward_iterator  begin()  { return forward_iterator(this);  }
     forward_iterator  end()    { return forward_iterator();       }
     backward_iterator rbegin() { return backward_iterator(this); }

@@ -16,7 +16,7 @@ void PrintInfo(OI &info) {
     cout << "(" << info.key << ":" << info.ObjID << ") ";
 }
 
-// Incrementa el ObjID (referencia al dato externo).
+// Incrementa el ObjID 
 
 void AddToObjID(OI &info, long cantidad) {
     info.ObjID += cantidad;

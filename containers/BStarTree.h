@@ -36,7 +36,7 @@ private:
 
 public:
     
-    // constrcutor 
+    // CONSTRUCTOR
     
     CBStarTree(int order = DEFAULT_BSTAR_ORDER, bool unique = true)
         : m_Root(2 * order + 1, unique),
@@ -47,8 +47,8 @@ public:
         m_Root.SetMaxKeysForChilds(order);
     }
 
-
-    // move constrcutor
+    
+    // MOVE CONSTRUCTOR
 
     CBStarTree(CBStarTree<Traits> &&other) noexcept
         : m_Root(other.m_Order * 2 + 1, other.m_Unique),
@@ -70,10 +70,9 @@ public:
     CBStarTree(const CBStarTree &) = delete;
     CBStarTree &operator=(const CBStarTree &) = delete;
 
-
-    // destructor 
-
+    // DESTRCUTOR
     virtual ~CBStarTree() = default;
+
 
 
     bool Insert(const value_type &key, const ref_type ObjID = -1) {
@@ -82,10 +81,10 @@ public:
         if (error == bt_duplicate) {
             return false;
         }
-        m_NumKeys++;
+        ++m_NumKeys;
         if (error == bt_overflow) {
             m_Root.SplitRoot();
-            m_Height++;
+            ++m_Height;
         }
         return true;
     }
@@ -96,9 +95,9 @@ public:
         if (error == bt_duplicate || error == bt_nofound) {
             return false;
         }
-        m_NumKeys--;
+        --m_NumKeys;
         if (error == bt_rootmerged) {
-            m_Height--;
+            --m_Height;
         }
         return true;
     }
@@ -111,8 +110,6 @@ public:
     }
 
 
-    //  is empty, size, height 
-
 
     long size()     const { std::lock_guard<std::mutex> lock(m_mutex); return m_NumKeys; }
     long height()   const { std::lock_guard<std::mutex> lock(m_mutex); return m_Height;  }
@@ -122,6 +119,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_NumKeys == 0;
     }
+
 
 
     std::mutex &getMutex() { return m_mutex; }
@@ -143,7 +141,9 @@ public:
     }
 
 
-    // recorridos con variadic 
+    // RECORRIDOS VARIADIC
+   
+
 
     template <typename Func, typename... Args>
     void inorden(Func fn, Args&&... args) {
@@ -163,7 +163,9 @@ public:
         m_Root.internoPostorden(&m_Root, fn, std::forward<Args>(args)...);
     }
 
-    // foraech con variadic
+
+    // FOREACH VARIADIC 
+
 
     template <typename ObjFunc, typename... Args>
     void Foreach(ObjFunc of, Args&&... args) {
@@ -171,7 +173,8 @@ public:
         m_Root.internoInorden(&m_Root, of, std::forward<Args>(args)...);
     }
 
-    // Firstthat con variadic
+
+    // FIRSTTHAT VARIADIC
 
 
     template <typename Func, typename... Args>
@@ -179,6 +182,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_Root.internoPrimerQue(&m_Root, resultado, fn, std::forward<Args>(args)...);
     }
+
 
     template <typename ObjFunc, typename... Args>
     auto FirstThat(ObjFunc of, Args&&... args) {
@@ -204,9 +208,9 @@ public:
         return m_Root.FirstThat(lpfn, 0, pExtra1);
     }
 
-
-    // persistencia (esto es un adicional)
-
+    
+    // PERSISTENCIA
+    
 
     void SaveToFile(const string &filename) {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -237,18 +241,19 @@ public:
         while (inFile >> key >> ref) {
             bt_ErrorCode error = m_Root.Insert(key, ref);
             if (error != bt_duplicate) {
-                m_NumKeys++;
+                ++m_NumKeys;
                 if (error == bt_overflow) {
                     m_Root.SplitRoot();
-                    m_Height++;
+                    ++m_Height;
                 }
             }
         }
         inFile.close();
     }
 
-    // operador << 
-
+    
+    // OPERADOR <<
+    
 
     friend ostream &operator<<(ostream &os, CBStarTree<Traits> &tree) {
         std::lock_guard<std::mutex> lock(tree.m_mutex);
@@ -262,7 +267,7 @@ public:
     }
 
     
-    // operador >>
+    // OPERADOR >>
     
 
     friend istream &operator>>(istream &is, CBStarTree<Traits> &tree) {
@@ -272,10 +277,10 @@ public:
             std::lock_guard<std::mutex> lock(tree.m_mutex);
             bt_ErrorCode error = tree.m_Root.Insert(key, ref);
             if (error != bt_duplicate) {
-                tree.m_NumKeys++;
+                ++tree.m_NumKeys;
                 if (error == bt_overflow) {
                     tree.m_Root.SplitRoot();
-                    tree.m_Height++;
+                    ++tree.m_Height;
                 }
             }
         }
