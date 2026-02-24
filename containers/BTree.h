@@ -132,22 +132,34 @@ private:
     ObjectInfo* InternalFirstThat(BTNode *page, FuncObj fn, Args... args);
 };
 
-const int MaxHeight = 5;
+// Constructor
 template <typename keyType, typename ObjIDType>
 BTree<keyType, ObjIDType>::BTree(int order, bool unique)
-                               : m_Root(2 * order  + 1, unique),
-                                 m_NumKeys(0),
-                                 m_Unique(unique),
-                                 m_Order(order)
+    : m_Root(2 * order + 1, unique),
+      m_NumKeys(0),
+      m_Unique(unique),
+      m_Order(order),
+      m_Height(1)
 {
-       m_Root.SetMaxKeysForChilds(order);
-       m_Height = 1;
+    m_Root.SetMaxKeysForChilds(order);
 }
 
+// Move Constructor
 template <typename keyType, typename ObjIDType>
-BTree<keyType, ObjIDType>::~BTree()
+BTree<keyType, ObjIDType>::BTree(BTree &&another)
+    : m_Root(2 * another.m_Order + 1, another.m_Unique),
+      m_NumKeys(another.m_NumKeys),
+      m_Unique(another.m_Unique),
+      m_Order(another.m_Order),
+      m_Height(another.m_Height)
 {
+    another.m_NumKeys = 0;
+    another.m_Height  = 0;
 }
+
+// Destructor
+template <typename keyType, typename ObjIDType>
+BTree<keyType, ObjIDType>::~BTree() {}
 
 template <typename keyType, typename ObjIDType>
 bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
@@ -221,6 +233,7 @@ void DemoBTree();
 
 
 #endif
+
 
 
 
