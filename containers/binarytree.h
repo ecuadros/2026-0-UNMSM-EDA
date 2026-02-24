@@ -149,15 +149,112 @@ public:
     }
 };
 
+// BinaryTree
 template <typename Traits>
-class CBinaryTree{
+class CBinaryTree {
 public:
-    using  value_type  = typename Traits::value_type;
-    using  Node        = typename NodeBinaryTree<Traits>;
-    using  CompareFunc = typename Traits::CompareFunc;
-private:
-    Node *m_pRoot = nullptr;
-    CompareFunc comp;
+    using value_type         = typename Traits::value_type;
+    using Node               = NodeBinaryTree<Traits>;
+    using CompareFunc        = typename Traits::CompareFunc;
+    using forward_iterator   = BinaryTreeForwardIterator<CBinaryTree<Traits>>;
+    using backward_iterator  = BinaryTreeBackwardIterator<CBinaryTree<Traits>>;
+
+    friend forward_iterator;
+    friend backward_iterator;
+
+protected:
+    Node* m_pRoot;
+    CompareFunc m_comp;
+    mutable std::mutex m_mutex; // Concurrencia
+
+    Node* copyTree(Node* node) {
+        if (!node) return nullptr;
+        Node* newNode = new Node(node->m_data, node->m_ref);
+        newNode->m_pLeft = copyTree(node->m_pLeft);
+        newNode->m_pRight = copyTree(node->m_pRight);
+        return newNode;
+    }
+
+    void deleteTree(Node* node) {
+        if (!node) return;
+        deleteTree(node->m_pLeft);
+        deleteTree(node->m_pRight);
+        delete node;
+    }
+
+    void InternalInsert(Node*& rParent, const value_type& val, ref_type ref) {
+        if (!rParent) {
+            rParent = new Node(val, ref);
+            return;
+        }
+        bool goRight = m_comp(val, rParent->GetValue());
+        if (goRight) {
+            InternalInsert(rParent->m_pRight, val, ref);
+        } else {
+            InternalInsert(rParent->m_pLeft, val, ref);
+        }
+    }
+
+    Node* findMin(Node* node) {
+        while (node && node->m_pLeft) {
+            node = node->m_pLeft;
+        }
+        return node;
+    }
+
+    Node* InternalRemove(Node* node, const value_type& val) {
+        if (!node) return nullptr;
+
+        if (val < node->m_data) {
+            node->m_pLeft = InternalRemove(node->m_pLeft, val);
+        } else if (val > node->m_data) {
+            node->m_pRight = InternalRemove(node->m_pRight, val);
+        } else {
+            if (!node->m_pLeft && !node->m_pRight) {
+                delete node;
+                return nullptr;
+            } else if (!node->m_pLeft) {
+                Node* temp = node->m_pRight;
+                delete node;
+                return temp;
+            } else if (!node->m_pRight) {
+                Node* temp = node->m_pLeft;
+                delete node;
+                return temp;
+            } else {
+                Node* temp = findMin(node->m_pRight);
+                node->m_data = temp->m_data;
+                node->m_ref = temp->m_ref;
+                node->m_pRight = InternalRemove(node->m_pRight, temp->m_data);
+            }
+        }
+        return node;
+    }
+
+    template <typename Func, typename... Args>
+    void InternalInorden(Node* node, Func fn, Args... args) {
+        if (!node) return;
+        InternalInorden(node->m_pLeft, fn, args...);
+        fn(node->GetValueRef(), args...);
+        InternalInorden(node->m_pRight, fn, args...);
+    }
+
+    template <typename Func, typename... Args>
+    void InternalPreorden(Node* node, Func fn, Args... args) {
+        if (!node) return;
+        fn(node->GetValueRef(), args...);
+        InternalPreorden(node->m_pLeft, fn, args...);
+        InternalPreorden(node->m_pRight, fn, args...);
+    }
+
+    template <typename Func, typename... Args>
+    void InternalPostorden(Node* node, Func fn, Args... args) {
+        if (!node) return;
+        InternalPostorden(node->m_pLeft, fn, args...);
+        InternalPostorden(node->m_pRight, fn, args...);
+        fn(node->GetValueRef(), args...);
+    }
+
 
 public:
     CBinaryTree(){}
