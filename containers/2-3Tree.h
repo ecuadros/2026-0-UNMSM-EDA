@@ -198,6 +198,7 @@ public:
        BackwardIterator rend()   { return BackwardIterator(); }
 
        bool            Insert (const keyType key, const ObjIDType ObjID);
+       bool            Insert (const keyType key); // Nueva sobrecarga automatica
        bool            Remove (const keyType key, const ObjIDType ObjID);
        ObjIDType       Search (const keyType key);
        Size            size()  const { std::lock_guard<std::mutex> lock(Block); return m_NumKeys; }
@@ -242,8 +243,7 @@ public:
        friend istream& operator>>(istream& is, TwoThreeTree& tree) {
            keyType key;
            if (is >> key) {
-               static TT auto_id = 1; 
-               tree.Insert(key, static_cast<ObjIDType>(auto_id++));
+               tree.Insert(key); // Llama a la nueva sobrecarga automatica
            }
            return is;
        }
@@ -266,6 +266,27 @@ bool TwoThreeTree<keyType, ObjIDType>::Insert(const keyType key, const ObjIDType
        tt_ErrorCode error = m_Root.Insert(key, ObjID);
        if( error == tt_duplicate )
                return false;
+       m_NumKeys++;
+       if( error == tt_overflow )
+       {
+               m_Root.SplitRoot();
+               m_Height++;
+       }
+       return true;
+}
+
+// Implementacion de la nueva insercion automatica
+template <typename keyType, typename ObjIDType>
+bool TwoThreeTree<keyType, ObjIDType>::Insert(const keyType key)
+{
+       std::lock_guard<std::mutex> lock(Block);
+       static ObjIDType auto_id = 100; // Empieza en 100 para no chocar con tus ID manuales
+       
+       tt_ErrorCode error = m_Root.Insert(key, auto_id);
+       if( error == tt_duplicate )
+               return false;
+       
+       auto_id++; // Solo incrementa si la insercion fue exitosa
        m_NumKeys++;
        if( error == tt_overflow )
        {
@@ -321,5 +342,7 @@ void TwoThreeTree<keyType, ObjIDType>::PostOrder(lpfnForEach<Args...> lpfn, Args
        std::lock_guard<std::mutex> lock(Block);
        m_Root.template PostOrder<Args...>(lpfn, 0, args...);
 }
+
+void DemoTwoThreeTree();
 
 #endif

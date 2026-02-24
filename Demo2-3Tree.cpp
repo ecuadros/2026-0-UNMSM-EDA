@@ -17,20 +17,19 @@ bool findNodeVariadicTT(TTInfoType& info, char target) {
 }
 
 void DemoTwoThreeTree() {
-    cout << " 2-3 TREE "<<endl;
+   cout << " 2-3 TREE "<<endl;
 
-    cout << "Probando  inserciones : \n";
+    cout << "Probando inserciones : \n";
     TwoThreeTree<char> bt(3);
-
-    bt.Insert('M', 1);
-    bt.Insert('A', 2);
-    bt.Insert('Z', 3);
-    bt.Insert('E', 4);
-    bt.Insert('X', 5);
-    bt.Insert('P', 6);
-    bt.Insert('L', 7);
-    bt.Insert('O', 8);
-
+    bt.Insert('M');
+    bt.Insert('A');
+    bt.Insert('Z');
+    bt.Insert('E');
+    bt.Insert('X');
+    bt.Insert('P'); 
+    bt.Insert('L'); 
+    bt.Insert('O'); 
+    bt.Insert('F');
     cout << "Arbol actual (Operator <<):\n";
     cout << bt << "\n";
 
@@ -65,6 +64,12 @@ void DemoTwoThreeTree() {
     } else {
         cout << "Elemento no encontrado.\n\n";
     }
+    
+    cout << "Probando Remove (borrando 'X', ID 5)...\n";
+    bt.Remove('X', 5);
+    cout << "Arbol despues de borrar 'X':\n";
+    cout << bt << "\n";
+
     cout << "Copy Constructor (copiando bt a btCopy)...\n";
     TwoThreeTree<char> btCopy = bt;
     cout << "Tamano del arbol original (bt): " << bt.size() << "\n";
@@ -77,8 +82,7 @@ void DemoTwoThreeTree() {
 
     cout << "Operator >> (Escribe un caracter y presiona Enter):\n";
     cin >> btMove;
-    cout << "\nArbol despues de la entrada:\n";
+    cout << "\nArbol despues de la entrada (tomara el siguiente ID progresivo):\n";
     cout << btMove << "\n";
-
     
 }
