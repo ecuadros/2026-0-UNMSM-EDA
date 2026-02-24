@@ -52,6 +52,7 @@ public:
        typedef typename BTNode::ObjectInfo      ObjectInfo;
 
        BTree(Size order = DEFAULT_BTREE_ORDER, bool unique = true);
+       BTree(BTree &&another) noexcept;
        ~BTree();
        //int           Open (char * name, int mode);
        //int           Create (char * name, int mode);
@@ -124,8 +125,30 @@ BTree<keyType, ObjIDType>::BTree(Size order, bool unique)
 }
 
 template <typename keyType, typename ObjIDType>
+BTree<keyType, ObjIDType>::BTree(BTree &&another) noexcept {
+       lock_guard<mutex> lock(another.mtx);
+       // intercambiar los datos del otro BTree
+       m_Root(2 * DEFAULT_BTREE_ORDER + 1, true);
+       m_NumKeys = std::exchange(another.m_NumKeys, 0);
+       m_Unique = std::exchange(another.m_Unique, true);
+       m_Order = std::exchange(another.m_Order, DEFAULT_BTREE_ORDER);
+       m_Height = std::exchange(another.m_Height, 1);
+
+       // intercambiar los datos internos de la pagina root
+       std::swap(m_Root.m_MinKeys, another.m_Root.m_MinKeys);
+       std::swap(m_Root.m_MaxKeys, another.m_Root.m_MaxKeys);
+       std::swap(m_Root.m_MaxKeysForChilds, another.m_Root.m_MaxKeysForChilds);
+       std::swap(m_Root.m_Unique, another.m_Root.m_Unique);
+       std::swap(m_Root.m_isRoot, another.m_Root.m_isRoot);
+       std::swap(m_Root.m_Keys, another.m_Root.m_Keys);
+       std::swap(m_Root.m_SubPages, another.m_Root.m_SubPages);
+       std::swap(m_Root.m_KeyCount, another.m_Root.m_KeyCount);
+}
+
+template <typename keyType, typename ObjIDType>
 BTree<keyType, ObjIDType>::~BTree()
 {
+       lock_guard<mutex> lock(mtx);
 }
 
 // funciones basicas bloqueadas por el mutex
