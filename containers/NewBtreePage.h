@@ -4,24 +4,26 @@
 #include <vector>
 #include <iostream>
 #include <assert.h>
-#include "general/types.h" 
+#include <utility>
+#include "../general/types.h" 
 
-template <typename keyType, typename ObjIDType>
-class BNEWTree;
+template <typename keyType, typename ObjIDType> class BNEWTree;
+template <typename keyType, typename ObjIDType> class BNEWTreeForwardIterator;
+template <typename keyType, typename ObjIDType> class BNEWTreeBackwardIterator;
 
 using namespace std;
 
-enum bt_ErrorCode {bt_ok, bt_overflow, bt_underflow, bt_duplicate, bt_nofound, bt_rootmerged};
+enum newbt_ErrorCode {newbt_ok, newbt_overflow, newbt_underflow, newbt_duplicate, newbt_nofound, newbt_rootmerged};
 
 template <typename keyType, typename ObjIDType>
-struct tagObjectInfo
+struct tagNewObjectInfo
 {
        keyType                 key;
        ObjIDType               ObjID;
        long                    UseCounter;
-       tagObjectInfo(const keyType     &_key, ObjIDType _ObjID)
+       tagNewObjectInfo(const keyType     &_key, ObjIDType _ObjID)
                : key(_key), ObjID(_ObjID), UseCounter(0) {}
-       tagObjectInfo()                          {}
+       tagNewObjectInfo()                          {}
        operator keyType                         ()     { return key; }
        long                    GetUseCounter() { return UseCounter;    }
 };
@@ -29,51 +31,46 @@ struct tagObjectInfo
 template <typename keyType, typename ObjIDType>
 class CBNEWTreePage 
 {
-       friend class BTree<keyType, ObjIDType>;
+       friend class BNEWTree<keyType, ObjIDType>;
+       friend class BNEWTreeForwardIterator<keyType, ObjIDType>;
+       friend class BNEWTreeBackwardIterator<keyType, ObjIDType>;
 
        typedef CBNEWTreePage<keyType, ObjIDType>    BTPage;
-       typedef tagObjectInfo<keyType, ObjIDType> ObjectInfo;
+       typedef tagNewObjectInfo<keyType, ObjIDType> ObjectInfo;
 
        template <typename... Args>
        using lpfnForEach = void (*)(ObjectInfo &info, Size level, Args... args);
 
-       template <typename... Args>
-       using lpfnFirstThat = ObjectInfo *(*)(ObjectInfo &info, Size level, Args... args);
-
  public:
+       // Constructor
        CBNEWTreePage(Size maxKeys, bool unique = true);
        
-       // --- Copy Constructor y Move Constructor (Requeridos) ---
+       // Copy Constructor
        CBNEWTreePage(const CBNEWTreePage& other);
        CBNEWTreePage& operator=(const CBNEWTreePage& other);
+
+       // Move Constructor
        CBNEWTreePage(CBNEWTreePage&& other) noexcept;
        CBNEWTreePage& operator=(CBNEWTreePage&& other) noexcept;
 
-       // --- Destructor Virtual (Requerido) ---
+       // Destructor
        virtual ~CBNEWTreePage();
 
-       bt_ErrorCode    Insert (const keyType &key, const ObjIDType ObjID);
-       bt_ErrorCode    Remove (const keyType &key, const ObjIDType ObjID);
+       newbt_ErrorCode Insert (const keyType &key, const ObjIDType ObjID);
+       newbt_ErrorCode Remove (const keyType &key, const ObjIDType ObjID);
        bool            Search (const keyType &key, ObjIDType &ObjID); 
 
-       // --- Recorridos Variadic (Requeridos) ---
+       // Inorden con variadic
        template <typename... Args>
        void            InOrder(lpfnForEach<Args...> lpfn, Size level, Args... args);
        
+       // Preorden con variadic
        template <typename... Args>
        void            PreOrder(lpfnForEach<Args...> lpfn, Size level, Args... args);
        
+       // Postorden con variadic
        template <typename... Args>
        void            PostOrder(lpfnForEach<Args...> lpfn, Size level, Args... args);
-
-       template <typename... Args>
-       void            ForEach(lpfnForEach<Args...> lpfn, Size level, Args... args) {
-           InOrder(lpfn, level, args...);
-       }
-       
-       // --- FirstThat Variadic (Requerido) ---
-       template <typename... Args>
-       ObjectInfo* FirstThat(lpfnFirstThat<Args...> lpfn, Size level, Args... args);
 
 protected:
        Size m_MinKeys; 
@@ -99,8 +96,8 @@ protected:
        bool    TreatUnderflow  (Size &pos)
        {       return Redistribute1(pos) || Redistribute2(pos);}
 
-       bt_ErrorCode    Merge  (Size pos);
-       bt_ErrorCode    MergeRoot ();
+       newbt_ErrorCode Merge  (Size pos);
+       newbt_ErrorCode MergeRoot ();
        void  SplitChild (Size pos);
 
        ObjectInfo &GetFirstObjectInfo();
@@ -134,7 +131,7 @@ private:
 };
 
 template <typename Container, typename ObjType>
-Size binary_search(Container& container, Size first, Size last, ObjType &object)
+Size newbt_binary_search(Container& container, Size first, Size last, ObjType &object)
 {
        if( first >= last )
                return first;
@@ -154,7 +151,7 @@ Size binary_search(Container& container, Size first, Size last, ObjType &object)
 }
 
 template <typename Container, typename ObjType>
-void insert_at(Container& container, const ObjType &object, Size pos)
+void newbt_insert_at(Container& container, const ObjType &object, Size pos)
 {
        Size size = container.size();
        for(Size i = size - 1 ; i > pos ; i--)
@@ -163,7 +160,7 @@ void insert_at(Container& container, const ObjType &object, Size pos)
 }
 
 template <typename Container>
-void remove(Container& container, Size pos)
+void newbt_remove(Container& container, Size pos)
 {
        Size size = container.size();
        for(Size i = pos + 1 ; i < size ; i++)
@@ -178,7 +175,6 @@ CBNEWTreePage<keyType, ObjIDType>::CBNEWTreePage(Size maxKeys, bool unique)
        SetMaxKeysForChilds(m_MaxKeys);
 }
 
-// --- Implementación: Copy Constructor (Requerido) ---
 template <typename keyType, typename ObjIDType>
 CBNEWTreePage<keyType, ObjIDType>::CBNEWTreePage(const CBNEWTreePage& other) : m_MaxKeys(other.m_MaxKeys), m_Unique(other.m_Unique), m_KeyCount(0) 
 {
@@ -216,22 +212,17 @@ void CBNEWTreePage<keyType, ObjIDType>::CopyFrom(const CBNEWTreePage& other)
     }
 }
 
-// --- Implementación: Move Constructor (Requerido) ---
 template <typename keyType, typename ObjIDType>
 CBNEWTreePage<keyType, ObjIDType>::CBNEWTreePage(CBNEWTreePage&& other) noexcept 
 {
-    m_MinKeys = other.m_MinKeys;
-    m_MaxKeys = other.m_MaxKeys;
-    m_MaxKeysForChilds = other.m_MaxKeysForChilds;
-    m_Unique = other.m_Unique;
-    m_isRoot = other.m_isRoot;
-    m_KeyCount = other.m_KeyCount;
+    m_MinKeys = std::exchange(other.m_MinKeys, 0);
+    m_MaxKeys = std::exchange(other.m_MaxKeys, 0);
+    m_MaxKeysForChilds = std::exchange(other.m_MaxKeysForChilds, 0);
+    m_Unique = std::exchange(other.m_Unique, true);
+    m_isRoot = std::exchange(other.m_isRoot, false);
+    m_KeyCount = std::exchange(other.m_KeyCount, 0);
     m_Keys = std::move(other.m_Keys);
     m_SubPages = std::move(other.m_SubPages);
-    
-    other.m_KeyCount = 0;
-    other.m_Keys.clear();
-    other.m_SubPages.clear();
 }
 
 template <typename keyType, typename ObjIDType>
@@ -239,18 +230,14 @@ CBNEWTreePage<keyType, ObjIDType>& CBNEWTreePage<keyType, ObjIDType>::operator=(
 {
     if(this != &other) {
         Reset();
-        m_MinKeys = other.m_MinKeys;
-        m_MaxKeys = other.m_MaxKeys;
-        m_MaxKeysForChilds = other.m_MaxKeysForChilds;
-        m_Unique = other.m_Unique;
-        m_isRoot = other.m_isRoot;
-        m_KeyCount = other.m_KeyCount;
+        m_MinKeys = std::exchange(other.m_MinKeys, 0);
+        m_MaxKeys = std::exchange(other.m_MaxKeys, 0);
+        m_MaxKeysForChilds = std::exchange(other.m_MaxKeysForChilds, 0);
+        m_Unique = std::exchange(other.m_Unique, true);
+        m_isRoot = std::exchange(other.m_isRoot, false);
+        m_KeyCount = std::exchange(other.m_KeyCount, 0);
         m_Keys = std::move(other.m_Keys);
         m_SubPages = std::move(other.m_SubPages);
-        
-        other.m_KeyCount = 0;
-        other.m_Keys.clear();
-        other.m_SubPages.clear();
     }
     return *this;
 }
@@ -262,37 +249,37 @@ CBNEWTreePage<keyType, ObjIDType>::~CBNEWTreePage()
 }
 
 template <typename keyType, typename ObjIDType>
-bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Insert(const keyType& key, const ObjIDType ObjID)
+newbt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Insert(const keyType& key, const ObjIDType ObjID)
 {
-       Size pos = binary_search(m_Keys, 0, m_KeyCount, key);
-       bt_ErrorCode error = bt_ok;
+       Size pos = newbt_binary_search(m_Keys, 0, m_KeyCount, key);
+       newbt_ErrorCode error = newbt_ok;
 
        if( pos < m_KeyCount && (keyType)m_Keys[pos] == key && m_Unique)
-               return bt_duplicate; 
+               return newbt_duplicate; 
 
        if( !m_SubPages[pos] ) 
        {
-               ::insert_at(m_Keys, ObjectInfo(key, ObjID), pos);
+               ::newbt_insert_at(m_Keys, ObjectInfo(key, ObjID), pos);
                m_KeyCount++;
                if( Overflow() )
-                       return bt_overflow;
-               return bt_ok;
+                       return newbt_overflow;
+               return newbt_ok;
        }
        else
        {
                error = m_SubPages[pos]->Insert(key, ObjID);
-               if( error == bt_overflow )
+               if( error == newbt_overflow )
                {
                        if( !Redistribute1(pos) )
                                SplitChild(pos);
                        if( Overflow() )          
-                               return bt_overflow;
-                       return bt_ok;
+                               return newbt_overflow;
+                       return newbt_ok;
                }
        }
        if( Overflow() ) 
-               return bt_overflow;
-       return bt_ok;
+               return newbt_overflow;
+       return newbt_ok;
 }
 
 template <typename keyType, typename ObjIDType>
@@ -380,13 +367,13 @@ void CBNEWTreePage<keyType, ObjIDType>::RedistributeR2L(Size pos)
        while(pSource->GetNumberOfKeys() > pSource->MinNumberOfKeys() &&
                  pTarget->GetNumberOfKeys() < pSource->GetNumberOfKeys() )
        {
-               ::insert_at(pTarget->m_Keys, m_Keys[pos-1], pTarget->NumberOfKeys()++);
-               ::insert_at(pTarget->m_SubPages, pSource->m_SubPages[0], pTarget->NumberOfKeys());
+               ::newbt_insert_at(pTarget->m_Keys, m_Keys[pos-1], pTarget->NumberOfKeys()++);
+               ::newbt_insert_at(pTarget->m_SubPages, pSource->m_SubPages[0], pTarget->NumberOfKeys());
 
                m_Keys[pos-1] = pSource->m_Keys[0];
 
-               ::remove(pSource->m_Keys    , 0);
-               ::remove(pSource->m_SubPages, 0);
+               ::newbt_remove(pSource->m_Keys    , 0);
+               ::newbt_remove(pSource->m_SubPages, 0);
                pSource->NumberOfKeys()--;
        }
 }
@@ -399,8 +386,8 @@ void CBNEWTreePage<keyType, ObjIDType>::RedistributeL2R(Size pos)
        while(pSource->GetNumberOfKeys() > pSource->MinNumberOfKeys() &&
                  pTarget->GetNumberOfKeys() < pSource->GetNumberOfKeys() )
        {
-               ::insert_at(pTarget->m_Keys, m_Keys[pos], 0);
-               ::insert_at(pTarget->m_SubPages, pSource->m_SubPages[pSource->NumberOfKeys()], 0);
+               ::newbt_insert_at(pTarget->m_Keys, m_Keys[pos], 0);
+               ::newbt_insert_at(pTarget->m_SubPages, pSource->m_SubPages[pSource->NumberOfKeys()], 0);
                pTarget->NumberOfKeys()++;
 
                m_Keys[pos] = pSource->m_Keys[pSource->NumberOfKeys()-1];
@@ -440,8 +427,8 @@ void CBNEWTreePage<keyType, ObjIDType>::SplitChild(Size pos)
        m_Keys    [pos] = oi1;
        m_SubPages[pos] = pChild1;
 
-       ::insert_at(m_Keys, oi2, pos+1);
-       ::insert_at(m_SubPages, pChild2, pos+1);
+       ::newbt_insert_at(m_Keys, oi2, pos+1);
+       ::newbt_insert_at(m_SubPages, pChild2, pos+1);
        NumberOfKeys()++;
 
        m_SubPages[pos+2] = pChild3;
@@ -526,7 +513,7 @@ bool CBNEWTreePage<keyType, ObjIDType>::SplitRoot()
 template <typename keyType, typename ObjIDType>
 bool CBNEWTreePage<keyType, ObjIDType>::Search(const keyType &key, ObjIDType &ObjID)
 {
-       Size pos = binary_search(m_Keys, 0, m_KeyCount, key);
+       Size pos = newbt_binary_search(m_Keys, 0, m_KeyCount, key);
        if( pos >= m_KeyCount ){
                if( m_SubPages[pos] )
                        return m_SubPages[pos]->Search(key, ObjID);
@@ -544,8 +531,6 @@ bool CBNEWTreePage<keyType, ObjIDType>::Search(const keyType &key, ObjIDType &Ob
                        return m_SubPages[pos]->Search(key, ObjID);
        return false;
 }
-
-// --- Implementación: Recorridos Variadic (Requeridos) ---
 
 template <typename keyType, typename ObjIDType>
 template <typename... Args>
@@ -587,47 +572,20 @@ void CBNEWTreePage<keyType, ObjIDType>::PostOrder(lpfnForEach<Args...> lpfn, Siz
        }
 }
 
-// --- Implementación: FirstThat Variadic (Requerido) ---
-
 template <typename keyType, typename ObjIDType>
-template <typename... Args>
-typename CBNEWTreePage<keyType, ObjIDType>::ObjectInfo *
-CBNEWTreePage<keyType, ObjIDType>::FirstThat(lpfnFirstThat<Args...> lpfn, Size level, Args... args)
+newbt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Remove(const keyType &key, const ObjIDType ObjID)
 {
-       ObjectInfo *pTmp;
-       for( Size i = 0 ; i < m_KeyCount ; i++){
-               if( m_SubPages[i] ){
-                       pTmp = m_SubPages[i]->template FirstThat<Args...>(lpfn, level+1, args...);
-                       if( pTmp )
-                           return pTmp;
-               }
-               if( lpfn(m_Keys[i], level, args...) )
-                       return &m_Keys[i];
-       }
-        if( m_SubPages[m_KeyCount] )
-        {       
-                pTmp = m_SubPages[m_KeyCount]->template FirstThat<Args...>(lpfn, level+1, args...);
-                if( pTmp ) 
-                    return pTmp;
-        }
-        return nullptr;
-}
-
-
-template <typename keyType, typename ObjIDType>
-bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Remove(const keyType &key, const ObjIDType ObjID)
-{
-       bt_ErrorCode error = bt_ok;
-       Size pos = binary_search(m_Keys, 0, m_KeyCount, key);
+       newbt_ErrorCode error = newbt_ok;
+       Size pos = newbt_binary_search(m_Keys, 0, m_KeyCount, key);
        if( pos < NumberOfKeys() && key == m_Keys[pos].key ) 
        {
                if( !m_SubPages[pos+1] )  
                {
-                       ::remove(m_Keys, pos);
+                       ::newbt_remove(m_Keys, pos);
                        NumberOfKeys()--;
                        if( Underflow() )
-                               return bt_underflow;
-                       return bt_ok;
+                               return newbt_underflow;
+                       return newbt_ok;
                }
 
                {
@@ -642,22 +600,22 @@ bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Remove(const keyType &key, const
                if( m_SubPages[pos] )
                        error = m_SubPages[pos]->Remove(key, ObjID);
                else
-                       return bt_nofound;
+                       return newbt_nofound;
        }
-       if( error == bt_underflow ){
+       if( error == newbt_underflow ){
                if( TreatUnderflow(pos) )
-                       return bt_ok;
+                       return newbt_ok;
                if( IsRoot() && NumberOfKeys() == 2 )
                        return MergeRoot();
                return Merge(pos);
        }
-       if( error == bt_nofound )
-               return bt_nofound;
-       return bt_ok;
+       if( error == newbt_nofound )
+               return newbt_nofound;
+       return newbt_ok;
 }
 
 template <typename keyType, typename ObjIDType>
-bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Merge(Size pos)
+newbt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Merge(Size pos)
 {
        assert( m_SubPages[pos-1]->NumberOfKeys() +
                        m_SubPages[ pos ]->NumberOfKeys() +
@@ -690,8 +648,8 @@ bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Merge(Size pos)
        m_Keys    [pos-1] = tmpKeys[i];
        m_SubPages[pos-1] = pChild1;
 
-       ::remove(m_Keys    , pos);
-       ::remove(m_SubPages, pos);
+       ::newbt_remove(m_Keys    , pos);
+       ::newbt_remove(m_SubPages, pos);
        NumberOfKeys()--;
 
        nKeys = pChild2->GetFreeCells();
@@ -706,12 +664,12 @@ bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::Merge(Size pos)
        m_SubPages[ pos ]          = pChild2;
 
        if( Underflow() )
-               return bt_underflow;
-       return bt_ok;
+               return newbt_underflow;
+       return newbt_ok;
 }
 
 template <typename keyType, typename ObjIDType>
-bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::MergeRoot()
+newbt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::MergeRoot()
 {
        Size pos = 1;
        assert( m_SubPages[pos-1]->NumberOfKeys() +
@@ -744,7 +702,7 @@ bt_ErrorCode CBNEWTreePage<keyType, ObjIDType>::MergeRoot()
        pChild2->Destroy();
        pChild3->Destroy();
 
-       return bt_rootmerged;
+       return newbt_rootmerged;
 }
 
 template <typename keyType, typename ObjIDType>
