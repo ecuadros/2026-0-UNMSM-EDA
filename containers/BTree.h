@@ -1,71 +1,234 @@
 // btree.h
 
 #ifndef BTREE_H
+
 #define BTREE_H
 
 #include <iostream>
+#include <fstream>
+#include <mutex>
 #include "BTreePage.h"
 
 #define DEFAULT_BTREE_ORDER 3
 
 template <typename keyType, typename ObjIDType = long>
-class BTree 
-// this is the full version of the BTree
+class BTree
 {
-       typedef CBTreePage <keyType, ObjIDType> BTNode;// useful shorthand
-       /*struct ObjectInfo
-       {
-               keyType first;
-               long    second;
-               ObjectInfo *&operator->() { return this; }
-       };*/
+    typedef CBTreePage <keyType, ObjIDType> BTNode;
 
 public:
-       //typedef ObjectInfo iterator;
-       typedef typename BTNode::lpfnForEach2    lpfnForEach2;
-       typedef typename BTNode::lpfnForEach3    lpfnForEach3;
-       typedef typename BTNode::lpfnFirstThat2  lpfnFirstThat2;
-       typedef typename BTNode::lpfnFirstThat3  lpfnFirstThat3;
-       typedef typename BTNode::ObjectInfo      ObjectInfo;
+    typedef typename BTNode::lpfnForEach2   lpfnForEach2;
+    typedef typename BTNode::lpfnForEach3   lpfnForEach3;
+    typedef typename BTNode::lpfnFirstThat2 lpfnFirstThat2;
+    typedef typename BTNode::lpfnFirstThat3 lpfnFirstThat3;
+    typedef typename BTNode::ObjectInfo     ObjectInfo;
+
+    // Forward Iterator
+    class ForwardIterator {
+    public:
+        BTree         *m_pTree;
+        long           m_pos;
+
+        ForwardIterator(BTree *pTree, long pos = 0)
+            : m_pTree(pTree), m_pos(pos) {}
+
+        ForwardIterator(ForwardIterator &another)
+            : m_pTree(another.m_pTree), m_pos(another.m_pos) {}
+
+        ForwardIterator &operator++() {
+            if (m_pos < m_pTree->m_NumKeys) ++m_pos;
+            return *this;
+        }
+
+        bool operator!=(const ForwardIterator &another) const {
+            return m_pTree != another.m_pTree || m_pos != another.m_pos;
+        }
+
+        ObjectInfo &operator*() {
+            return m_pTree->GetByInorderPos(m_pos);
+        }
+    };
+
+    // Backward Iterator
+    class BackwardIterator {
+    public:
+        BTree         *m_pTree;
+        long           m_pos;
+
+        BackwardIterator(BTree *pTree, long pos = 0)
+            : m_pTree(pTree), m_pos(pos) {}
+
+        BackwardIterator(BackwardIterator &another)
+            : m_pTree(another.m_pTree), m_pos(another.m_pos) {}
+
+        BackwardIterator &operator++() {
+            if (m_pos > -1) --m_pos;
+            return *this;
+        }
+
+        bool operator!=(const BackwardIterator &another) const {
+            return m_pTree != another.m_pTree || m_pos != another.m_pos;
+        }
+
+        ObjectInfo &operator*() {
+            return m_pTree->GetByInorderPos(m_pos);
+        }
+    };
 
 public:
-       BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
-       ~BTree();
-       //int           Open (char * name, int mode);
-       //int           Create (char * name, int mode);
-       //int           Close ();
-       bool            Insert (const keyType key, const int ObjID);
-       bool            Remove (const keyType key, const int ObjID);
-       ObjIDType       Search (const keyType key);
-       long            size()  { return m_NumKeys; }
-       long            height() { return m_Height;      }
-       long            GetOrder() { return m_Order;     }
+    BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
 
-       void            Print (ostream &os);
-       void            ForEach( lpfnForEach2 lpfn, void *pExtra1 );
-       void            ForEach( lpfnForEach3 lpfn, void *pExtra1, void *pExtra2);
-       ObjectInfo*     FirstThat( lpfnFirstThat2 lpfn, void *pExtra1 );
-       ObjectInfo*     FirstThat( lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2);
-       //typedef               ObjectInfo iterator;
+    // Move Constructor
+    BTree(BTree &&another)
+        : m_Root(std::move(another.m_Root)),
+          m_NumKeys(another.m_NumKeys),
+          m_Unique(another.m_Unique),
+          m_Order(another.m_Order),
+          m_Height(another.m_Height)
+    {
+        another.m_NumKeys = 0;
+        another.m_Height  = 1;
+    }
+
+    ~BTree();
+
+    bool      Insert(const keyType key, const int ObjID);
+    bool      Remove(const keyType key, const int ObjID);
+    ObjIDType Search(const keyType key);
+
+    long size()     { return m_NumKeys; }
+    long height()   { return m_Height;  }
+    long GetOrder() { return m_Order;   }
+
+    void Print(ostream &os);
+
+    // Iteradores
+    ForwardIterator  begin()  { return ForwardIterator(this, 0); }
+    ForwardIterator  end()    { return ForwardIterator(this, m_NumKeys); }
+    BackwardIterator rbegin() { return BackwardIterator(this, m_NumKeys - 1); }
+    BackwardIterator rend()   { return BackwardIterator(this, -1); }
+
+    template <typename ObjFunc, typename ...Args>
+    void Inorder(ObjFunc of, Args ...args) {
+        lock_guard<mutex> lock(m_mutex);
+        InternalInorder(&m_Root, of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    void Preorder(ObjFunc of, Args ...args) {
+        lock_guard<mutex> lock(m_mutex);
+        InternalPreorder(&m_Root, of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    void Postorder(ObjFunc of, Args ...args) {
+        lock_guard<mutex> lock(m_mutex);
+        InternalPostorder(&m_Root, of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    ForwardIterator FirstThat(ObjFunc of, Args ...args) {
+        return ::FirstThat(*this, of, args...);
+    }
+
+    void ForEach(lpfnForEach2 lpfn, void *pExtra1);
+    void ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2);
+
+    ObjectInfo *FirstThat(lpfnFirstThat2 lpfn, void *pExtra1);
+    ObjectInfo *FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2);
+
+    friend ostream &operator<<(ostream &os, BTree<keyType, ObjIDType> &tree) {
+        os << "BTree(2-3): size=" << tree.m_NumKeys
+           << " height=" << tree.m_Height << endl;
+        tree.m_Root.Print(os);
+        return os;
+    }
+
+    friend istream &operator>>(istream &is, BTree<keyType, ObjIDType> &tree) {
+        keyType   key;
+        ObjIDType id;
+        while (is >> key >> id)
+            tree.Insert(key, static_cast<int>(id));
+        return is;
+    }
+
+    ObjectInfo &GetByInorderPos(long pos) {
+        long       idx    = 0;
+        ObjectInfo *pResult = nullptr;
+        InorderCollect(&m_Root, pos, idx, pResult);
+        return *pResult;
+    }
 
 protected:
-       BTNode          m_Root;
-       long            m_NumKeys; // number of keys
-       bool            m_Unique;  // Accept the elements only once ?
-       int             m_Order;   // order of tree
-       int             m_Height;  // height of tree
+    BTNode     m_Root;
+    long       m_NumKeys;
+    bool       m_Unique;
+    int        m_Order;
+    int        m_Height;
+    mutex      m_mutex;
+
+private:
+
+    void InorderCollect(BTNode *node, long target, long &current, ObjectInfo *&result) {
+        if (!node) return;
+        int nKeys = node->GetNumberOfKeys();
+        for (int i = 0; i < nKeys; ++i) {
+            if (node->m_SubPages[i])
+                InorderCollect(node->m_SubPages[i], target, current, result);
+            if (current == target) { result = &node->m_Keys[i]; }
+            ++current;
+        }
+        if (node->m_SubPages[nKeys])
+            InorderCollect(node->m_SubPages[nKeys], target, current, result);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    void InternalInorder(BTNode *node, ObjFunc of, Args ...args) {
+        if (!node) return;
+        int nKeys = node->GetNumberOfKeys();
+        for (int i = 0; i < nKeys; ++i) {
+            if (node->m_SubPages[i])
+                InternalInorder(node->m_SubPages[i], of, args...);
+            of(node->m_Keys[i], args...);
+        }
+        if (node->m_SubPages[nKeys])
+            InternalInorder(node->m_SubPages[nKeys], of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    void InternalPreorder(BTNode *node, ObjFunc of, Args ...args) {
+        if (!node) return;
+        int nKeys = node->GetNumberOfKeys();
+        for (int i = 0; i < nKeys; ++i)
+            of(node->m_Keys[i], args...);
+        for (int i = 0; i <= nKeys; ++i)
+            if (node->m_SubPages[i])
+                InternalPreorder(node->m_SubPages[i], of, args...);
+    }
+
+    template <typename ObjFunc, typename ...Args>
+    void InternalPostorder(BTNode *node, ObjFunc of, Args ...args) {
+        if (!node) return;
+        int nKeys = node->GetNumberOfKeys();
+        for (int i = 0; i <= nKeys; ++i)
+            if (node->m_SubPages[i])
+                InternalPostorder(node->m_SubPages[i], of, args...);
+        for (int i = 0; i < nKeys; ++i)
+            of(node->m_Keys[i], args...);
+    }
 };
 
 const int MaxHeight = 5;
+
 template <typename keyType, typename ObjIDType>
 BTree<keyType, ObjIDType>::BTree(int order, bool unique)
-                               : m_Root(2 * order  + 1, unique),
-                                 m_NumKeys(0),
-                                 m_Unique(unique),
-                                 m_Order(order)
+    : m_Root(2 * order + 1, unique),
+      m_NumKeys(0),
+      m_Unique(unique),
+      m_Order(order)
 {
-       m_Root.SetMaxKeysForChilds(order);
-       m_Height = 1;
+    m_Root.SetMaxKeysForChilds(order);
+    m_Height = 1;
 }
 
 template <typename keyType, typename ObjIDType>
@@ -76,69 +239,69 @@ BTree<keyType, ObjIDType>::~BTree()
 template <typename keyType, typename ObjIDType>
 bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
 {
-       bt_ErrorCode error = m_Root.Insert(key, ObjID);
-       if( error == bt_duplicate )
-               return false;
-       m_NumKeys++;
-       if( error == bt_overflow )
-       {
-               m_Root.SplitRoot();
-               m_Height++;
-       }
-       return true;
+    lock_guard<mutex> lock(m_mutex);
+    bt_ErrorCode error = m_Root.Insert(key, ObjID);
+    if (error == bt_duplicate)
+        return false;
+    m_NumKeys++;
+    if (error == bt_overflow) {
+        m_Root.SplitRoot();
+        m_Height++;
+    }
+    return true;
 }
 
 template <typename keyType, typename ObjIDType>
-bool BTree<keyType, ObjIDType>::Remove (const keyType key, const int ObjID)
+bool BTree<keyType, ObjIDType>::Remove(const keyType key, const int ObjID)
 {
-       bt_ErrorCode error = m_Root.Remove(key, ObjID);
-       if( error == bt_duplicate || error == bt_nofound )
-               return false;
-       m_NumKeys--;
-
-       if( error == bt_rootmerged )
-               m_Height--;
-       return true;
+    lock_guard<mutex> lock(m_mutex);
+    bt_ErrorCode error = m_Root.Remove(key, ObjID);
+    if (error == bt_duplicate || error == bt_nofound)
+        return false;
+    m_NumKeys--;
+    if (error == bt_rootmerged)
+        m_Height--;
+    return true;
 }
 
 template <typename keyType, typename ObjIDType>
-ObjIDType BTree<keyType, ObjIDType>::Search (const keyType key)
+ObjIDType BTree<keyType, ObjIDType>::Search(const keyType key)
 {
-       ObjIDType ObjID = -1;
-       m_Root.Search(key, ObjID);
-       return ObjID;
+    lock_guard<mutex> lock(m_mutex);
+    ObjIDType ObjID = -1;
+    m_Root.Search(key, ObjID);
+    return ObjID;
 }
-
 
 template <typename keyType, typename ObjIDType>
 void BTree<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, void *pExtra1)
 {
-       m_Root.ForEach(lpfn, 0, pExtra1);
+    m_Root.ForEach(lpfn, 0, pExtra1);
 }
 
 template <typename keyType, typename ObjIDType>
 void BTree<keyType, ObjIDType>::ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2)
 {
-       m_Root.ForEach(lpfn, 0, pExtra1, pExtra2);
+    m_Root.ForEach(lpfn, 0, pExtra1, pExtra2);
 }
 
 template <typename keyType, typename ObjIDType>
 typename BTree<keyType, ObjIDType>::ObjectInfo *
 BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat2 lpfn, void *pExtra1)
 {
-       return m_Root.FirstThat(lpfn, 0, pExtra1);
+    return m_Root.FirstThat(lpfn, 0, pExtra1);
 }
 
 template <typename keyType, typename ObjIDType>
 typename BTree<keyType, ObjIDType>::ObjectInfo *
 BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2)
 {
-       return m_Root.FirstThat(lpfn, 0, pExtra1, pExtra2);
+    return m_Root.FirstThat(lpfn, 0, pExtra1, pExtra2);
 }
 
 template <typename keyType, typename ObjIDType>
-void BTree<keyType, ObjIDType>::Print(ostream &os){
-       m_Root.Print(os);
+void BTree<keyType, ObjIDType>::Print(ostream &os) {
+    m_Root.Print(os);
 }
 
 void DemoBTree();

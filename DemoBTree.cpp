@@ -1,26 +1,26 @@
 //#include <iostream.h>
-#include <time.h>
-#include <stdlib.h>
-#include <string>
-#include <iostream>
-#include "containers/BTree.h"
+//#include <time.h>
+//#include <stdlib.h>
+//#include <string>
+//#include <iostream>
+//#include "containers/BTree.h"
 
 //const char * keys="CDAMPIWNBKEHOLJYQZFXVRTSGU";
-const char * keys1 = "D1XJ2xTg8zKL9AhijOPQcEowRSp0NbW567BUfCqrs4FdtYZakHIuvGV3eMylmn";
-const char * keys2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-const char * keys3 = "DYZakHIUwxVJ203ejOP9Qc8AdtuEop1XvTRghSNbW567BfiCqrs4FGMyzKLlmn";
+//const char * keys1 = "D1XJ2xTg8zKL9AhijOPQcEowRSp0NbW567BUfCqrs4FdtYZakHIuvGV3eMylmn";
+//const char * keys2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+//const char * keys3 = "DYZakHIUwxVJ203ejOP9Qc8AdtuEop1XvTRghSNbW567BfiCqrs4FGMyzKLlmn";
 
-const int BTreeSize = 3;
-void DemoBTree(){
-       int i;
-       BTree <char> bt (BTreeSize);
-       for (i = 0; keys1[i]; i++)
-       {
+//const int BTreeSize = 3;
+//void DemoBTree(){
+       //int i;
+       //BTree <char> bt (BTreeSize);
+       //for (i = 0; keys1[i]; i++)
+       //{
                //cout<<"Inserting "<<keys1[i]<<endl;
-               bt.Insert(keys1[i], i*i);
+               //bt.Insert(keys1[i], i*i);
                //bt.Print(cout);
-       }
-       bt.Print(cout);
+       //}
+       //bt.Print(cout);
 //        for (i = 0; keys2[i]; i++)
 //        {
 //                cout << "Searching " << keys2[i] << " ";
@@ -43,7 +43,7 @@ void DemoBTree(){
 //        }
 //        bt.Print(cout);
 //        cout.flush();
-}
+//}
 
 
 
@@ -110,3 +110,69 @@ main (int argc, char * argv)
        cout.flush();
        return 1;
 }*/
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+#include "containers/BTree.h"
+#include "variadic-util.h"
+
+using T1 = int;
+
+template <typename Q>
+void Print(Q &elem){ cout << elem << ","; }
+
+bool EsMayor20(tagObjectInfo<int, long> &info, int, void *){ return info.key > 20; }
+
+void DemoBTree() {
+    BTree<T1> bt;
+
+    bt.Insert(30, 1);
+    bt.Insert(10, 2);
+    bt.Insert(50, 3);
+    bt.Insert(20, 4);
+    bt.Insert(40, 5);
+    bt.Insert(60, 6);
+    bt.Insert(15, 7);
+
+    cout << bt << endl;
+
+    // forward iterator
+    ::ForEach(bt.begin(), bt.end(), &Print<T1>); cout << endl;
+
+    // backward iterator
+    ::ForEach(bt.rbegin(), bt.rend(), &Print<T1>); cout << endl;
+
+    // inorder variadic
+    bt.Inorder([](tagObjectInfo<T1, long> &info, void *) {
+        cout << info.key << ",";
+    }, nullptr); cout << endl;
+
+    // preorder variadic
+    bt.Preorder([](tagObjectInfo<T1, long> &info, void *) {
+        cout << info.key << ",";
+    }, nullptr); cout << endl;
+
+    // postorder variadic
+    bt.Postorder([](tagObjectInfo<T1, long> &info, void *) {
+        cout << info.key << ",";
+    }, nullptr); cout << endl;
+
+    // search
+    auto id = bt.Search(20);
+    cout << "Search(20): id=" << id << endl;
+
+    // operator>> (persistencia)
+    ofstream of("btree.txt");
+    of << bt;
+    of.close();
+
+    // remove
+    bt.Remove(20, 4);
+    cout << bt << endl;
+
+    // move constructor
+    BTree<T1> bt2(std::move(bt));
+    cout << bt2 << endl;
+}
