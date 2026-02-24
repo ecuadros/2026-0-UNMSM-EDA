@@ -4,6 +4,7 @@
 #include "containers/array.h"
 #include "containers/lists.h"
 #include "containers/binarytree.h"
+#include "containers/avl.h"
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
