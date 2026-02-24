@@ -3,7 +3,15 @@
 #include "pointers.h"
 #include "containers/array.h"
 #include "containers/lists.h"
+#include "containers/heap.h"
+#include "containers/binarytree.h"
+#include "containers/avl.h"
 #include "containers/BTree.h"
+
+void DemoHeap();
+void DemoBinaryTree();
+void DemoAVL();
+void DemoBTree();
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
@@ -13,6 +21,14 @@ int main() {
     // DemoPointers1();
     // DemoArray();
     // DemoLists();
+    // DemoCircularLists();
+    //DemoDoubleLists();
+    //DemoCircularDoubleLists();
+    //DemoStack();
+    //DemoQueue();
+    //DemoHeap();
+    DemoBinaryTree();
+    DemoAVL();
     DemoBTree();
     return 0;
 }

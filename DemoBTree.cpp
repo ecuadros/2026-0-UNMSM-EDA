@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include "containers/BTree.h"
 
 //const char * keys="CDAMPIWNBKEHOLJYQZFXVRTSGU";
@@ -21,6 +22,67 @@ void DemoBTree(){
                //bt.Print(cout);
        }
        bt.Print(cout);
+
+       // operator<<
+       cout << "\n--- operator<< ---" << endl;
+       cout << bt << endl;
+
+       // forward iterator
+       cout << "--- Forward Iterator ---" << endl;
+       cout << "Forward: ";
+       for (auto it = bt.begin(); it != bt.end(); ++it)
+               cout << *it << " ";
+       cout << endl;
+
+       // backward iterator
+       cout << "--- Backward Iterator ---" << endl;
+       cout << "Backward: ";
+       for (auto it = bt.rbegin(); it != bt.rend(); ++it)
+               cout << *it << " ";
+       cout << endl;
+
+       // inorder
+       cout << "\n--- Inorder Variadic ---" << endl;
+       cout << "Inorder: ";
+       bt.Inorder([](char &key){ cout << key << " "; });
+       cout << endl;
+
+       // preorder
+       cout << "\n--- Preorder Variadic ---" << endl;
+       cout << "Preorder: ";
+       bt.Preorder([](char &key){ cout << key << " "; });
+       cout << endl;
+
+       // foreach
+       cout << "\n--- Foreach Variadic (key + 1) ---" << endl;
+       cout << "Foreach: ";
+       bt.Foreach([](char &key, int offset){ cout << (char)(key + offset) << " "; }, 1);
+       cout << endl;
+
+       // firstthat
+       cout << "\n--- FirstThat Variadic (>'m') ---" << endl;
+       auto it2 = bt.FirstThatV([](char &key) -> bool { return key > 'm'; });
+       if (it2 != bt.end())
+               cout << "Encontrado: " << *it2 << endl;
+
+       // copy constructor
+       cout << "\n--- Copy Constructor ---" << endl;
+       BTree<char> copia(bt);
+       cout << "Copia: size = " << copia.size() << endl;
+
+       // move constructor
+       cout << "--- Move Constructor ---" << endl;
+       BTree<char> moved(std::move(copia));
+       cout << "Moved: size = " << moved.size() << endl;
+       cout << "Copia (vacio): size = " << copia.size() << endl;
+
+       // operator>>
+       cout << "\n--- operator>> ---" << endl;
+       BTree<char> bt2(2);
+       istringstream iss("3 A 1 B 2 C 3");
+       iss >> bt2;
+       cout << bt2 << endl;
+
 //        for (i = 0; keys2[i]; i++)
 //        {
 //                cout << "Searching " << keys2[i] << " ";

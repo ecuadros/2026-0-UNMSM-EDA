@@ -3,7 +3,7 @@
 #include "general/types.h"
 
 // C, C++
-// typedef bool (*CompFunc)(const ContainerElemType &, const ContainerElemType &);
+typedef bool (*CompFunc)(const ContainerElemType &, const ContainerElemType &);
 // C++11 en adelante
 
 template <typename T>
