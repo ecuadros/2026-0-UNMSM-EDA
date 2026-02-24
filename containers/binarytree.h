@@ -41,6 +41,114 @@ public:
     value_type& GetValueRef()       { return m_data; }
 };
 
+// Forward Iterator
+template <typename Container>
+class BinaryTreeForwardIterator {
+public:
+    using Node = typename Container::Node;
+    using value_type = typename Container::value_type;
+
+private:
+    queue<Node*> m_queue;
+    Node* m_pCurrent;
+
+public:
+    BinaryTreeForwardIterator(Node* root) : m_pCurrent(nullptr) {
+        if (root) {
+            inorderTraversal(root);
+            if (!m_queue.empty()) {
+                m_pCurrent = m_queue.front();
+                m_queue.pop();
+            }
+        }
+    }
+
+    BinaryTreeForwardIterator() : m_pCurrent(nullptr) {}
+
+    void inorderTraversal(Node* node) {
+        if (!node) return;
+        inorderTraversal(node->m_pLeft);
+        m_queue.push(node);
+        inorderTraversal(node->m_pRight);
+    }
+
+    bool operator!=(const BinaryTreeForwardIterator& other) const {
+        return m_pCurrent != other.m_pCurrent;
+    }
+
+    bool operator==(const BinaryTreeForwardIterator& other) const {
+        return m_pCurrent == other.m_pCurrent;
+    }
+
+    value_type& operator*() {
+        return m_pCurrent->GetValueRef();
+    }
+
+    BinaryTreeForwardIterator& operator++() {
+        if (!m_queue.empty()) {
+            m_pCurrent = m_queue.front();
+            m_queue.pop();
+        } else {
+            m_pCurrent = nullptr;
+        }
+        return *this;
+    }
+};
+
+// Backward Iterator
+template <typename Container>
+class BinaryTreeBackwardIterator {
+public:
+    using Node = typename Container::Node;
+    using value_type = typename Container::value_type;
+
+private:
+    queue<Node*> m_queue;
+    Node* m_pCurrent;
+
+public:
+    BinaryTreeBackwardIterator(Node* root) : m_pCurrent(nullptr) {
+        if (root) {
+            reverseInorderTraversal(root);
+            if (!m_queue.empty()) {
+                m_pCurrent = m_queue.front();
+                m_queue.pop();
+            }
+        }
+    }
+
+    BinaryTreeBackwardIterator() : m_pCurrent(nullptr) {}
+
+    void reverseInorderTraversal(Node* node) {
+        if (!node) return;
+        reverseInorderTraversal(node->m_pRight);
+        m_queue.push(node);
+        reverseInorderTraversal(node->m_pLeft);
+    }
+
+    bool operator!=(const BinaryTreeBackwardIterator& other) const {
+        return m_pCurrent != other.m_pCurrent;
+    }
+
+    bool operator==(const BinaryTreeBackwardIterator& other) const {
+        return m_pCurrent == other.m_pCurrent;
+    }
+
+    value_type& operator*() {
+        return m_pCurrent->GetValueRef();
+    }
+
+    BinaryTreeBackwardIterator& operator++() {
+        if (!m_queue.empty()) {
+            m_pCurrent = m_queue.front();
+            m_queue.pop();
+        } else {
+            m_pCurrent = nullptr;
+        }
+        return *this;
+    }
+};
+
 template <typename Traits>
 class CBinaryTree{
 public:
