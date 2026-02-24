@@ -1,10 +1,6 @@
 
 //CBTreePage.h
 
-/*************************
-#ifndef BTPage_H
-#define BTPage_H
-***************************/
 #ifndef CBTreePage_H
 #define CBTreePage_H
 #include <vector>
@@ -14,17 +10,17 @@
 template <typename keyType, typename ObjIDType>
 class BTree;
 
+template <typename keyType, typename ObjIDType>
+struct BTreeFwdIterator;
+
+template <typename keyType, typename ObjIDType>
+struct BTreeBwdIterator;
+
 
 using namespace std;
 enum bt_ErrorCode {bt_ok, bt_overflow, bt_underflow, bt_duplicate, bt_nofound, bt_rootmerged};
 
-/*template <typename keyType>
-bool operator>=(const _ObjectInfo<keyType>& object1, const _ObjectInfo<keyType>& object2)
-{ return object1.key >= object2.key;    }
 
-template <typename keyType>
-bool operator<=(const _ObjectInfo<keyType>& object1, const _ObjectInfo<keyType>& object2)
-{ return object1.key <= object2.key;    }*/
 
 template <typename keyType, typename ObjIDType>
 struct tagObjectInfo
@@ -45,6 +41,8 @@ class CBTreePage
 // this is the in-memory version of the CBTreePage
 {
        friend class BTree<keyType, ObjIDType>;
+       friend struct BTreeFwdIterator<keyType, ObjIDType>;
+       friend struct BTreeBwdIterator<keyType, ObjIDType>;
 
        typedef CBTreePage<keyType, ObjIDType>    BTPage;         // useful shorthand
        typedef tagObjectInfo<keyType, ObjIDType> ObjectInfo;
@@ -496,19 +494,6 @@ bool CBTreePage<keyType, ObjIDType>::Search(const keyType &key, long &ObjID)
        return false;
 }
 
-/*template <typename keyType, typename ObjIDType>
-void CBTreePage<keyType, ObjIDType>::ForEachReverse(lpfnForEach2 lpfn, int level, void *pExtra1)
-{
-       if( m_SubPages[m_KeyCount] )
-               m_SubPages[m_KeyCount]->ForEach(lpfn, level+1, pExtra1);
-       for( int i = m_KeyCount-1 ; i >= 0  ; i--)
-       {
-               lpfn(m_Keys[i], level, pExtra1);
-               if( m_SubPages[i] )
-                       m_SubPages[i]->ForEach(lpfn, level+1, pExtra1);
-       }
-}*/
-
 template <typename keyType, typename ObjIDType>
 void CBTreePage<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, int level, void *pExtra1)
 {
@@ -769,9 +754,9 @@ void CBTreePage<keyType, ObjIDType>::Create()
 template <typename keyType, typename ObjIDType>
 void CBTreePage<keyType, ObjIDType>::Reset()
 {
-       for( int i = 0 ; i < m_KeyCount ; i++ )
-               delete m_SubPages[i];
-       clear();
+	for( int i = 0 ; i <= m_KeyCount && i < (int)m_SubPages.size() ; i++ )
+		delete m_SubPages[i];
+	clear();
 }
 
 template <typename keyType, typename ObjIDType>
