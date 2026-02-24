@@ -4,7 +4,7 @@
 
 using namespace std;
 
-void DemoTrees(){
+void DemoBinaryTree(){
 
     cout << " DEMO CBinaryTree (BST)\n";
 
