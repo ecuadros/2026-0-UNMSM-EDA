@@ -370,4 +370,6 @@ private:
     }
 };
 
+void DemoBinaryTree();
+
 #endif // __BINARYTREE_H__
