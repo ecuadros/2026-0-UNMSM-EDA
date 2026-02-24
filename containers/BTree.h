@@ -12,24 +12,40 @@
 #define DEFAULT_BTREE_ORDER 3
 
 template <typename keyType, typename ObjIDType = long>
-class BTree 
-// this is the full version of the BTree
+class BTree
 {
-       typedef CBTreePage <keyType, ObjIDType> BTNode;// useful shorthand
-       /*struct ObjectInfo
-       {
-               keyType first;
-               long    second;
-               ObjectInfo *&operator->() { return this; }
-       };*/
+    typedef CBTreePage<keyType, ObjIDType> BTNode;
 
 public:
-       //typedef ObjectInfo iterator;
-       typedef typename BTNode::lpfnForEach2    lpfnForEach2;
-       typedef typename BTNode::lpfnForEach3    lpfnForEach3;
-       typedef typename BTNode::lpfnFirstThat2  lpfnFirstThat2;
-       typedef typename BTNode::lpfnFirstThat3  lpfnFirstThat3;
-       typedef typename BTNode::ObjectInfo      ObjectInfo;
+    typedef typename BTNode::lpfnForEach2   lpfnForEach2;
+    typedef typename BTNode::lpfnForEach3   lpfnForEach3;
+    typedef typename BTNode::lpfnFirstThat2 lpfnFirstThat2;
+    typedef typename BTNode::lpfnFirstThat3 lpfnFirstThat3;
+    typedef typename BTNode::ObjectInfo     ObjectInfo;
+
+    // Forward Iterator
+    class ForwardIterator {
+        std::shared_ptr<std::vector<ObjectInfo*>> m_items;
+        int m_pos;
+    public:
+        ForwardIterator(std::shared_ptr<std::vector<ObjectInfo*>> items, int pos)
+            : m_items(items), m_pos(pos) {}
+        ObjectInfo &operator*()       { return *(*m_items)[m_pos]; }
+        ForwardIterator &operator++() { ++m_pos; return *this; }
+        bool operator!=(const ForwardIterator &o) const { return m_pos != o.m_pos; }
+    };
+
+    // Backward Iterator
+    class BackwardIterator {
+        std::shared_ptr<std::vector<ObjectInfo*>> m_items;
+        int m_pos;
+    public:
+        BackwardIterator(std::shared_ptr<std::vector<ObjectInfo*>> items, int pos)
+            : m_items(items), m_pos(pos) {}
+        ObjectInfo &operator*()        { return *(*m_items)[m_pos]; }
+        BackwardIterator &operator++() { --m_pos; return *this; }
+        bool operator!=(const BackwardIterator &o) const { return m_pos != o.m_pos; }
+    };
 
 public:
        BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
@@ -148,3 +164,4 @@ void DemoBTree();
 
 
 #endif
+
