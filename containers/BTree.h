@@ -193,45 +193,39 @@ void BTree<keyType, ObjIDType>::Print(ostream &os) {
     m_Root.Print(os);
 }
 
-
-
-
-
 template <typename keyType, typename ObjIDType>
-void BTree<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, void *pExtra1)
-{
-       m_Root.ForEach(lpfn, 0, pExtra1);
+void BTree<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, void *pExtra1) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_Root.ForEach(lpfn, 0, pExtra1);
 }
 
 template <typename keyType, typename ObjIDType>
-void BTree<keyType, ObjIDType>::ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2)
-{
-       m_Root.ForEach(lpfn, 0, pExtra1, pExtra2);
+void BTree<keyType, ObjIDType>::ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_Root.ForEach(lpfn, 0, pExtra1, pExtra2);
 }
 
 template <typename keyType, typename ObjIDType>
-typename BTree<keyType, ObjIDType>::ObjectInfo *
-BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat2 lpfn, void *pExtra1)
-{
-       return m_Root.FirstThat(lpfn, 0, pExtra1);
+typename BTree<keyType, ObjIDType>::ObjectInfo*
+BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat2 lpfn, void *pExtra1) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_Root.FirstThat(lpfn, 0, pExtra1);
 }
 
 template <typename keyType, typename ObjIDType>
-typename BTree<keyType, ObjIDType>::ObjectInfo *
-BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2)
-{
-       return m_Root.FirstThat(lpfn, 0, pExtra1, pExtra2);
+typename BTree<keyType, ObjIDType>::ObjectInfo*
+BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_Root.FirstThat(lpfn, 0, pExtra1, pExtra2);
 }
 
-template <typename keyType, typename ObjIDType>
-void BTree<keyType, ObjIDType>::Print(ostream &os){
-       m_Root.Print(os);
-}
+
 
 void DemoBTree();
 
 
 #endif
+
 
 
 
