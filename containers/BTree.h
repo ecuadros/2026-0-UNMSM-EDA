@@ -4,6 +4,9 @@
 #define BTREE_H
 
 #include <iostream>
+#include <mutex>
+#include <vector>
+#include <memory>
 #include "BTreePage.h"
 
 #define DEFAULT_BTREE_ORDER 3
@@ -142,5 +145,6 @@ void BTree<keyType, ObjIDType>::Print(ostream &os){
 }
 
 void DemoBTree();
+
 
 #endif
