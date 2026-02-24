@@ -236,10 +236,35 @@ BTree<keyType, ObjIDType>::FirstThat(FuncObj fn, Args... args) {
     return InternalFirstThat(&m_Root, fn, args...);
 }
 
+// Inorden
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::Inorden(FuncObj fn, Args... args) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    InternalInorden(&m_Root, fn, args...);
+}
+
+// Preorden
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::Preorden(FuncObj fn, Args... args) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    InternalPreorden(&m_Root, fn, args...);
+}
+
+// Postorden
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::Postorden(FuncObj fn, Args... args) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    InternalPostorden(&m_Root, fn, args...);
+}
+
 void DemoBTree();
 
 
 #endif
+
 
 
 
