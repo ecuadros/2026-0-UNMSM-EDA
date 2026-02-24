@@ -3,7 +3,9 @@
 #include "../general/types.h"
 
 #include "linkedlist.h"
+#include "binarytree.h"
+#include "binarytreeAVL.h"
 
-void DemoLists();
+void DemoBinaryTree();
 
 #endif // __LISTS_H__

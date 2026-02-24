@@ -9,6 +9,8 @@
 #define CBTreePage_H
 #include <vector>
 #include <iostream>
+#include <algorithm>
+#include <stdexcept>
 #include <assert.h>
 
 template <typename keyType, typename ObjIDType>
@@ -34,7 +36,7 @@ struct tagObjectInfo
        long                    UseCounter;
        tagObjectInfo(const keyType     &_key, ObjIDType _ObjID)
                : key(_key), ObjID(_ObjID), UseCounter(0) {}
-       tagObjectInfo()                          {}
+       tagObjectInfo() : key(), ObjID(), UseCounter(0) {}
        operator keyType                         ()     { return key; }
        long                    GetUseCounter() { return UseCounter;    }
 };
@@ -44,28 +46,45 @@ template <typename keyType, typename ObjIDType>
 class CBTreePage 
 // this is the in-memory version of the CBTreePage
 {
-       friend class BTree<keyType, ObjIDType>;
+        friend class BTree<keyType, ObjIDType>;
 
-       typedef CBTreePage<keyType, ObjIDType>    BTPage;         // useful shorthand
-       typedef tagObjectInfo<keyType, ObjIDType> ObjectInfo;
+        typedef CBTreePage<keyType, ObjIDType>    BTPage;         // useful shorthand
+        typedef tagObjectInfo<keyType, ObjIDType> ObjectInfo;
 
-       typedef void (*lpfnForEach2)(ObjectInfo &info, int level, void *pExtra1);
-       typedef void (*lpfnForEach3)(ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
+        typedef void (*lpfnForEach2)(ObjectInfo &info, int level, void *pExtra1);
+        typedef void (*lpfnForEach3)(ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
 
-       typedef ObjectInfo *(*lpfnFirstThat2)(ObjectInfo &info, int level, void *pExtra1);
-       typedef ObjectInfo *(*lpfnFirstThat3)(ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
- public:
-       CBTreePage(int maxKeys, bool unique = true);
-       virtual ~CBTreePage();
+        typedef ObjectInfo *(*lpfnFirstThat2)(ObjectInfo &info, int level, void *pExtra1);
+        typedef ObjectInfo *(*lpfnFirstThat3)(ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
+public:
 
-       bt_ErrorCode    Insert (const keyType &key, const ObjIDType ObjID);
-       bt_ErrorCode    Remove (const keyType &key, const ObjIDType ObjID);
-       bool            Search (const keyType &key, long &ObjID);
-       void            Print  (ostream &os);
-       void            ForEach(lpfnForEach2 lpfn, int level, void *pExtra1);
-       void            ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2);
-       ObjectInfo*     FirstThat(lpfnFirstThat2 lpfn, int level, void *pExtra1);
-       ObjectInfo*     FirstThat(lpfnFirstThat3 lpfn, int level, void *pExtra1, void *pExtra2);
+        CBTreePage(int maxKeys=0, bool unique = true, bool isRoot = false);
+        virtual ~CBTreePage();
+        CBTreePage (CBTreePage&& other) noexcept;
+        CBTreePage& operator=(CBTreePage&& other) noexcept;
+
+        CBTreePage (const CBTreePage&) = delete;
+        CBTreePage& operator=(const CBTreePage&) = delete;
+
+        bt_ErrorCode    Insert (const keyType &key, const ObjIDType ObjID);
+        bt_ErrorCode    Remove (const keyType &key, const ObjIDType ObjID);
+        bool            Search (const keyType &key,  ObjIDType &ObjID);
+        void            Print  (ostream &os);
+        void            ForEach(lpfnForEach2 lpfn, int level, void *pExtra1);
+        void            ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2);
+        ObjectInfo*     FirstThat(lpfnFirstThat2 lpfn, int level, void *pExtra1);
+        ObjectInfo*     FirstThat(lpfnFirstThat3 lpfn, int level, void *pExtra1, void *pExtra2);
+        template <typename Func, typename... Args>
+        void InOrderV(Func &func, int level, Args&... args);
+
+        template <typename Func, typename... Args>
+        void PreOrderV(Func &func, int level, Args&... args);
+
+        template <typename Func, typename... Args>
+        void PostOrderV(Func &func, int level, Args&... args);
+
+        template <typename Pred, typename... Args>
+        ObjectInfo* FirstThatV(Pred &pred, int level, Args&... args);
 
 protected:
        int  m_MinKeys; // minimum number of keys in a node
@@ -162,8 +181,8 @@ void remove(Container& container, int pos)
 }
 
 template <typename keyType, typename ObjIDType>
-CBTreePage<keyType, ObjIDType>:: CBTreePage(int maxKeys, bool unique)
-                                       : m_MaxKeys(maxKeys), m_Unique(unique), m_KeyCount(0)
+CBTreePage<keyType, ObjIDType>:: CBTreePage(int maxKeys, bool unique, bool isRoot)
+                                       : m_MaxKeys(maxKeys), m_Unique(unique), m_isRoot(isRoot), m_KeyCount(0)
 {
        Create();
        SetMaxKeysForChilds(m_MaxKeys);
@@ -475,7 +494,7 @@ bool CBTreePage<keyType, ObjIDType>::SplitRoot()
 }
 
 template <typename keyType, typename ObjIDType>
-bool CBTreePage<keyType, ObjIDType>::Search(const keyType &key, long &ObjID)
+bool CBTreePage<keyType, ObjIDType>::Search(const keyType &key, ObjIDType &ObjID)
 {
        int pos = binary_search(m_Keys, 0, m_KeyCount, key);
        if( pos >= m_KeyCount ){
@@ -610,8 +629,12 @@ bt_ErrorCode CBTreePage<keyType, ObjIDType>::Remove(const keyType &key, const Ob
                        error = m_SubPages[++pos]->Remove(key, ObjID);
                }
        }
-       else if( pos == NumberOfKeys() ) // it is not here, go by the last branch
-               error = m_SubPages[pos]->Remove(key, ObjID);
+       else if (pos == NumberOfKeys()){
+        if (m_SubPages[pos])
+                error = m_SubPages[pos]->Remove(key, ObjID);
+        else
+                return bt_nofound;
+        }
        else if( key <= m_Keys[pos].key ){ // = is because identical keys are inserted on left (see Insert)
                if( m_SubPages[pos] )
                        error = m_SubPages[pos]->Remove(key, ObjID);
@@ -759,18 +782,27 @@ void CBTreePage<keyType, ObjIDType>::Print(ostream & os)
 template <typename keyType, typename ObjIDType>
 void CBTreePage<keyType, ObjIDType>::Create()
 {
-       Reset();
-       m_Keys.resize(m_MaxKeys+1);
-       m_SubPages.resize(m_MaxKeys+2, NULL);
-       m_KeyCount = 0;
-       m_MinKeys  = 2 * m_MaxKeys/3;
+        m_Keys.resize(m_MaxKeys+1);
+        m_SubPages.resize(m_MaxKeys+2, NULL);
+        m_KeyCount = 0;
+        m_MinKeys  = 2 * m_MaxKeys/3;
 }
 
 template <typename keyType, typename ObjIDType>
 void CBTreePage<keyType, ObjIDType>::Reset()
 {
-       for( int i = 0 ; i < m_KeyCount ; i++ )
-               delete m_SubPages[i];
+       if( !m_SubPages.empty() )
+       {
+              int limit = m_KeyCount;
+              if( limit >= (int)m_SubPages.size() )
+                     limit = (int)m_SubPages.size() - 1;
+
+              for( int i = 0 ; i <= limit ; i++ )
+              {
+                     delete m_SubPages[i];
+                     m_SubPages[i] = NULL;
+              }
+       }
        clear();
 }
 
@@ -818,4 +850,123 @@ int CBTreePage<keyType, ObjIDType>::GetFreeCellsOnRight(int pos)
        return 0;
 }
 
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename... Args>
+void CBTreePage<keyType, ObjIDType>::InOrderV(Func &func, int level, Args&... args)
+{
+       for (int i = 0; i < m_KeyCount; ++i)
+       {
+              if (m_SubPages[i])
+                     m_SubPages[i]->InOrderV(func, level + 1, args...);
+
+              func(m_Keys[i], level, args...);
+       }
+
+       if (m_SubPages[m_KeyCount])
+              m_SubPages[m_KeyCount]->InOrderV(func, level + 1, args...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename... Args>
+void CBTreePage<keyType, ObjIDType>::PreOrderV(Func &func, int level, Args&... args)
+{
+       // "Visitar el nodo" -> visitamos sus claves primero
+       for (int i = 0; i < m_KeyCount; ++i)
+              func(m_Keys[i], level, args...);
+
+       // Luego sus hijos
+       for (int i = 0; i <= m_KeyCount; ++i)
+              if (m_SubPages[i])
+                     m_SubPages[i]->PreOrderV(func, level + 1, args...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Func, typename... Args>
+void CBTreePage<keyType, ObjIDType>::PostOrderV(Func &func, int level, Args&... args)
+{
+       // Primero hijos
+       for (int i = 0; i <= m_KeyCount; ++i)
+              if (m_SubPages[i])
+                     m_SubPages[i]->PostOrderV(func, level + 1, args...);
+
+       // Luego claves del nodo
+       for (int i = 0; i < m_KeyCount; ++i)
+              func(m_Keys[i], level, args...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename Pred, typename... Args>
+typename CBTreePage<keyType, ObjIDType>::ObjectInfo*
+CBTreePage<keyType, ObjIDType>::FirstThatV(Pred &pred, int level, Args&... args)
+{
+       ObjectInfo *pTmp = NULL;
+
+       for (int i = 0; i < m_KeyCount; ++i)
+       {
+              if (m_SubPages[i])
+              {
+                     pTmp = m_SubPages[i]->FirstThatV(pred, level + 1, args...);
+                     if (pTmp)
+                            return pTmp;
+              }
+
+              if (pred(m_Keys[i], level, args...))
+                     return &m_Keys[i];
+       }
+
+       if (m_SubPages[m_KeyCount])
+       {
+              pTmp = m_SubPages[m_KeyCount]->FirstThatV(pred, level + 1, args...);
+              if (pTmp)
+                     return pTmp;
+       }
+
+       return NULL;
+}
+
+template <typename keyType, typename ObjIDType>
+CBTreePage<keyType, ObjIDType>::CBTreePage(CBTreePage&& other) noexcept
+    : m_MinKeys(other.m_MinKeys),
+      m_MaxKeys(other.m_MaxKeys),
+      m_MaxKeysForChilds(other.m_MaxKeysForChilds),
+      m_Unique(other.m_Unique),
+      m_isRoot(other.m_isRoot),
+      m_Keys(std::move(other.m_Keys)),
+      m_SubPages(std::move(other.m_SubPages)),
+      m_KeyCount(other.m_KeyCount)
+{
+       // Dejar al objeto origen en estado válido (vacío)
+       other.m_KeyCount = 0;
+       other.m_Keys.resize(other.m_MaxKeys + 1);
+       other.m_SubPages.assign(other.m_MaxKeys + 2, NULL);
+       other.m_MinKeys = 2 * other.m_MaxKeys / 3;
+}
+
+template <typename keyType, typename ObjIDType>
+CBTreePage<keyType, ObjIDType>&
+CBTreePage<keyType, ObjIDType>::operator=(CBTreePage&& other) noexcept
+{
+       if (this != &other)
+       {
+              // Liberar lo que ya tengo
+              Reset();
+
+              m_MinKeys = other.m_MinKeys;
+              m_MaxKeys = other.m_MaxKeys;
+              m_MaxKeysForChilds = other.m_MaxKeysForChilds;
+              m_Unique = other.m_Unique;
+              m_isRoot = other.m_isRoot;
+              m_KeyCount = other.m_KeyCount;
+
+              m_Keys = std::move(other.m_Keys);
+              m_SubPages = std::move(other.m_SubPages);
+
+              // Dejar al origen en estado válido
+              other.m_KeyCount = 0;
+              other.m_Keys.resize(other.m_MaxKeys + 1);
+              other.m_SubPages.assign(other.m_MaxKeys + 2, NULL);
+              other.m_MinKeys = 2 * other.m_MaxKeys / 3;
+       }
+       return *this;
+}
 #endif
