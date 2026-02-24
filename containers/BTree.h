@@ -161,32 +161,29 @@ BTree<keyType, ObjIDType>::BTree(BTree &&another)
 template <typename keyType, typename ObjIDType>
 BTree<keyType, ObjIDType>::~BTree() {}
 
+// Insert
 template <typename keyType, typename ObjIDType>
-bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
-{
-       bt_ErrorCode error = m_Root.Insert(key, ObjID);
-       if( error == bt_duplicate )
-               return false;
-       m_NumKeys++;
-       if( error == bt_overflow )
-       {
-               m_Root.SplitRoot();
-               m_Height++;
-       }
-       return true;
+bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    bt_ErrorCode error = m_Root.Insert(key, ObjID);
+    if (error == bt_duplicate) return false;
+    m_NumKeys++;
+    if (error == bt_overflow) {
+        m_Root.SplitRoot();
+        m_Height++;
+    }
+    return true;
 }
 
+// Remove
 template <typename keyType, typename ObjIDType>
-bool BTree<keyType, ObjIDType>::Remove (const keyType key, const int ObjID)
-{
-       bt_ErrorCode error = m_Root.Remove(key, ObjID);
-       if( error == bt_duplicate || error == bt_nofound )
-               return false;
-       m_NumKeys--;
-
-       if( error == bt_rootmerged )
-               m_Height--;
-       return true;
+bool BTree<keyType, ObjIDType>::Remove(const keyType key, const int ObjID) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    bt_ErrorCode error = m_Root.Remove(key, ObjID);
+    if (error == bt_duplicate || error == bt_nofound) return false;
+    m_NumKeys--;
+    if (error == bt_rootmerged) m_Height--;
+    return true;
 }
 
 template <typename keyType, typename ObjIDType>
@@ -233,6 +230,7 @@ void DemoBTree();
 
 
 #endif
+
 
 
 
