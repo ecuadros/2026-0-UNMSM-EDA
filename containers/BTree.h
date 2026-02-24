@@ -260,10 +260,55 @@ void BTree<keyType, ObjIDType>::Postorden(FuncObj fn, Args... args) {
     InternalPostorden(&m_Root, fn, args...);
 }
 
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::InternalInorden(BTNode *page, FuncObj fn, Args... args) {
+    if (!page) return;
+    int n = page->GetNumberOfKeys();
+    for (int i = 0; i < n; i++) {
+        if (page->m_SubPages[i])
+            InternalInorden(page->m_SubPages[i], fn, args...);
+        fn(page->m_Keys[i], args...);
+    }
+    if (page->m_SubPages[n])
+        InternalInorden(page->m_SubPages[n], fn, args...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::InternalPreorden(BTNode *page, FuncObj fn, Args... args) {
+    if (!page) return;
+    int n = page->GetNumberOfKeys();
+    for (int i = 0; i < n; i++) {
+        fn(page->m_Keys[i], args...);
+        if (page->m_SubPages[i])
+            InternalPreorden(page->m_SubPages[i], fn, args...);
+    }
+    if (page->m_SubPages[n])
+        InternalPreorden(page->m_SubPages[n], fn, args...);
+}
+
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::InternalPostorden(BTNode *page, FuncObj fn, Args... args) {
+    if (!page) return;
+    int n = page->GetNumberOfKeys();
+    for (int i = 0; i <= n; i++) {
+        if (page->m_SubPages[i])
+            InternalPostorden(page->m_SubPages[i], fn, args...);
+    }
+    for (int i = 0; i < n; i++)
+        fn(page->m_Keys[i], args...);
+}
+
+
+
+
 void DemoBTree();
 
 
 #endif
+
 
 
 
