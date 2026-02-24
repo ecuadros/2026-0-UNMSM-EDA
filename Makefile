@@ -7,7 +7,8 @@ SRCS = main.cpp util.cpp pointers.cpp\
        DemoArray.cpp\
        Demos.cpp \
        DemosP_C_.cpp\
-       DemoBTree.cpp
+       DemoBTree.cpp\
+       DemoTree.cpp
 
 CXX = g++
 

@@ -116,10 +116,6 @@ public:
     heap.Push(val);
     return is;
     }
-
-
 };
-
-
 
 #endif // __HEAP_H__
