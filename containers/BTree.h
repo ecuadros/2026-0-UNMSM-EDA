@@ -5,12 +5,13 @@
 
 #include <iostream>
 #include "BTreePage.h"
+#include <mutex>
 
 #define DEFAULT_BTREE_ORDER 3
 
 template <typename keyType, typename ObjIDType = long>
 class BTree 
-// this is the full version of the BTree
+
 {
        typedef CBTreePage <keyType, ObjIDType> BTNode;// useful shorthand
        /*struct ObjectInfo
@@ -31,6 +32,11 @@ public:
 public:
        BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
        ~BTree();
+       BTree(const BTree& other);
+       BTree(BTree&& other) noexcept;
+
+       bool operator<(const BTree& other) const;
+       bool operator>(const BTree& other) const;
        //int           Open (char * name, int mode);
        //int           Create (char * name, int mode);
        //int           Close ();
@@ -54,6 +60,7 @@ protected:
        bool            m_Unique;  // Accept the elements only once ?
        int             m_Order;   // order of tree
        int             m_Height;  // height of tree
+       mutable std::mutex mtx;
 };
 
 const int MaxHeight = 5;
@@ -69,13 +76,37 @@ BTree<keyType, ObjIDType>::BTree(int order, bool unique)
 }
 
 template <typename keyType, typename ObjIDType>
+BTree<keyType, ObjIDType>::BTree(const BTree& other)
+    : m_Root(other.m_Root),
+      m_NumKeys(other.m_NumKeys),
+      m_Unique(other.m_Unique),
+      m_Order(other.m_Order),
+      m_Height(other.m_Height)
+{
+}
+
+template <typename keyType, typename ObjIDType>
+BTree<keyType, ObjIDType>::BTree(BTree&& other) noexcept
+    : m_Root(std::move(other.m_Root)),
+      m_NumKeys(other.m_NumKeys),
+      m_Unique(other.m_Unique),
+      m_Order(other.m_Order),
+      m_Height(other.m_Height)
+{
+    other.m_NumKeys = 0;
+    other.m_Height = 0;
+}
+
+template <typename keyType, typename ObjIDType>
 BTree<keyType, ObjIDType>::~BTree()
 {
+    std::lock_guard<std::mutex> lock(mtx);
 }
 
 template <typename keyType, typename ObjIDType>
 bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        bt_ErrorCode error = m_Root.Insert(key, ObjID);
        if( error == bt_duplicate )
                return false;
@@ -91,6 +122,7 @@ bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID)
 template <typename keyType, typename ObjIDType>
 bool BTree<keyType, ObjIDType>::Remove (const keyType key, const int ObjID)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        bt_ErrorCode error = m_Root.Remove(key, ObjID);
        if( error == bt_duplicate || error == bt_nofound )
                return false;
@@ -104,6 +136,7 @@ bool BTree<keyType, ObjIDType>::Remove (const keyType key, const int ObjID)
 template <typename keyType, typename ObjIDType>
 ObjIDType BTree<keyType, ObjIDType>::Search (const keyType key)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        ObjIDType ObjID = -1;
        m_Root.Search(key, ObjID);
        return ObjID;
@@ -113,12 +146,14 @@ ObjIDType BTree<keyType, ObjIDType>::Search (const keyType key)
 template <typename keyType, typename ObjIDType>
 void BTree<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, void *pExtra1)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        m_Root.ForEach(lpfn, 0, pExtra1);
 }
 
 template <typename keyType, typename ObjIDType>
 void BTree<keyType, ObjIDType>::ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        m_Root.ForEach(lpfn, 0, pExtra1, pExtra2);
 }
 
@@ -126,6 +161,7 @@ template <typename keyType, typename ObjIDType>
 typename BTree<keyType, ObjIDType>::ObjectInfo *
 BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat2 lpfn, void *pExtra1)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        return m_Root.FirstThat(lpfn, 0, pExtra1);
 }
 
@@ -133,12 +169,28 @@ template <typename keyType, typename ObjIDType>
 typename BTree<keyType, ObjIDType>::ObjectInfo *
 BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2)
 {
+       std::lock_guard<std::mutex> lock(mtx);
        return m_Root.FirstThat(lpfn, 0, pExtra1, pExtra2);
 }
 
 template <typename keyType, typename ObjIDType>
 void BTree<keyType, ObjIDType>::Print(ostream &os){
+       std::lock_guard<std::mutex> lock(mtx);
        m_Root.Print(os);
+}
+
+template <typename keyType, typename ObjIDType>
+bool BTree<keyType, ObjIDType>::operator<(const BTree& other) const
+{
+    std::scoped_lock lock(mtx, other.mtx);
+    return m_NumKeys < other.m_NumKeys;
+}
+
+template <typename keyType, typename ObjIDType>
+bool BTree<keyType, ObjIDType>::operator>(const BTree& other) const
+{
+    std::scoped_lock lock(mtx, other.mtx);
+    return m_NumKeys > other.m_NumKeys;
 }
 
 void DemoBTree();
