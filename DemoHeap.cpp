@@ -5,7 +5,7 @@ using T1 = int;
 
 void DemoHeap() {
     CHeap< MaxHeap<T1> > h1;
-    std::cout << "\n--DEMO MAX HEAP--\n";
+    std::cout << "\nDEMO MAX HEAP\n";
     std::cout << "Ingresamos valores al MaxHeap (Push):\n";
     h1.Push(89);
     h1.Push(90);
@@ -31,8 +31,8 @@ void DemoHeap() {
 
     std::cout << "\nMOVE CONSTRUCTOR: Creamos h3 robando los datos de h2\n";
     CHeap< MaxHeap<T1> > h3 = std::move(h2);
-    std::cout << "h2 (original vaciado):\n" << h2; 
-    std::cout << "h3 (movido):\n" << h3;
+    std::cout << "h2 (original v):\n" << h2; 
+    std::cout << "h3 (copia):\n" << h3;
 
     std::cout << "\nAhora agregamos un valor a h3 usando 'cin >>' : ";
     std::cin >> h3;
@@ -54,8 +54,8 @@ void DemoHeap() {
     hMin.Push(24);
     hMin.Push(5);
     
-    std::cout << "Mostramos el MinHeap (el menor estara primero):\n" << hMin;
-    std::cout << "Hacemos el primer pop (sale el menor): " << hMin.Pop() << "\n";
+    std::cout << "Mostramos el MinHeap :\n" << hMin;
+    std::cout << "Hacemos el primer pop : " << hMin.Pop() << "\n";
     std::cout<<hMin;
     std::cout << "El nuevo Top del MinHeap es: " << hMin.Top() << "\n\n";
 }
