@@ -49,8 +49,8 @@ class CBTreePage
        typedef CBTreePage<keyType, ObjIDType>    BTPage;         // useful shorthand
        typedef tagObjectInfo<keyType, ObjIDType> ObjectInfo;
 
-       typedef void (*lpfnForEach2)(ObjectInfo &info, int level, void *pExtra1);
-       typedef void (*lpfnForEach3)(ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
+       typedef void (*lpfnForEach2)(const ObjectInfo &info, int level, void *pExtra1);
+       typedef void (*lpfnForEach3)(const ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
 
        typedef ObjectInfo *(*lpfnFirstThat2)(ObjectInfo &info, int level, void *pExtra1);
        typedef ObjectInfo *(*lpfnFirstThat3)(ObjectInfo &info, int level, void *pExtra1, void *pExtra2);
@@ -60,12 +60,60 @@ class CBTreePage
 
        bt_ErrorCode    Insert (const keyType &key, const ObjIDType ObjID);
        bt_ErrorCode    Remove (const keyType &key, const ObjIDType ObjID);
-       bool            Search (const keyType &key, long &ObjID);
-       void            Print  (ostream &os);
-       void            ForEach(lpfnForEach2 lpfn, int level, void *pExtra1);
-       void            ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2);
+       bool            Search (const keyType &key, ObjIDType &ObjID);
+       void            Print  (ostream &os) const;
+       void            ForEach(lpfnForEach2 lpfn, int level, void *pExtra1) const;
+       void            ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2) const;
        ObjectInfo*     FirstThat(lpfnFirstThat2 lpfn, int level, void *pExtra1);
        ObjectInfo*     FirstThat(lpfnFirstThat3 lpfn, int level, void *pExtra1, void *pExtra2);
+
+       // Pre-order traversal method
+       void ForEachPreOrder(lpfnForEach2 lpfn, int level, void *pExtra1){
+                for (int i = 0; i < m_KeyCount; i++) {
+                        lpfn(m_Keys[i], level, pExtra1);
+                       if(m_SubPages[i]) {
+                              m_SubPages[i]->ForEachPreOrder(lpfn, level + 1, pExtra1);
+                       }
+                }
+                if(m_SubPages[m_KeyCount]) {
+                       m_SubPages[m_KeyCount]->ForEachPreOrder(lpfn, level + 1, pExtra1);
+                }
+       }
+       void ForEachPreOrder(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2){
+                for (int i = 0; i < m_KeyCount; i++) {
+                        lpfn(m_Keys[i], level, pExtra1, pExtra2);
+                       if(m_SubPages[i]) {
+                              m_SubPages[i]->ForEachPreOrder(lpfn, level + 1, pExtra1, pExtra2);
+                       }
+                }
+                if(m_SubPages[m_KeyCount]) {
+                       m_SubPages[m_KeyCount]->ForEachPreOrder(lpfn, level + 1, pExtra1, pExtra2);
+                }
+       }
+
+       // Post-order traversal method
+       void ForEachPostOrder(lpfnForEach2 lpfn, int level, void *pExtra1){
+                for (int i = 0; i < m_KeyCount; i++) {
+                       if(m_SubPages[i]) {
+                              m_SubPages[i]->ForEachPostOrder(lpfn, level + 1, pExtra1);
+                       }
+                        lpfn(m_Keys[i], level, pExtra1);
+                }
+                if(m_SubPages[m_KeyCount]) {
+                       m_SubPages[m_KeyCount]->ForEachPostOrder(lpfn, level + 1, pExtra1);
+                }
+       }
+        void ForEachPostOrder(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2){
+                  for (int i = 0; i < m_KeyCount; i++) {
+                          if(m_SubPages[i]) {
+                                  m_SubPages[i]->ForEachPostOrder(lpfn, level + 1, pExtra1, pExtra2);
+                          }
+                           lpfn(m_Keys[i], level, pExtra1, pExtra2);
+                  }
+                  if(m_SubPages[m_KeyCount]) {
+                          m_SubPages[m_KeyCount]->ForEachPostOrder(lpfn, level + 1, pExtra1, pExtra2);
+                  }
+        }
 
 protected:
        int  m_MinKeys; // minimum number of keys in a node
@@ -475,7 +523,7 @@ bool CBTreePage<keyType, ObjIDType>::SplitRoot()
 }
 
 template <typename keyType, typename ObjIDType>
-bool CBTreePage<keyType, ObjIDType>::Search(const keyType &key, long &ObjID)
+bool CBTreePage<keyType, ObjIDType>::Search(const keyType &key, ObjIDType &ObjID)
 {
        int pos = binary_search(m_Keys, 0, m_KeyCount, key);
        if( pos >= m_KeyCount ){
@@ -510,7 +558,7 @@ void CBTreePage<keyType, ObjIDType>::ForEachReverse(lpfnForEach2 lpfn, int level
 }*/
 
 template <typename keyType, typename ObjIDType>
-void CBTreePage<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, int level, void *pExtra1)
+void CBTreePage<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, int level, void *pExtra1) const
 {
        for( int i = 0 ; i < m_KeyCount ; i++)
        {
@@ -523,7 +571,7 @@ void CBTreePage<keyType, ObjIDType>::ForEach(lpfnForEach2 lpfn, int level, void 
 }
 
 template <typename keyType, typename ObjIDType>
-void CBTreePage<keyType, ObjIDType>::ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2)
+void CBTreePage<keyType, ObjIDType>::ForEach(lpfnForEach3 lpfn, int level, void *pExtra1, void *pExtra2) const
 {
        for( int i = 0 ; i < m_KeyCount ; i++)
        {
@@ -741,7 +789,7 @@ CBTreePage<keyType, ObjIDType>::GetFirstObjectInfo()
 }
 
 template <typename keyType, typename ObjIDType>
-void Print(tagObjectInfo<keyType, ObjIDType> &info, int level, void *pExtra)
+void Print(const tagObjectInfo<keyType, ObjIDType> &info, int level, void *pExtra)
 {
         ostream &os = *(ostream *)pExtra;
         for( int i = 0; i < level ; i++)
@@ -750,7 +798,7 @@ void Print(tagObjectInfo<keyType, ObjIDType> &info, int level, void *pExtra)
 }
 
 template <typename keyType, typename ObjIDType>
-void CBTreePage<keyType, ObjIDType>::Print(ostream & os)
+void CBTreePage<keyType, ObjIDType>::Print(ostream & os) const
 {
        lpfnForEach2 lpfn = &::Print<keyType, ObjIDType>;
        ForEach(lpfn, 0, &os);
@@ -761,7 +809,7 @@ void CBTreePage<keyType, ObjIDType>::Create()
 {
        Reset();
        m_Keys.resize(m_MaxKeys+1);
-       m_SubPages.resize(m_MaxKeys+2, NULL);
+       m_SubPages.resize(m_MaxKeys+2, nullptr);
        m_KeyCount = 0;
        m_MinKeys  = 2 * m_MaxKeys/3;
 }
@@ -783,7 +831,7 @@ void CBTreePage<keyType, ObjIDType>::clear()
 }
 
 template <typename keyType, typename ObjIDType>
-CBTreePage<keyType, ObjIDType> * CreateBTreeNode (int maxKeys, int unique)
+CBTreePage<keyType, ObjIDType> * CreateBTreeNode (int maxKeys, bool unique)
 {
        return new CBTreePage<keyType, ObjIDType> (maxKeys, unique);
 }
