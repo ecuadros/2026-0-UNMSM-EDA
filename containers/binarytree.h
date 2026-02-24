@@ -2,6 +2,7 @@
 #define __BINARYTREE_H__
 
 #include <iostream>
+#include <mutex>
 #include "../general/types.h"
 #include "../util.h"
 

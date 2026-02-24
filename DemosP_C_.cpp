@@ -2,8 +2,9 @@
 #include "containers/StaQue.h"
 
 void DemoPila(){
-    cout<<"Prueba de pila de strings"<<endl;
+    Titulo("Prueba de Pilas");
 
+    cout<<"Prueba de pila de strings"<<endl;
     CStack<string> pila;
     pila.Push("uno");
     pila.Push("dos");
@@ -51,6 +52,8 @@ void DemoPila(){
 }
 
 void DemoCola(){
+    Titulo("Prueba de Colas");
+
         cout<<"Prueba de cola de enteros"<<endl;
         CQueue<int> cola;
         cola.Push(1);
@@ -96,7 +99,61 @@ void DemoCola(){
         cout<<endl;
 
 }
+void DemoHeap(){
+    Titulo("Prueba de Heap");
+
+    Escribir("MAX HEAP de eteros");
+    CHeap<MaxHeap<int>> maxHeap;
+    maxHeap.Push(1);
+    maxHeap.Push(2);
+    maxHeap.Push(3);
+    maxHeap.Push(4);
+    cout<< maxHeap;
+    cout<<"Tope MAX: "<<maxHeap.Top()<<endl;
+    //haciendo pop sacando al mayor
+    Escribir("Haciendo POP sacando al mayor");
+    maxHeap.Pop();
+    cout<< maxHeap;
+    cout<<"Nuevo Tope MAX: "<<maxHeap.Top()<<endl;
+    cout<<endl;
+
+    Escribir("MIN HEAP de eteros");
+    CHeap<MinHeap<int> > minHeap;
+    minHeap.Push(4);
+    minHeap.Push(3);
+    minHeap.Push(2); //sube como raiz
+    minHeap.Push(8);
+    Escribir("Ingrese un valor");
+    cin>>minHeap;
+    cout<< minHeap;
+    cout<<"Tope MIN: "<<minHeap.Top()<<endl;
+    //haciendo pop sacando al menor
+    Escribir("Haciendo POP sacando al menor: ");
+    while(!minHeap.IsEmpty()){
+        cout<<"sacando al menor: "<<minHeap.Top()<<endl;
+        minHeap.Pop();
+        cout<<minHeap<<endl;
+    }
+    if(minHeap.IsEmpty()){
+        cout<<"Heap vacio"<<endl;
+    }
+    cout<<endl;
+    //Constructor copia y move
+
+    //copia
+    CHeap<MaxHeap<int> > copiaMax(maxHeap);
+    maxHeap.Push(4444);
+    cout<<" MAX Original + 4444 : "<<maxHeap<<endl;
+    cout<<"copia MAX: "<<copiaMax<<endl;
+    //move
+    CHeap<MaxHeap<int> > moveMax(std::move(copiaMax));
+    cout<<"Heap Movido(copia)"<<moveMax<<endl;
+    cout<<"Heap Original: "<<maxHeap<<endl;
+    cout<<endl;
+
+}
 void DemoP_C_(){
     DemoPila();
     DemoCola();
+    DemoHeap();
 }

@@ -1,5 +1,6 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
+using namespace std;
 
 using T1 = int;
 using T  = unsigned int;

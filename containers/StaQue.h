@@ -5,6 +5,7 @@
 #include <iomanip>
 #include "../general/types.h"
 #include "../foreach.h"
+#include "heap.h"
     //persona
     struct Alumno{
         int id;
@@ -43,11 +44,16 @@
         return id > otro.id;
     }
 };
-void Escribir(string texto){
+inline void Escribir(string texto){
     cout<<endl;
     cout<<" "<<texto<<endl;
     cout<<endl;
 };
+inline void Titulo(string txt){
+    Escribir("====================================");
+    cout<<"      "<<txt<<"      "<<endl;
+    Escribir("====================================");
+}
 void DemoP_C_();
 
 
