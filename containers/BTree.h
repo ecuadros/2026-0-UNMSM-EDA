@@ -341,4 +341,6 @@ public:
     }
 };
 
+void DemoBTree();
+
 #endif // __BTREE_H__
