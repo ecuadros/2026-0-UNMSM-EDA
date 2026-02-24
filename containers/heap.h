@@ -8,6 +8,7 @@
 #include "../util.h"
 using namespace std;
 
+// Heap (Max y Min)
 template <typename T, typename Compare>
 class CHeap {
 private:
@@ -147,3 +148,53 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.clear();
     }
+
+    // Operator <<
+    friend ostream& operator<<(ostream& os, CHeap<T, Compare>& heap) {
+        std::lock_guard<std::mutex> lock(heap.m_mutex);
+        
+        os << "CHeap: size = " << heap.m_data.size() << endl;
+        os << "[";
+        
+        for (size_t i = 0; i < heap.m_data.size(); ++i) {
+            os << heap.m_data[i];
+            if (i < heap.m_data.size() - 1) os << ", ";
+        }
+        
+        os << "]" << endl;
+        return os;
+    }
+
+    // Operator >>
+    friend istream& operator>>(istream& is, CHeap<T, Compare>& heap) {
+        std::lock_guard<std::mutex> lock(heap.m_mutex);
+        
+        heap.clear();
+        
+        size_t n;
+        is >> n;
+        
+        for (size_t i = 0; i < n; ++i) {
+            T val;
+            is >> val;
+            heap.m_data.push_back(val);
+        }
+        
+        for (int i = (heap.m_data.size() / 2) - 1; i >= 0; --i) {
+            heap.heapifyDown(i);
+        }
+        
+        return is;
+    }
+};
+
+// MaxHeap
+template <typename T>
+using MaxHeap = CHeap<T, std::greater<T>>;
+
+// MinHeap
+template <typename T>
+using MinHeap = CHeap<T, std::less<T>>;
+
+#endif // __HEAP_H__
+
