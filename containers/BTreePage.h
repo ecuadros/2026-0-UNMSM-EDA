@@ -602,12 +602,31 @@ bt_ErrorCode CBTreePage<keyType, ObjIDType>::Remove(const keyType &key, const Ob
        bt_ErrorCode error = bt_ok;
        Size pos = binary_search(m_Keys, 0, m_KeyCount, key);
 
-        if( pos < NumberOfKeys() && key == m_Keys[pos].key /*&& m_Keys[pos].m_ObjID == ObjID*/) // We found it !
+       if( pos < NumberOfKeys() && key == m_Keys[pos].key ) // We found matching key
        {
-               // si existe la key pero no el ObjID (duplicado) buscar en subarbol izquierdo.
-               if( m_Keys[pos].ObjID != ObjID ) {
-                       if( m_SubPages[pos] )  // si hay subarbol izquierdo
-                               return m_SubPages[pos]->Remove(key, ObjID);
+               // caso especial: cuando hay varios duplicados en una misma hoja
+               // se busca en el rango de duplicados
+               // expandir rango de duplicados contiguos [firstEq, lastEq]
+               Size firstEq = pos;
+               while( firstEq > 0 && m_Keys[firstEq - 1].key == key ) firstEq--;  // buscar hacia la izquierda
+               Size lastEq = pos;
+               while( lastEq + 1 < NumberOfKeys() && m_Keys[lastEq + 1].key == key ) lastEq++;  // hacia la derecha
+
+               // buscar el ObjID exacto dentro del rango de duplicados de esta pagina
+               bool foundExact = false;
+               for( Size i = firstEq; i <= lastEq; ++i ) {
+                       if( m_Keys[i].ObjID == ObjID ) {
+                               pos = i;
+                               foundExact = true;
+                               break;
+                       }
+               }
+
+               // si no esta en esta pagina, por politica de insercion de iguales,
+               // el candidato queda en el subarbol izquierdo del primer duplicado
+               if( !foundExact ) {
+                       if( m_SubPages[firstEq] )
+                               return m_SubPages[firstEq]->Remove(key, ObjID);
                        return bt_nofound;
                }
 

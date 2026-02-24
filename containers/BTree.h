@@ -4,7 +4,6 @@
 #define BTREE_H
 
 #include <iomanip>
-#include <iostream>
 #include <mutex>
 #include <string>
 #include <type_traits>
@@ -29,7 +28,7 @@ template <typename keyType, typename ObjIDType = LSize>
 class BTree 
 // this is the full version of the BTree
 {
-       using BTNode = CBTreePage<keyType, ObjIDType>; // useful shorthand
+       typedef CBTreePage<keyType, ObjIDType> BTNode; // useful shorthand
        /*struct ObjectInfo
        {
                keyType first;
@@ -162,7 +161,7 @@ template<typename Func, typename... Args>
 typename BTree<keyType, ObjIDType>::ObjectInfo *
 BTree<keyType, ObjIDType>::FirstThat(forward_iterator start, forward_iterator end, Func func, Args &&... args) {
        auto it = ::FirstThat(start, end, func, std::forward<Args>(args)...);
-       return (it == end) ? nullptr : it.operator->();
+       return (it == end) ? nullptr : &(*it);
 }
 
 // funciones publicas para los traversals
