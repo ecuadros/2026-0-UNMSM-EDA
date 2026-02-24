@@ -5,6 +5,7 @@ using T1 = int;
 using T  = unsigned int;
 using TT = unsigned long long;
 using Size = int;
+using LSize = long;
 
 using ContainerElemType = int;
 using ContainerRange = int;
