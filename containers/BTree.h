@@ -62,7 +62,6 @@ public:
 
     void Print(ostream &os);
 
-    // ForEach puntero a función
     void ForEach(lpfnForEach2 lpfn, void *pExtra1);
     void ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2);
 
@@ -70,7 +69,6 @@ public:
     template <typename FuncObj, typename ...Args>
     void ForEach(FuncObj fn, Args... args);
 
-    // FirstThat puntero a función
     ObjectInfo* FirstThat(lpfnFirstThat2 lpfn, void *pExtra1);
     ObjectInfo* FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2);
 
@@ -78,7 +76,6 @@ public:
     template <typename FuncObj, typename ...Args>
     ObjectInfo* FirstThat(FuncObj fn, Args... args);
 
-    // Recorridos variadic
     template <typename FuncObj, typename ...Args>
     void Inorden(FuncObj fn, Args... args);
 
@@ -88,7 +85,6 @@ public:
     template <typename FuncObj, typename ...Args>
     void Postorden(FuncObj fn, Args... args);
 
-    // Iteradores
     ForwardIterator  begin();
     ForwardIterator  end();
     BackwardIterator rbegin();
@@ -161,7 +157,6 @@ BTree<keyType, ObjIDType>::BTree(BTree &&another)
 template <typename keyType, typename ObjIDType>
 BTree<keyType, ObjIDType>::~BTree() {}
 
-// Insert
 template <typename keyType, typename ObjIDType>
 bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID) {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -175,7 +170,6 @@ bool BTree<keyType, ObjIDType>::Insert(const keyType key, const int ObjID) {
     return true;
 }
 
-// Remove
 template <typename keyType, typename ObjIDType>
 bool BTree<keyType, ObjIDType>::Remove(const keyType key, const int ObjID) {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -187,12 +181,20 @@ bool BTree<keyType, ObjIDType>::Remove(const keyType key, const int ObjID) {
 }
 
 template <typename keyType, typename ObjIDType>
-ObjIDType BTree<keyType, ObjIDType>::Search (const keyType key)
-{
-       ObjIDType ObjID = -1;
-       m_Root.Search(key, ObjID);
-       return ObjID;
+ObjIDType BTree<keyType, ObjIDType>::Search(const keyType key) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    ObjIDType ObjID = -1;
+    m_Root.Search(key, ObjID);
+    return ObjID;
 }
+
+template <typename keyType, typename ObjIDType>
+void BTree<keyType, ObjIDType>::Print(ostream &os) {
+    m_Root.Print(os);
+}
+
+
+
 
 
 template <typename keyType, typename ObjIDType>
@@ -230,6 +232,7 @@ void DemoBTree();
 
 
 #endif
+
 
 
 
