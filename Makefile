@@ -1,23 +1,19 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
-LDFLAGS = -pthread # Añadido -pthread
+CXXFLAGS = -g -Wall -Wextra -std=c++17
 
-TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp \
-	   sorting.cpp DemoBTree.cpp
+OBJ = main.o DemoBTree.o
+EXEC = main
 
-OBJS = $(SRCS:.cpp=.o)
+all: $(EXEC)
 
-all: $(TARGET)
+$(EXEC): $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $(EXEC) $(OBJ)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) $^ -o $@
+main.o: main.cpp containers/BTree.h
+	$(CXX) $(CXXFLAGS) -c main.cpp
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
+DemoHeap.o: DemoBTree.o containers/BTree.h
+	$(CXX) $(CXXFLAGS) -c DemoBTree.cpp
 clean:
-	rm -f $(OBJS) $(TARGET)
-
+	rm -f $(OBJ) $(EXEC)
 .PHONY: all clean
