@@ -109,11 +109,27 @@ public:
     }
 
 protected:
-       BTNode          m_Root;
-       long            m_NumKeys; // number of keys
-       bool            m_Unique;  // Accept the elements only once ?
-       int             m_Order;   // order of tree
-       int             m_Height;  // height of tree
+    BTNode  m_Root;
+    long    m_NumKeys;
+    bool    m_Unique;
+    int     m_Order;
+    int     m_Height;
+    mutable std::mutex m_mutex;  // Concurrencia
+
+private:
+    void CollectInorden(BTNode *page, std::vector<ObjectInfo*> &items);
+
+    template <typename FuncObj, typename ...Args>
+    void InternalInorden(BTNode *page, FuncObj fn, Args... args);
+
+    template <typename FuncObj, typename ...Args>
+    void InternalPreorden(BTNode *page, FuncObj fn, Args... args);
+
+    template <typename FuncObj, typename ...Args>
+    void InternalPostorden(BTNode *page, FuncObj fn, Args... args);
+
+    template <typename FuncObj, typename ...Args>
+    ObjectInfo* InternalFirstThat(BTNode *page, FuncObj fn, Args... args);
 };
 
 const int MaxHeight = 5;
@@ -205,5 +221,6 @@ void DemoBTree();
 
 
 #endif
+
 
 
