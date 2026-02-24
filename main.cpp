@@ -1,8 +1,4 @@
 #include <iostream>
-#include "util.h"
-#include "pointers.h"
-#include "containers/array.h"
-#include "containers/lists.h"
 #include "containers/BTree.h"
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
