@@ -1,0 +1,40 @@
+name: EDA CI - Compilar y ejecutar
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código del PR
+        uses: actions/checkout@v4
+
+      - name: Instalar compilador C++
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Mostrar estructura del proyecto (debug)
+        run: ls -R
+
+      - name: Compilar con Makefile
+        run: make
+
+      - name: Ejecutar Demo
+        run: |
+          echo "===== OUTPUT DEL DEMO ====="
+
+          if [ -f demo ]; then
+            timeout 5s ./demo
+          elif [ -f main ]; then
+            timeout 5s ./main
+          else
+            echo "No se encontró ejecutable demo o main"
+          fi
+
+          echo "==========================="
+
+      - name: Limpiar binarios
+        run: make clean || true
