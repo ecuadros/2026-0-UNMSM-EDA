@@ -70,7 +70,6 @@ protected:
        int  m_MaxKeys, // maximum number of keys in a node
                 m_MaxKeysForChilds; // just to distinguish the root
        bool m_Unique;
-       bool m_isRoot;
        vector<ObjectInfo> m_Keys;
        vector<BTPage *>m_SubPages;
        int  m_KeyCount;

@@ -144,7 +144,7 @@ public:
        // move constructor
        BTree(BTree &&otro) noexcept;
 
-       // destructor seguro
+       // destructor
        virtual ~BTree();
        //int           Open (char * name, int mode);
        //int           Create (char * name, int mode);
@@ -163,7 +163,7 @@ public:
        ObjectInfo*     FirstThat( lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2);
        //typedef               ObjectInfo iterator;
 
-       // forward iterator begin
+       // forward iterator
        forward_iterator begin() {
                forward_iterator it;
                if (m_NumKeys > 0) it.descendLeft(&m_Root);
@@ -171,7 +171,7 @@ public:
        }
        forward_iterator end() { return forward_iterator(); }
 
-       // backward iterator rbegin
+       // backward iterator
        backward_iterator rbegin() {
                backward_iterator it;
                if (m_NumKeys > 0) it.descendRight(&m_Root);
@@ -193,20 +193,22 @@ public:
                InternalPreorder(&m_Root, of, args...);
        }
 
-       // foreach
+       // foreach with variadic arguments
        template <typename ObjFunc, typename ...Args>
        void Foreach(ObjFunc of, Args... args) {
+               std::lock_guard<std::mutex> lock(m_mtx);
                ::Foreach(*this, of, args...);
        }
 
-       // firstthat
+       // firstthat with variadic arguments
        template <typename ObjFunc, typename ...Args>
        auto FirstThatV(ObjFunc of, Args... args) {
+               std::lock_guard<std::mutex> lock(m_mtx);
                return ::FirstThat(*this, of, args...);
        }
 
-       // operator<<
-       friend ostream& operator<<(ostream &os, BTree &container) {
+       // operator<< for printing BTree
+       friend std::ostream& operator<<(std::ostream &os, BTree &container) {
                os << "BTree: size = " << container.size()
                   << ", height = " << container.height()
                   << ", order = " << container.GetOrder() << endl;
