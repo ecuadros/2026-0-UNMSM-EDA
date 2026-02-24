@@ -96,3 +96,54 @@ public:
         }
         return *this;
     }
+    
+    // Push
+    void push(const T& val) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.push_back(val);
+        heapifyUp(m_data.size() - 1);
+    }
+
+    // Pop (retorna valor)
+    T pop() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        if (m_data.empty()) {
+            throw std::runtime_error("Heap vacío");
+        }
+
+        T root = m_data[0];
+        m_data[0] = m_data.back();
+        m_data.pop_back();
+
+        if (!m_data.empty()) {
+            heapifyDown(0);
+        }
+
+        return root;
+    }
+
+    T top() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        
+        if (m_data.empty()) {
+            throw std::runtime_error("Heap vacío");
+        }
+        
+        return m_data[0];
+    }
+
+    bool isEmpty() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_data.empty();
+    }
+
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_data.size();
+    }
+
+    void clear() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.clear();
+    }
