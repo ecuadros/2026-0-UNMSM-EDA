@@ -333,23 +333,39 @@ void BTree<keyType, ObjIDType>::CollectInorden(BTNode *page, std::vector<ObjectI
         CollectInorden(page->m_SubPages[n], items);
 }
 
+// begin / end / rbegin / rend
+template <typename keyType, typename ObjIDType>
+typename BTree<keyType, ObjIDType>::ForwardIterator
+BTree<keyType, ObjIDType>::begin() {
+    auto items = std::make_shared<std::vector<ObjectInfo*>>();
+    CollectInorden(&m_Root, *items);
+    return ForwardIterator(items, 0);
+}
 
+template <typename keyType, typename ObjIDType>
+typename BTree<keyType, ObjIDType>::ForwardIterator
+BTree<keyType, ObjIDType>::end() {
+    auto items = std::make_shared<std::vector<ObjectInfo*>>();
+    CollectInorden(&m_Root, *items);
+    return ForwardIterator(items, (int)items->size());
+}
 
+template <typename keyType, typename ObjIDType>
+typename BTree<keyType, ObjIDType>::BackwardIterator
+BTree<keyType, ObjIDType>::rbegin() {
+    auto items = std::make_shared<std::vector<ObjectInfo*>>();
+    CollectInorden(&m_Root, *items);
+    return BackwardIterator(items, (int)items->size() - 1);
+}
 
-
+template <typename keyType, typename ObjIDType>
+typename BTree<keyType, ObjIDType>::BackwardIterator
+BTree<keyType, ObjIDType>::rend() {
+    auto items = std::make_shared<std::vector<ObjectInfo*>>();
+    CollectInorden(&m_Root, *items);
+    return BackwardIterator(items, -1);
+}
 
 void DemoBTree();
 
-
 #endif
-
-
-
-
-
-
-
-
-
-
-
