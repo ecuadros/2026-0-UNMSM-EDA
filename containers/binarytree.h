@@ -1,11 +1,14 @@
 #ifndef __BINARYTREE_H__
 #define __BINARYTREE_H__
-
 #include <iostream>
+#include <mutex>
+#include <queue>
+#include <stdexcept>
 #include "../general/types.h"
 #include "../util.h"
+using namespace std;
 
-
+// Traits
 template <typename T>
 struct TreeTraitAscending {
     using value_type  = T;
@@ -18,21 +21,24 @@ struct TreeTraitDescending {
     using CompareFunc = std::less<T>;
 };
 
+// Node
 template <typename Traits>
-class NodeBinaryTree{
-    using  value_type  = typename Traits::value_type;
-    using  Node        = typename NodeBinaryTree<Traits>;
-    using  CompareFunc = typename Traits::CompareFunc;
-private:
+class NodeBinaryTree {
+public:
+    using value_type  = typename Traits::value_type;
+    using Node        = NodeBinaryTree<Traits>;
+    using CompareFunc = typename Traits::CompareFunc;
+
     value_type m_data;
     ref_type   m_ref;
-    Node *m_pChild[2]  = nullptr;
-public:
-    NodeBinaryTree(){}
-    NodeBinaryTree( value_type _value, ref_type _ref = -1)
-        : m_data(_value), m_ref(_ref){   }
-    value_type  GetValue   () const { return m_data; }
-    value_type &GetValueRef() { return m_data; }
+    Node*      m_pLeft;
+    Node*      m_pRight;
+
+    NodeBinaryTree(value_type val, ref_type ref = -1)
+        : m_data(val), m_ref(ref), m_pLeft(nullptr), m_pRight(nullptr) {}
+
+    value_type  GetValue()    const { return m_data; }
+    value_type& GetValueRef()       { return m_data; }
 };
 
 template <typename Traits>
