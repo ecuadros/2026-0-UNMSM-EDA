@@ -29,4 +29,15 @@ void DemoBinaryTree() {
     cout << "Preorden: ";
     bt.preorden(&Print<int>);
     cout << endl;
+    
+    // AVL con rotaciones
+    CAVLTree<TreeTraitAscending<int>> avl;
+    avl.Insert(10);
+    avl.Insert(20);
+    avl.Insert(30);  // Provoca rotación
+    avl.Insert(40);
+    avl.Insert(50);  // Provoca rotación
+    
+    cout << "\nAVL Tree (auto-balanceado): " << endl;
+    cout << avl << endl;
 }
