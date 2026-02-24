@@ -48,24 +48,65 @@ public:
     };
 
 public:
-       BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
-       ~BTree();
-       //int           Open (char * name, int mode);
-       //int           Create (char * name, int mode);
-       //int           Close ();
-       bool            Insert (const keyType key, const int ObjID);
-       bool            Remove (const keyType key, const int ObjID);
-       ObjIDType       Search (const keyType key);
-       long            size()  { return m_NumKeys; }
-       long            height() { return m_Height;      }
-       long            GetOrder() { return m_Order;     }
+    BTree(int order = DEFAULT_BTREE_ORDER, bool unique = true);
+    BTree(BTree &&another);           // Move Constructor
+    BTree(const BTree &) = delete;
+    virtual ~BTree();
 
-       void            Print (ostream &os);
-       void            ForEach( lpfnForEach2 lpfn, void *pExtra1 );
-       void            ForEach( lpfnForEach3 lpfn, void *pExtra1, void *pExtra2);
-       ObjectInfo*     FirstThat( lpfnFirstThat2 lpfn, void *pExtra1 );
-       ObjectInfo*     FirstThat( lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2);
-       //typedef               ObjectInfo iterator;
+    bool      Insert(const keyType key, const int ObjID);
+    bool      Remove(const keyType key, const int ObjID);
+    ObjIDType Search(const keyType key);
+    long      size()     { return m_NumKeys; }
+    long      height()   { return m_Height;  }
+    long      GetOrder() { return m_Order;   }
+
+    void Print(ostream &os);
+
+    // ForEach puntero a función
+    void ForEach(lpfnForEach2 lpfn, void *pExtra1);
+    void ForEach(lpfnForEach3 lpfn, void *pExtra1, void *pExtra2);
+
+    // ForEach variadic
+    template <typename FuncObj, typename ...Args>
+    void ForEach(FuncObj fn, Args... args);
+
+    // FirstThat puntero a función
+    ObjectInfo* FirstThat(lpfnFirstThat2 lpfn, void *pExtra1);
+    ObjectInfo* FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *pExtra2);
+
+    // FirstThat variadic
+    template <typename FuncObj, typename ...Args>
+    ObjectInfo* FirstThat(FuncObj fn, Args... args);
+
+    // Recorridos variadic
+    template <typename FuncObj, typename ...Args>
+    void Inorden(FuncObj fn, Args... args);
+
+    template <typename FuncObj, typename ...Args>
+    void Preorden(FuncObj fn, Args... args);
+
+    template <typename FuncObj, typename ...Args>
+    void Postorden(FuncObj fn, Args... args);
+
+    // Iteradores
+    ForwardIterator  begin();
+    ForwardIterator  end();
+    BackwardIterator rbegin();
+    BackwardIterator rend();
+
+    // Operator <<
+    friend ostream &operator<<(ostream &os, BTree<keyType, ObjIDType> &bt) {
+        bt.Print(os);
+        return os;
+    }
+
+    // Operator >>
+    friend istream &operator>>(istream &is, BTree<keyType, ObjIDType> &bt) {
+        keyType key; int id;
+        while (is >> key >> id)
+            bt.Insert(key, id);
+        return is;
+    }
 
 protected:
        BTNode          m_Root;
@@ -164,4 +205,5 @@ void DemoBTree();
 
 
 #endif
+
 
