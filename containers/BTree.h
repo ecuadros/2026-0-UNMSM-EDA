@@ -219,12 +219,28 @@ BTree<keyType, ObjIDType>::FirstThat(lpfnFirstThat3 lpfn, void *pExtra1, void *p
     return m_Root.FirstThat(lpfn, 0, pExtra1, pExtra2);
 }
 
+// ForEach variadic
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+void BTree<keyType, ObjIDType>::ForEach(FuncObj fn, Args... args) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    InternalInorden(&m_Root, fn, args...);
+}
 
+// FirstThat variadic
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+typename BTree<keyType, ObjIDType>::ObjectInfo*
+BTree<keyType, ObjIDType>::FirstThat(FuncObj fn, Args... args) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return InternalFirstThat(&m_Root, fn, args...);
+}
 
 void DemoBTree();
 
 
 #endif
+
 
 
 
