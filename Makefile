@@ -1,22 +1,24 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -pthread # Añadido -pthread
-LDFLAGS = -pthread # Añadido -pthread
+
+CXXFLAGS = -std=c++17 -Wall -g -pthread
+
 
 TARGET = main
-SRCS = main.cpp util.cpp pointers.cpp \
-       DemoArray.cpp Demo.cpp \
-	   sorting.cpp
-OBJS = $(SRCS:.cpp=.o)
 
+
+SRCS = main.cpp DemoHeap.cpp 
+
+# Regla principal
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) $^ -o $@
+$(TARGET): $(SRCS)
+	$(CXX) $(CXXFLAGS) $(SRCS) -o $(TARGET)
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
+# Limpiar
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(TARGET)
+	rm -f *.o
 
-.PHONY: all clean
+# Ejecutar
+run: $(TARGET)
+	./$(TARGET)
