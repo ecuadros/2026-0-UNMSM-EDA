@@ -299,5 +299,113 @@ public:
         return *this;
     }
 
+    // Insert
+    void Insert(const value_type& val, ref_type ref = -1) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        InternalInsert(m_pRoot, val, ref);
+    }
+
+    // Remove
+    void Remove(const value_type& val) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pRoot = InternalRemove(m_pRoot, val);
+    }
+
+    void clear() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        deleteTree(m_pRoot);
+        m_pRoot = nullptr;
+    }
+
+    // begin() / end()
+    forward_iterator begin() {
+        return forward_iterator(m_pRoot);
+    }
+
+    forward_iterator end() {
+        return forward_iterator();
+    }
+
+    // rbegin() / rend()
+    backward_iterator rbegin() {
+        return backward_iterator(m_pRoot);
+    }
+
+    backward_iterator rend() {
+        return backward_iterator();
+    }
+
+    // inorden con variadic
+    template <typename Func, typename... Args>
+    void inorden(Func fn, Args... args) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        InternalInorden(m_pRoot, fn, args...);
+    }
+
+    // preorden con variadic
+    template <typename Func, typename... Args>
+    void preorden(Func fn, Args... args) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        InternalPreorden(m_pRoot, fn, args...);
+    }
+
+    // postorden con variadic
+    template <typename Func, typename... Args>
+    void postorden(Func fn, Args... args) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        InternalPostorden(m_pRoot, fn, args...);
+    }
+
+    // ForEach con variadic
+    template <typename Func, typename... Args>
+    void Foreach(Func fn, Args... args) {
+        inorden(fn, args...);
+    }
+
+    // FirstThat con variadic
+    template <typename Func, typename... Args>
+    forward_iterator FirstThat(Func fn, Args... args) {
+        for (auto it = begin(); it != end(); ++it) {
+            if (fn(*it, args...)) {
+                return it;
+            }
+        }
+        return end();
+    }
+
+    // Operator <<
+    friend ostream& operator<<(ostream& os, CBinaryTree<Traits>& tree) {
+        std::lock_guard<std::mutex> lock(tree.m_mutex);
+        
+        os << "CBinaryTree (inorden): [";
+        bool first = true;
+        tree.InternalInorden(tree.m_pRoot, [&](value_type& val) {
+            if (!first) os << ", ";
+            os << val;
+            first = false;
+        });
+        os << "]" << endl;
+        return os;
+    }
+
+    // Operator >>
+    friend istream& operator>>(istream& is, CBinaryTree<Traits>& tree) {
+        std::lock_guard<std::mutex> lock(tree.m_mutex);
+        
+        tree.clear();
+        
+        size_t n;
+        is >> n;
+        
+        for (size_t i = 0; i < n; ++i) {
+            value_type val;
+            is >> val;
+            tree.InternalInsert(tree.m_pRoot, val, -1);
+        }
+        
+        return is;
+    }
+};
 
 #endif // __BINARYTREE_H__
+
