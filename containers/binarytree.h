@@ -255,34 +255,49 @@ protected:
         fn(node->GetValueRef(), args...);
     }
 
-
 public:
-    CBinaryTree(){}
-    // TODO: Copy constructor
-    CBinaryTree(CBinaryTree &another){
+    // Constructor
+    CBinaryTree() : m_pRoot(nullptr) {}
 
+    // Constructor copia
+    CBinaryTree(const CBinaryTree& other) : m_pRoot(nullptr) {
+        std::lock_guard<std::mutex> lock(other.m_mutex);
+        m_pRoot = copyTree(other.m_pRoot);
+        m_comp = other.m_comp;
     }
-    // TODO: Move constructor
-    CBinaryTree(CBinaryTree &&another){
 
+    // Move Constructor
+    CBinaryTree(CBinaryTree&& other) noexcept : m_pRoot(other.m_pRoot), m_comp(other.m_comp) {
+        other.m_pRoot = nullptr;
     }
-    virtual ~CBinaryTree(){
 
+    // Destructor seguro
+    virtual ~CBinaryTree() {
+        clear();
     }
-private:
-    void InternalInsert(Node *&rParent, const value_type &val, ref_type ref){
-        if( !rParent ){
-            rParent = new Node(val, ref);
-            return;
+
+    CBinaryTree& operator=(const CBinaryTree& other) {
+        if (this != &other) {
+            std::lock(m_mutex, other.m_mutex);
+            std::lock_guard<std::mutex> lock1(m_mutex, std::adopt_lock);
+            std::lock_guard<std::mutex> lock2(other.m_mutex, std::adopt_lock);
+            
+            clear();
+            m_pRoot = copyTree(other.m_pRoot);
+            m_comp = other.m_comp;
         }
-        auto path = comp(val, rParent->GetValue());
-        InternalInsert(rParent->m_pChild[path], val, ref);
+        return *this;
     }
-public:
-    void Insert(const value_type &val, ref_type ref){
-        InternalInsert(m_pRoot, val, ref);
+
+    CBinaryTree& operator=(CBinaryTree&& other) noexcept {
+        if (this != &other) {
+            clear();
+            m_pRoot = other.m_pRoot;
+            m_comp = other.m_comp;
+            other.m_pRoot = nullptr;
+        }
+        return *this;
     }
-};
 
 
 #endif // __BINARYTREE_H__
