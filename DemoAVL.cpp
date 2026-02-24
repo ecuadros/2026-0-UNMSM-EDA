@@ -20,20 +20,25 @@ namespace TreeFunctions {
 void DemoAVL(){
    using namespace TreeFunctions;
 
-    cout << "=== DEMO AVL TREE (DESCENDING) ===" << endl;
+    cout << " DEMO AVL TREE (ASCENDING) " << endl;
     
-    // Instancia con Trait Descendente
-    CAVLTree<TreeTraitDescending<int>> avlTree;
-
-    // Insertamos secuencialmente. 
-    // Un arbol normal colapsaria en una linea recta, pero el AVL rotara.
+    cout << "ASCENDING AVL TREE " <<endl; 
+    CAVLTree<TreeTraitAscending<int>> avlTree;
     avlTree.Insert(10);
     avlTree.Insert(20);
     avlTree.Insert(30); 
     avlTree.Insert(40);
     avlTree.Insert(50); 
-
-    cout << "Ingresa un numero para insertar en el AVL: ";
+    cout<<avlTree;
+    CAVLTree<TreeTraitDescending<int>> DescavlTree;
+    DescavlTree.Insert(10);
+    DescavlTree.Insert(20);
+    DescavlTree.Insert(30); 
+    DescavlTree.Insert(40);
+    DescavlTree.Insert(50); 
+    cout<<DescavlTree;
+    cout<<endl;
+    cout << "Ingresa un numero para insertar en el AVL TREE: ";
     cin >> avlTree; 
     cout << "Arbol AVL actual: " << avlTree << "\n\n";
 
@@ -45,18 +50,27 @@ void DemoAVL(){
     avlTree.Foreach(PrintNode); 
     cout << endl;
 
-    auto pNode = avlTree.FirstThat(IsExactMatch, 30);
-    if (pNode != nullptr) {
+    auto pNode1 = avlTree.FirstThat(IsExactMatch, 30);
+    if (pNode1 != nullptr) {
         cout << "FirstThat (== 30): Encontrado con exito.\n\n";
     }
-
-    // Al eliminar, el AVL tambien verificara su balanceo
+   
+    auto pNode2 = avlTree.FirstThat(IsGreaterThan, 20);
+    if (pNode2 != nullptr) {
+        cout << "FirstThat (> 20): Encontrado con exito.\n\n";
+    }
     avlTree.Remove(20);
     cout << "Despues de Remove(20): " << avlTree << "\n\n";
-
-    CAVLTree<TreeTraitDescending<int>> copyAvl = avlTree;
-    CAVLTree<TreeTraitDescending<int>> moveAvl = std::move(copyAvl);
-    
+    cout<<"COPY CONSTRUCTOR :"<<endl;
+    CAVLTree<TreeTraitAscending<int>> copyAvl = avlTree;
+    cout<<"Original(AVL Tree) :"<<avlTree<<endl;
+    cout<<"Copia (Copy AVL)   :"<<copyAvl<<endl;
+    cout<<endl;
+    cout<<"MOVE CONSTRUCTOR : "<<endl;
+    CAVLTree<TreeTraitAscending<int>> moveAvl = std::move(copyAvl);
+    cout<<"Original(Copy AVL) :"<<copyAvl<<endl;
+    cout<<"Copia (Move AVL)   :"<<moveAvl<<endl;
+    cout<<endl;
     cout << "Forward Iterator (AVL Movido): ";
     for (auto it = moveAvl.begin(); it != moveAvl.end(); ++it) {
         cout << *it << " ";
