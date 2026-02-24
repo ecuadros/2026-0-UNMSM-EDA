@@ -4,6 +4,6 @@
 
 #include "linkedlist.h"
 
-void DemoLists();
+void DemoBTree();
 
 #endif // __LISTS_H__
