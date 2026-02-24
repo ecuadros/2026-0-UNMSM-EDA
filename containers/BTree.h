@@ -301,6 +301,40 @@ void BTree<keyType, ObjIDType>::InternalPostorden(BTNode *page, FuncObj fn, Args
         fn(page->m_Keys[i], args...);
 }
 
+template <typename keyType, typename ObjIDType>
+template <typename FuncObj, typename ...Args>
+typename BTree<keyType, ObjIDType>::ObjectInfo*
+BTree<keyType, ObjIDType>::InternalFirstThat(BTNode *page, FuncObj fn, Args... args) {
+    if (!page) return nullptr;
+    int n = page->GetNumberOfKeys();
+    for (int i = 0; i < n; i++) {
+        if (page->m_SubPages[i]) {
+            auto *res = InternalFirstThat(page->m_SubPages[i], fn, args...);
+            if (res) return res;
+        }
+        if (fn(page->m_Keys[i], args...))
+            return &page->m_Keys[i];
+    }
+    if (page->m_SubPages[n])
+        return InternalFirstThat(page->m_SubPages[n], fn, args...);
+    return nullptr;
+}
+
+template <typename keyType, typename ObjIDType>
+void BTree<keyType, ObjIDType>::CollectInorden(BTNode *page, std::vector<ObjectInfo*> &items) {
+    if (!page) return;
+    int n = page->GetNumberOfKeys();
+    for (int i = 0; i < n; i++) {
+        if (page->m_SubPages[i])
+            CollectInorden(page->m_SubPages[i], items);
+        items.push_back(&page->m_Keys[i]);
+    }
+    if (page->m_SubPages[n])
+        CollectInorden(page->m_SubPages[n], items);
+}
+
+
+
 
 
 
@@ -308,6 +342,7 @@ void DemoBTree();
 
 
 #endif
+
 
 
 
