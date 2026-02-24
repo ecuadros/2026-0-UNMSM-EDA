@@ -10,6 +10,7 @@ int main() {
     // DemoPointers1();
     // DemoArray();
     // DemoLists();
-    DemoVector();
+    // DemoVector();
+    DemoBinaryTree();
     return 0;
 }
