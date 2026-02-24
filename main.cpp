@@ -1,6 +1,8 @@
 #include <iostream>
 #include "util.h"
 #include "containers/Vector.h"
+#include "containers/binarytree.h"
+
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
