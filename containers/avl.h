@@ -129,3 +129,25 @@ private:
 
         return node;
     }
+
+public:
+    // Constructor
+    CAVLTree() : BaseTree() {}
+
+    // Constructor copia
+    CAVLTree(const CAVLTree& other) : BaseTree(other) {}
+
+    // Move Constructor
+    CAVLTree(CAVLTree&& other) noexcept : BaseTree(std::move(other)) {}
+
+    // Destructor
+    virtual ~CAVLTree() {}
+
+    // Insert con balanceo
+    void Insert(const value_type& val, ref_type ref = -1) {
+        std::lock_guard<std::mutex> lock(this->m_mutex);
+        this->m_pRoot = InternalInsertAVL(this->m_pRoot, val, ref);
+    }
+};
+
+#endif // __AVL_H__
