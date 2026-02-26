@@ -204,6 +204,31 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         InternalInsert(m_pRoot, val, ref);
     }
+    //foreach
+    template <typename Callable, typename... Args>
+    void ForEach(Callable func, Args&&... args) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        Node* curr = m_pRoot;
+        while (curr) {
+            // Se ejecuta la función lambda sobre cada elemento pasando los argumentos extra
+            func(curr->GetValueRef(), std::forward<Args>(args)...);
+            curr = curr->GetNext();
+        }
+    }
+
+    //firstThat
+    template <typename Callable, typename... Args>
+    value_type* FirstThat(Callable func, Args&&... args) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        Node* curr = m_pRoot;
+        while (curr) {
+            if (func(curr->GetValueRef(), std::forward<Args>(args)...)) {
+                return &(curr->GetValueRef());
+            }
+            curr = curr->GetNext();
+        }
+        return nullptr;
+    }
 
     size_t getSize() const{
         std::lock_guard<std::mutex> lock(m_mutex);

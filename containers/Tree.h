@@ -5,6 +5,7 @@
 #include "../foreach.h"
 #include "binarytree.h"
 #include "AVL.h"
+#include "Arbol_2_3.h"
 #include "StaQue.h"
 
 void DemoTree();

@@ -88,6 +88,48 @@ public:
         }
         cout << "]" << endl;
     }
+   //foreach
+   template <typename Calleable, typename...Args>
+   void ForEach(Calleable func, Args&&... args){
+        std::lock_guard <std::mutex> lock(this->mutex);
+        Node* curr = this->m_pRoot;
+        while(curr){
+            func(curr->GetValueRef(), std::forward<Args>(args)...);
+            curr = curr->GetNext();
+        }
+    }
+    template<typename Calleable, typename...Args>
+    value_type* FirstThat(Calleable func, Args&&... args){
+        std::lock_guard <std::mutex> lock(this->mutex);
+        Node* curr = this->m_pRoot;
+        while(curr){
+            if(func(curr->GetValueRef(), std::forward<Args>(args)...)){
+                return &curr->GetValueRef();
+            }
+            curr = curr->GetNext();
+        }
+        return nullptr;
+    }
+template<typename U>
+friend ostream& operator<<(ostream& os, CDoubleLinkedList<U>& list) {
+    std::lock_guard<std::mutex> lock(list.m_mutex);
+    os << "DoubleLinkedList: [ ";
+    auto curr = list.m_pRoot;
+    while (curr) {
+        os << curr->GetValue() << " ";
+        curr = curr->GetNext();
+    }
+    os << "]";
+    return os;
+}
+    template<typename U>
+    friend istream& operator>>(istream& is, CDoubleLinkedList<U>& list) {
+        typename U::value_type val;
+        cout << "Ingrese valor: ";
+        is >> val;
+        list.Insert(val);
+        return is;
+    }
 protected:
     void InternalInsertDouble(Node *&rCurrent, Node *rPrevNode, const value_type &val, ref_type ref){
         if (!rCurrent || typename Traits::Func()(val, rCurrent->GetValue())) {
@@ -103,6 +145,5 @@ protected:
         }
         InternalInsertDouble(rCurrent->GetNextRef(), rCurrent, val, ref);
     }
-
 };
 #endif

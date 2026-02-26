@@ -113,7 +113,66 @@ void DemoAVL(){
     cout<<AVL<<endl;
 
 }
+void Demo23(){
+    Titulo("Prueba de Arbol 2-3");
+    Arbol23< TreeTraitAscending<char> > arbol23;
+    Escribir("Insertando valores: 0-6");
+    arbol23.Insert('0');
+    arbol23.Insert('1');
+    arbol23.Insert('2');
+    arbol23.Insert('3');
+    arbol23.Insert('4');
+    arbol23.Insert('5');
+    arbol23.Insert('6');
+    cout << arbol23 << endl;
+    Escribir("Vemos el mega split al agregar el 7");
+    arbol23.Insert('7');
+    cout << arbol23 << endl;
+    Escribir("Vemos el split al agregar el 8 y 9");
+    arbol23.Insert('8');
+    arbol23.Insert('9');
+    cout << arbol23 << endl;
+    Escribir("Vemos el mega split al agregar A, B, C, D");
+    arbol23.Insert('A');
+    arbol23.Insert('B');
+    arbol23.Insert('C');
+    arbol23.Insert('D');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('E');
+    arbol23.Insert('F');
+    arbol23.Insert('G');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('H');
+    arbol23.Insert('I');
+    arbol23.Insert('J');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('K');
+    arbol23.Insert('L');
+    arbol23.Insert('M');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('N');
+    arbol23.Insert('O');
+    arbol23.Insert('P');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('Q');
+    arbol23.Insert('R');
+    arbol23.Insert('S');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('T');
+    arbol23.Insert('U');
+    arbol23.Insert('V');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('W');
+    arbol23.Insert('X');
+    arbol23.Insert('Y');
+    cout<<  arbol23 << endl;
+    arbol23.Insert('Z');
+    cout<<  arbol23 << endl;
+
+}
+
 void DemoTree(){
         DemoBinaryTree();
         DemoAVL();
+        Demo23();
 }
