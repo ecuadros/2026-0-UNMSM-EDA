@@ -37,6 +37,49 @@ protected:
     Node* m_pRoot = nullptr;
     mutable std::mutex mutex;
     CompareFunc comp;
+    //RECORRIDOS
+    //INORDEN
+    template <typename Callable, typename... Args>
+    void InternalInorder(Node* node, Callable func, Args... args) {
+        if (!node) return;
+        for (int i = 0; i < node->count; ++i) {
+            if (!node->isLeaf) InternalInorder(node->children[i], func, args...);
+            func(node->keys[i], args...);
+        }
+        if (!node->isLeaf) InternalInorder(node->children[node->count], func, args...);
+    }
+    //PREORDEN
+    template <typename Callable, typename... Args>
+    void InternalPreorder(Node* node, Callable func, Args... args) {
+        if (!node) return;
+        for (int i = 0; i < node->count; ++i) func(node->keys[i], args...);
+        if (!node->isLeaf) {
+            for (int i = 0; i <= node->count; ++i) InternalPreorder(node->children[i], func, args...);
+        }
+    }
+    //POSORDEN
+    template <typename Callable, typename... Args>
+    void InternalPostorder(Node* node, Callable func, Args... args) {
+        if (!node) return;
+        if (!node->isLeaf) {
+            for (int i = 0; i <= node->count; ++i) InternalPostorder(node->children[i], func, args...);
+        }
+        for (int i = 0; i < node->count; ++i) func(node->keys[i], args...);
+    }
+    //FIRSTTHAT
+    template <typename Callable, typename... Args>
+    value_type* InternalFirstThat(Node* node, Callable func, Args... args) {
+        if (!node) return nullptr;
+        for (int i = 0; i < node->count; ++i) {
+            if (!node->isLeaf) {
+                value_type* found = InternalFirstThat(node->children[i], func, args...);
+                if (found) return found;
+            }
+            if (func(node->keys[i], args...)) return &(node->keys[i]);
+        }
+        if (!node->isLeaf) return InternalFirstThat(node->children[node->count], func, args...);
+        return nullptr;
+    }
 
     //destructor
     void DestroyTree(Node* pNode) {
@@ -108,16 +151,17 @@ protected:
 
         leftSibling->keys[leftSibling->count] = parent->keys[myIndex - 1];
         leftSibling->children[leftSibling->count + 1] = node->children[0];
+
         if (leftSibling->children[leftSibling->count + 1]) {
             leftSibling->children[leftSibling->count + 1]->parent = leftSibling;
         }
-        leftSibling->count++;
+        leftSibling -> count++;
 
-        parent->keys[myIndex - 1] = node->keys[0];
+        parent -> keys[myIndex - 1] = node -> keys[0];
 
-        for (int i = 0; i < node->count - 1; i++) node->keys[i] = node->keys[i + 1];
-        for (int i = 0; i < node->count; i++) node->children[i] = node->children[i + 1];
-        node->count--;
+        for (int i = 0; i < node->count - 1; ++i) node->keys[i] = node->keys[i + 1];
+        for (int i = 0; i < node->count; ++i) node->children[i] = node->children[i + 1];
+        node -> count--;
     }
     void MegaMergeSplit(Node* leftSibling, Node* node, Node* parent, int myIndex) {
         value_type pool[8];
@@ -127,8 +171,8 @@ protected:
 
         Node* childPool[9] = {nullptr};
         if (!node->isLeaf) {
-            for(int i=0; i<4; i++) childPool[i] = leftSibling->children[i];
-            for(int i=0; i<5; i++) childPool[i+4] = node->children[i];
+            for(int i=0; i<4; ++i) childPool[i] = leftSibling->children[i];
+            for(int i=0; i<5; ++i) childPool[i+4] = node->children[i];
         }
 
         value_type up1 = pool[2];
@@ -157,12 +201,12 @@ protected:
 
         parent->keys[myIndex - 1] = up1;
 
-        for (int i = parent->count; i > myIndex; i--) parent->keys[i] = parent->keys[i - 1];
-        for (int i = parent->count + 1; i > myIndex; i--) parent->children[i] = parent->children[i - 1];
+        for (int i = parent->count; i > myIndex; --i) parent->keys[i] = parent->keys[i - 1];
+        for (int i = parent->count + 1; i > myIndex; --i) parent->children[i] = parent->children[i - 1];
 
-        parent->keys[myIndex] = up2;
-        parent->children[myIndex] = midNode;
-        parent->count++;
+        parent -> keys[myIndex] = up2;
+        parent -> children[myIndex] = midNode;
+        parent -> count++;
 
         CheckOverflow(parent);
     }
@@ -242,6 +286,72 @@ protected:
         }
     }
 public:
+    //Iterardores
+    class iterator {
+     private:
+         Node* m_pNode;
+         int m_index;
+     public:
+        iterator(Node* node = nullptr, int idx = 0) : m_pNode(node), m_index(idx) {}
+        bool operator!=(const iterator& other) const { return m_pNode != other.m_pNode || m_index != other.m_index; }
+        value_type& operator*() { return m_pNode->keys[m_index]; }
+
+        iterator& operator++() {
+            if (!m_pNode) return *this;
+            if (!m_pNode->isLeaf) {
+                m_pNode = m_pNode->children[m_index + 1];
+                while (!m_pNode->isLeaf) m_pNode = m_pNode->children[0];
+                m_index = 0;
+            } else {
+                if (m_index + 1 < m_pNode->count) { m_index++; }
+                else {
+                    Node* p = m_pNode->parent;
+                    while (p) {
+                        int c = 0;
+                        while (c <= p->count && p->children[c] != m_pNode) c++;
+                        if (c < p->count) { m_pNode = p; m_index = c; return *this; }
+                        m_pNode = p;
+                        p = p->parent;
+                    }
+                    m_pNode = nullptr; m_index = 0;
+                }
+            }
+            return *this;
+        }
+    };
+    class reverse_iterator{
+    private:
+        Node* m_pNode;
+        int m_index;
+        public:
+            reverse_iterator(Node* node = nullptr, int idx = 0) : m_pNode(node), m_index(idx) {}
+            bool operator!=(const reverse_iterator& other) const { return m_pNode != other.m_pNode || m_index != other.m_index; }
+            value_type& operator*() { return m_pNode->keys[m_index]; }
+
+            reverse_iterator& operator++() {
+                if (!m_pNode) return *this;
+                if (!m_pNode->isLeaf) {
+                    m_pNode = m_pNode->children[m_index];
+                    while (!m_pNode->isLeaf) m_pNode = m_pNode->children[m_pNode->count];
+                    m_index = m_pNode->count - 1;
+                } else {
+                    if (m_index > 0) { m_index--; }
+                    else {
+                        Node* p = m_pNode->parent;
+                        while (p) {
+                            int c = 0;
+                            while (c <= p->count && p->children[c] != m_pNode) c++;
+                            if (c > 0) { m_pNode = p; m_index = c - 1; return *this; }
+                            m_pNode = p;
+                            p = p->parent;
+                        }
+                        m_pNode = nullptr; m_index = 0;
+                    }
+                }
+                return *this;
+            }
+        };
+
     //Constructor y Destructor
     Arbol23() {}
 
@@ -249,7 +359,53 @@ public:
         std::lock_guard<std::mutex> lock(mutex);
         DestroyTree(m_pRoot);
     }
+    //begin y end
+    iterator begin() {
+        std::lock_guard<std::mutex> lock(mutex);
+        Node* curr = m_pRoot;
+        if(!curr) return iterator(nullptr, 0);
+        while (!curr->isLeaf) curr = curr->children[0];
+        return iterator(curr, 0);
+    }
+    iterator end() { return iterator(nullptr, 0); }
 
+    reverse_iterator rbegin() {
+        std::lock_guard<std::mutex> lock(mutex);
+        Node* curr = m_pRoot;
+        if (!curr) return reverse_iterator(nullptr, 0);
+        while (!curr->isLeaf) curr = curr->children[curr->count];
+        return reverse_iterator(curr, curr->count - 1);
+    }
+    reverse_iterator rend() { return reverse_iterator(nullptr, 0); }
+
+    template <typename Callable, typename... Args>
+    void Inorder(Callable func, Args... args) {
+        std::lock_guard<std::mutex> lock(mutex);
+        InternalInorder(m_pRoot, func, args...);
+    }
+
+    template <typename Callable, typename... Args>
+    void Preorder(Callable func, Args... args) {
+        std::lock_guard<std::mutex> lock(mutex);
+        InternalPreorder(m_pRoot, func, args...);
+    }
+
+    template <typename Callable, typename... Args>
+    void Postorder(Callable func, Args... args) {
+        std::lock_guard<std::mutex> lock(mutex);
+        InternalPostorder(m_pRoot, func, args...);
+    }
+
+    template <typename Callable, typename... Args>
+    void ForEach(Callable func, Args... args) {
+        Inorder(func, args...);
+    }
+
+    template <typename Callable, typename... Args>
+    value_type* FirstThat(Callable func, Args... args) {
+        std::lock_guard<std::mutex> lock(mutex);
+        return InternalFirstThat(m_pRoot, func, args...);
+    }
     // --- MÉTODO INSERT PÚBLICO ---
     void Insert(const value_type& val) {
         std::lock_guard<std::mutex> lock(mutex);
