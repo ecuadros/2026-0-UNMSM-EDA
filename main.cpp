@@ -3,6 +3,9 @@
 #include "pointers.h"
 #include "containers/array.h"
 #include "containers/lists.h"
+#include "containers/StaQue.h"
+#include "containers/BTree.h"
+#include "containers/Tree.h"
 
 // g++ -std=c++17 -Wall -g -pthread main.cpp -o main
 
@@ -11,6 +14,9 @@ int main() {
     // DemoUtil();
     // DemoPointers1();
     // DemoArray();
-    DemoLists();
+    // DemoLists();
+    //DemoP_C_();
+    //DemoBTree();
+    DemoTree();
     return 0;
 }
