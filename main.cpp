@@ -1,18 +1,8 @@
 #include <iostream>
-#include "util.h"
-#include "pointers.h"
-#include "containers/array.h"
-#include "containers/lists.h"
-#include "containers/BTree.h"
-
-// g++ -std=c++17 -Wall -g -pthread main.cpp -o main
+#include "DemoBTree.cpp"
+using namespace std;
 
 int main() {
-    std::cout << "Hello EDA-UNMSM!" << std::endl;
-    // DemoUtil();
-    // DemoPointers1();
-    // DemoArray();
-    // DemoLists();
     DemoBTree();
     return 0;
 }
