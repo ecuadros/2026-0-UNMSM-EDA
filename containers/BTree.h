@@ -184,7 +184,7 @@ public:
 
 
     BTree(Size orden = DEFAULT_BTREE_ORDER, bool unico = true)
-        : m_Root(2*orden + 1, unico),
+        : m_Root(orden - 1, unico),
           m_NumKeys(0),
           m_Order(orden),
           m_Height(1),
@@ -344,3 +344,4 @@ public:
 void DemoBTree();
 
 #endif // __BTREE_H__
+
