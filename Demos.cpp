@@ -1,5 +1,6 @@
 #include <iostream>
 #include "containers/lists.h"
+#include "DemoHeap.cpp"
 
 using namespace std;
 
@@ -11,3 +12,9 @@ void DemoLists(){
     cout << l1 << endl;
 }
 
+void DemoHeap();
+
+int main(){
+    DemoHeap();
+    return 0;
+}
