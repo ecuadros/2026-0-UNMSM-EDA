@@ -121,6 +121,54 @@ private:
                                                ObjectInfo        & oi1,
                                                ObjectInfo        & oi2);
        void MovePage(BTPage *  pChildPage,vector<ObjectInfo> & tmpKeys,vector<BTPage *> & tmpSubPages);
+
+template <typename Func, typename... Args>
+void InOrderRec(BTNode* nodo, Size nivel, Func& funcion, Args&&... args){
+
+    if(!nodo) return;
+
+    Size n = nodo->GetNumberOfKeys();
+
+    for(Size i = 0; i < n; ++i){
+        InOrderRec(nodo->m_SubPages[i], nivel+1, funcion, std::forward<Args>(args)...);
+        funcion(nodo->m_Keys[i], nivel, std::forward<Args>(args)...);
+    }
+
+    InOrderRec(nodo->m_SubPages[n], nivel+1, funcion, std::forward<Args>(args)...);
+}
+
+template <typename Func, typename... Args>
+void PreOrderRec(BTNode* nodo, Size nivel, Func& funcion, Args&&... args){
+
+    if(!nodo) return;
+
+    Size n = nodo->GetNumberOfKeys();
+
+    for(Size i = 0; i < n; ++i){
+        funcion(nodo->m_Keys[i], nivel, std::forward<Args>(args)...);
+    }
+
+    for(Size i = 0; i <= n; ++i){
+        PreOrderRec(nodo->m_SubPages[i], nivel+1, funcion, std::forward<Args>(args)...);
+    }
+}
+
+template <typename Func, typename... Args>
+void PostOrderRec(BTNode* nodo, Size nivel, Func& funcion, Args&&... args){
+
+    if(!nodo) return;
+
+    Size n = nodo->GetNumberOfKeys();
+
+    for(Size i = 0; i <= n; ++i){
+        PostOrderRec(nodo->m_SubPages[i], nivel+1, funcion, std::forward<Args>(args)...);
+    }
+
+    for(Size i = 0; i < n; ++i){
+        funcion(nodo->m_Keys[i], nivel, std::forward<Args>(args)...);
+    }
+}
+
 };
 
 template <typename Container, typename ObjType>
@@ -816,6 +864,53 @@ int CBTreePage<keyType, ObjIDType>::GetFreeCellsOnRight(int pos)
        if( pos < GetNumberOfKeys() )   // there is some page on right ?
                return m_SubPages[pos+1]->GetFreeCells();
        return 0;
+}
+
+template <typename Traits>
+CBTreePage<Traits>::CBTreePage(const CBTreePage& other)
+{
+    m_MaxKeys   = other.m_MaxKeys;
+    m_Unico     = other.m_Unico;
+    m_Keys      = other.m_Keys;
+
+    // copiar hijos recursivamente
+    m_SubPages.resize(other.m_SubPages.size(), nullptr);
+
+    for (Size i = 0; i < other.m_SubPages.size(); ++i) {
+        if (other.m_SubPages[i])
+            m_SubPages[i] = new CBTreePage(*other.m_SubPages[i]);
+    }
+}
+
+template <typename Traits>
+CBTreePage<Traits>& CBTreePage<Traits>::operator=(const CBTreePage& other){
+    if(this == &other) return *this;
+
+    Reset(); // libera hijos actuales
+
+    m_MaxKeys = other.m_MaxKeys;
+    m_Unico   = other.m_Unico;
+    m_Keys    = other.m_Keys;
+
+    m_SubPages.resize(other.m_SubPages.size(), nullptr);
+
+    for(Size i = 0; i < other.m_SubPages.size(); ++i){
+        if(other.m_SubPages[i])
+            m_SubPages[i] = new CBTreePage(*other.m_SubPages[i]);
+    }
+
+    return *this;
+}
+
+template <typename Traits>
+void CBTreePage<Traits>::Reset(){
+
+    for(auto* child : m_SubPages){
+        delete child;
+    }
+
+    m_SubPages.clear();
+    m_Keys.clear();
 }
 
 #endif
